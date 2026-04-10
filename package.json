@@ -1,0 +1,13 @@
+{
+  "name": "erp-system",
+  "private": true,
+  "workspaces": [
+    "frontend-development",
+    "backend-development"
+  ],
+  "scripts": {
+    "dev:frontend": "npm run dev --workspace=frontend-development",
+    "dev:backend": "npm run dev --workspace=backend-development",
+    "test:backend": "npm run test --workspace=backend-development"
+  }
+}
