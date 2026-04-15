@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router';
 import { AuthLayout } from '../layouts/AuthLayout';
 import { LoginPage } from '../../features/auth/pages/LoginPage';
 import { DashboardPage } from '../../features/dashboard/pages/DashboardPage';
+import { AppShellLayout } from '../layouts/app-shell-layout';
 
 export const AppRouter = () => {
   return (
@@ -10,7 +11,9 @@ export const AppRouter = () => {
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
       </Route>
-      <Route path="/dashboard" element={<DashboardPage />} />
+      <Route element={<AppShellLayout />}>
+        <Route path="/dashboard" element={<DashboardPage />} />
+      </Route>
     </Routes>
   );
 };
