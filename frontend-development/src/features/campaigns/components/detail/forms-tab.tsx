@@ -1,15 +1,28 @@
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import type { Form } from '../../types/campaign.types';
 
 interface FormsTabProps {
   forms: Form[];
   onDeleteForm: (form: Form) => void;
   onToggleStatus: (form: Form) => void;
+  onCreateForm: () => void;
 }
 
-export const FormsTab = ({ forms, onDeleteForm, onToggleStatus }: FormsTabProps) => {
+export const FormsTab = ({ forms, onDeleteForm, onToggleStatus, onCreateForm }: FormsTabProps) => {
   return (
     <section className="pt-5">
+      <div className="mb-4 flex items-center justify-between rounded-lg bg-white">
+        <h3 className="text-sm font-semibold text-slate-900">Campaign Form</h3>
+        <button
+          type="button"
+          onClick={onCreateForm}
+          className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 px-3 py-2 text-xs font-medium text-white hover:bg-blue-700 cursor-pointer"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Create Form
+        </button>
+      </div>
+
       {forms.length === 0 ? (
         <div className="py-6 text-sm text-slate-500">No forms registered in this campaign.</div>
       ) : (

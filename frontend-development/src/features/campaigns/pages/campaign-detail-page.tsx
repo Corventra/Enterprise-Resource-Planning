@@ -78,6 +78,10 @@ export const CampaignDetailPage = () => {
           {activeTab === 'forms' && (
             <FormsTab
               forms={forms}
+              onCreateForm={() => {
+                const campaignNameParam = encodeURIComponent(campaign.name);
+                navigate(`/forms?campaignId=${campaign.id}&campaignName=${campaignNameParam}`);
+              }}
               onDeleteForm={(form) => setDeletingForm(form)}
               onToggleStatus={async (form) => {
                 await updateForm(form.id, { status: form.status === 'Active' ? 'Archived' : 'Active' });

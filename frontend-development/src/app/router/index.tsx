@@ -5,6 +5,7 @@ import { DashboardPage } from '../../features/dashboard/pages/DashboardPage';
 import { AppShellLayout } from '../layouts/app-shell-layout';
 import { CampaignsPage } from '../../features/campaigns/pages/campaigns-page';
 import { CampaignDetailPage } from '../../features/campaigns/pages/campaign-detail-page';
+import { FormBuilderPage } from '../../features/forms/pages/form-builder-page';
 
 export const AppRouter = () => {
   return (
@@ -17,6 +18,8 @@ export const AppRouter = () => {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/campaigns" element={<CampaignsPage />} />
         <Route path="/campaigns/:campaignId" element={<CampaignDetailPage />} />
+        <Route path="/forms" element={<FormBuilderPage />} />
+        <Route path="/forms/:formId" element={<FormBuilderPage />} />
       </Route>
     </Routes>
   );
