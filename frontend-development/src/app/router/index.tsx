@@ -3,6 +3,8 @@ import { AuthLayout } from '../layouts/AuthLayout';
 import { LoginPage } from '../../features/auth/pages/LoginPage';
 import { DashboardPage } from '../../features/dashboard/pages/DashboardPage';
 import { AppShellLayout } from '../layouts/app-shell-layout';
+import { CampaignsPage } from '../../features/campaigns/pages/campaigns-page';
+import { CampaignDetailPage } from '../../features/campaigns/pages/campaign-detail-page';
 
 export const AppRouter = () => {
   return (
@@ -13,6 +15,8 @@ export const AppRouter = () => {
       </Route>
       <Route element={<AppShellLayout />}>
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/campaigns" element={<CampaignsPage />} />
+        <Route path="/campaigns/:campaignId" element={<CampaignDetailPage />} />
       </Route>
     </Routes>
   );

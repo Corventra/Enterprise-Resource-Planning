@@ -6,7 +6,7 @@ interface PageContainerProps {
 
 export const PageContainer = ({ children }: PageContainerProps) => {
   return (
-    <div className="p-6 md:p-8 max-w-[1600px] mx-auto w-full animate-in fade-in duration-500">
+    <div className="p-6 md:p-8 max-w-[2000px] mx-auto w-full animate-in fade-in duration-500">
       {children}
     </div>
   );
