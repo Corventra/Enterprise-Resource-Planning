@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { LeadTrackerEmptyState } from '../components/list/lead-tracker-empty-state';
 import { LeadTrackerFiltersSection } from '../components/list/lead-tracker-filters';
 import { LeadTrackerSummaryCards } from '../components/list/lead-tracker-summary-cards';
@@ -8,6 +9,7 @@ import { useLeadTrackerFilters } from '../hooks/use-lead-tracker-filters';
 import { useLeadTrackerList } from '../hooks/use-lead-tracker-list';
 
 export const LeadTrackerPage = () => {
+  const navigate = useNavigate();
   const { items, isLoading, summary } = useLeadTrackerList();
   const {
     filters,
@@ -100,7 +102,11 @@ export const LeadTrackerPage = () => {
       ) : filteredItems.length === 0 ? (
         <LeadTrackerEmptyState onReset={resetFilters} />
       ) : (
-        <LeadTrackerTable items={paginatedItems} onView={() => {}} footer={paginationFooter} />
+        <LeadTrackerTable
+          items={paginatedItems}
+          onView={(item) => navigate(`/lead-workspace/${item.id}`)}
+          footer={paginationFooter}
+        />
       )}
     </div>
   );

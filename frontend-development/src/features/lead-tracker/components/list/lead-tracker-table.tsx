@@ -105,7 +105,7 @@ export const LeadTrackerTable = ({ items, onView, footer }: LeadTrackerTableProp
                     <button
                       type="button"
                       onClick={() => onView(item)}
-                      className="inline-flex text-[#737784] transition-colors hover:text-[#003c90] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1d59c1]/40"
+                      className="inline-flex text-[#737784] transition-colors hover:text-[#003c90] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1d59c1]/40 cursor-pointer"
                       aria-label="View lead"
                     >
                       <Eye className="h-4 w-4" strokeWidth={2} />
