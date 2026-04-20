@@ -1,35 +1,36 @@
-import { FileBadge2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router';
+import { ProposalDetailSection } from '../components/proposal-detail-section';
+import { ProposalHistorySection } from '../components/proposal-history-section';
 import type { LeadWorkspaceOutletContext } from './lead-workspace-page';
 
 export const ProposalPage = () => {
   const { workspace } = useOutletContext<LeadWorkspaceOutletContext>();
-  const proposal = workspace.proposal;
+  const proposals = useMemo(() => workspace.proposals, [workspace.proposals]);
+  const [selectedProposalId, setSelectedProposalId] = useState<string | null>(proposals[0]?.id ?? null);
+
+  useEffect(() => {
+    if (proposals.length === 0) {
+      setSelectedProposalId(null);
+      return;
+    }
+
+    const isStillAvailable = proposals.some((proposal) => proposal.id === selectedProposalId);
+    if (!isStillAvailable) {
+      setSelectedProposalId(proposals[0].id);
+    }
+  }, [proposals, selectedProposalId]);
+
+  const selectedProposal = proposals.find((proposal) => proposal.id === selectedProposalId) ?? proposals[0];
 
   return (
-    <section className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-[#eceef0]">
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-wider text-[#737784]">Active Proposal</p>
-          <h3 className="mt-1 text-xl font-bold text-[#191c1e]">{proposal.title}</h3>
-          <p className="text-xs text-[#515f74]">{proposal.serviceType}</p>
-        </div>
-        <FileBadge2 className="h-5 w-5 text-[#003c90]" />
-      </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-lg bg-[#f2f4f6] p-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[#737784]">Estimated Fee</p>
-          <p className="mt-1 text-lg font-bold text-[#191c1e]">{proposal.estimatedFee}</p>
-        </div>
-        <div className="rounded-lg bg-[#f2f4f6] p-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[#737784]">Payment Terms</p>
-          <p className="mt-1 text-sm font-semibold text-[#191c1e]">{proposal.paymentTerms}</p>
-        </div>
-        <div className="rounded-lg bg-[#f2f4f6] p-3">
-          <p className="text-[10px] font-bold uppercase tracking-wide text-[#737784]">Status</p>
-          <p className="mt-1 text-sm font-semibold text-[#00419c]">{proposal.status}</p>
-        </div>
-      </div>
+    <section className="grid grid-cols-12 gap-6">
+      <ProposalHistorySection
+        proposals={proposals}
+        selectedProposalId={selectedProposal?.id}
+        onSelectProposal={setSelectedProposalId}
+      />
+      <ProposalDetailSection proposal={selectedProposal} />
     </section>
   );
 };

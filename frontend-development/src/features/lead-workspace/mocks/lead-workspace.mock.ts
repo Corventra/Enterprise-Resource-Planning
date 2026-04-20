@@ -135,6 +135,83 @@ export const leadWorkspaceMock: LeadWorkspace[] = [
       paymentTerms: 'One-time payment · Net 30',
       status: 'Client Reviewing'
     },
+    proposals: [
+      {
+        id: 'prop-001',
+        title: 'Strategic Tax Advisory',
+        createdAt: '2026-04-18T10:15:00.000Z',
+        paymentType: 'One-time Payment',
+        subcon: 'Tax Compliance Squad',
+        sentAt: '2026-04-19T09:30:00.000Z',
+        dealDate: '2026-04-28T00:00:00.000Z',
+        proposalFee: '$42,500.00',
+        dealPrice: '$40,000.00',
+        notes: 'Client requested slight discount due to multi-year expansion plan.',
+        detail: {
+          tier: 'STRATEGIC_RETAINER',
+          serviceType: 'Strategic Tax Advisory',
+          status: 'WAITING_CEO_APPROVAL',
+          discount: '$2,500.00',
+          agreeFee: '$40,000.00',
+          hasSubcon: true,
+          subconPartner: 'Tax Compliance Squad',
+          subconPayer: 'PARTNER',
+          planMode: 'MONTHLY_RETAINER',
+          billingSchedule: [],
+          contractStart: '2026-05-01',
+          contractEnd: '2027-04-30',
+          billingTiming: 'START_OF_MONTH',
+          downPayment: '-',
+          successFeePercent: '-',
+          successFeeBase: '-',
+          attachments: ['proposal-strategic-tax-advisory.pdf', 'financial-model.xlsx']
+        }
+      },
+      {
+        id: 'prop-002',
+        title: 'Transfer Pricing Review',
+        createdAt: '2026-04-09T13:10:00.000Z',
+        paymentType: 'Milestone',
+        subcon: 'Advisory Execution Team',
+        sentAt: '2026-04-11T10:45:00.000Z',
+        dealDate: '2026-04-22T00:00:00.000Z',
+        proposalFee: '$18,750.00',
+        dealPrice: '$17,900.00',
+        notes: 'Follow-up package tied with annual compliance renewal.',
+        detail: {
+          tier: 'PREMIUM_MODULAR',
+          serviceType: 'Transfer Pricing Advisory',
+          status: 'APPROVED',
+          discount: '$850.00',
+          agreeFee: '$17,900.00',
+          hasSubcon: false,
+          subconPartner: '',
+          subconPayer: '',
+          planMode: 'INSTALLMENTS',
+          billingSchedule: [
+            {
+              label: 'Down Payment',
+              percentage: 50,
+              nominal: '$9,375.00',
+              description: 'Due after proposal signing'
+            },
+            {
+              label: 'Termin 1',
+              percentage: 50,
+              nominal: '$9,375.00',
+              description: 'Due after final transfer pricing report delivery'
+            }
+          ],
+          contractStart: '-',
+          contractEnd: '-',
+          billingTiming: 'START_OF_MONTH',
+          downPayment: '-',
+          successFeePercent: '-',
+          successFeeBase: '-',
+          attachments: ['tp-review-proposal.pdf']
+        }
+      }
+    ],
     engagementLetter: {
       status: 'Drafting',
       lastUpdatedAt: '2026-04-21T15:10:00.000Z',
@@ -191,6 +268,39 @@ export const leadWorkspaceMock: LeadWorkspace[] = [
       paymentTerms: 'Two milestones',
       status: 'Drafting'
     },
+    proposals: [
+      {
+        id: 'prop-003',
+        title: 'Infrastructure Modernization',
+        createdAt: '2026-04-12T11:20:00.000Z',
+        paymentType: 'Two Milestones',
+        subcon: 'Cloud Migration Unit',
+        sentAt: '2026-04-14T14:05:00.000Z',
+        dealDate: '2026-04-30T00:00:00.000Z',
+        proposalFee: '$28,000.00',
+        dealPrice: '$26,500.00',
+        notes: 'Awaiting client legal review before final negotiation.',
+        detail: {
+          tier: 'PREMIUM_MODULAR',
+          serviceType: 'Infrastructure Modernization',
+          status: 'DRAFT',
+          discount: '$1,500.00',
+          agreeFee: '$26,500.00',
+          hasSubcon: true,
+          subconPartner: 'Cloud Migration Unit',
+          subconPayer: 'CLIENT',
+          planMode: 'DISPUTE_UM_SF',
+          billingSchedule: [],
+          contractStart: '-',
+          contractEnd: '-',
+          billingTiming: 'END_OF_MONTH',
+          downPayment: '$8,000.00',
+          successFeePercent: '12%',
+          successFeeBase: 'from total migration cost savings',
+          attachments: ['infra-modernization-draft.pdf']
+        }
+      }
+    ],
     engagementLetter: {
       status: 'Not Created',
       lastUpdatedAt: '2026-04-20T08:00:00.000Z',

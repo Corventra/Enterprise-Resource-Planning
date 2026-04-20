@@ -56,6 +56,45 @@ export interface LeadWorkspaceProposal {
   status: 'Drafting' | 'Submitted for Approval' | 'Approved' | 'Sent to Client' | 'Client Reviewing';
 }
 
+export interface LeadWorkspaceProposalItem {
+  id: string;
+  title: string;
+  createdAt: string;
+  paymentType: string;
+  subcon: string;
+  sentAt: string;
+  dealDate: string;
+  proposalFee: string;
+  dealPrice: string;
+  notes: string;
+  detail: LeadWorkspaceProposalDetail;
+}
+
+export interface LeadWorkspaceProposalDetail {
+  tier: 'STRATEGIC_RETAINER' | 'PREMIUM_MODULAR' | 'STANDARDIZED_MODULAR';
+  serviceType: string;
+  status: 'DRAFT' | 'WAITING_CEO_APPROVAL' | 'REVISION' | 'APPROVED' | 'SENT';
+  discount: string;
+  agreeFee: string;
+  hasSubcon: boolean;
+  subconPartner: string;
+  subconPayer: 'PARTNER' | 'CLIENT' | '';
+  planMode: 'INSTALLMENTS' | 'MONTHLY_RETAINER' | 'DISPUTE_UM_SF';
+  billingSchedule: Array<{
+    label: string;
+    percentage: number;
+    nominal: string;
+    description: string;
+  }>;
+  contractStart: string;
+  contractEnd: string;
+  billingTiming: 'START_OF_MONTH' | 'END_OF_MONTH';
+  downPayment: string;
+  successFeePercent: string;
+  successFeeBase: string;
+  attachments: string[];
+}
+
 export interface LeadWorkspaceEngagementLetter {
   status: 'Not Created' | 'Drafting' | 'Submitted for Approval' | 'Approved' | 'Sent to Client' | 'Awaiting Signature' | 'Signed';
   lastUpdatedAt: string;
@@ -90,6 +129,7 @@ export interface LeadWorkspace {
   meetings: LeadWorkspaceMeetingItem[];
   minutes: LeadWorkspaceMinutesItem[];
   proposal: LeadWorkspaceProposal;
+  proposals: LeadWorkspaceProposalItem[];
   engagementLetter: LeadWorkspaceEngagementLetter;
   nextSteps: LeadWorkspaceNextStep[];
   winProbability: number;
