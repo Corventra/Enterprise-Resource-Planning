@@ -1,50 +1,80 @@
-import type { Campaign } from '../../types/campaign.types';
-import { CampaignChannelBadge } from '../shared/campaign-channel-badge';
-import { CampaignStatusBadge } from '../shared/campaign-status-badge';
-import { CampaignTypeBadge } from '../shared/campaign-type-badge';
+import { ArrowLeft, Trash2 } from 'lucide-react';
+import type { Campaign, CampaignStatus } from '../../types/campaign.types';
+import { formatChannel } from '../../utils/format-channel';
 
 interface CampaignDetailHeaderProps {
   campaign: Campaign;
+  onBack: () => void;
+  onEditCampaign: () => void;
+  onDeleteCampaign: () => void;
 }
 
-export const CampaignDetailHeader = ({ campaign }: CampaignDetailHeaderProps) => {
-  const createdAt = new Date(campaign.createdAt).toLocaleString();
-  const lastUpdated = new Date(campaign.updatedAt).toLocaleString();
+const statusBadgeClass = (status: CampaignStatus): string => {
+  switch (status) {
+    case 'Active':
+      return 'bg-[#006544] text-[#58e7ab]';
+    case 'Draft':
+      return 'bg-[#d5e3fc] text-[#57657a]';
+    case 'Paused':
+      return 'bg-amber-100 text-amber-900';
+    case 'Completed':
+      return 'bg-[#e0e3e5] text-[#434653]';
+    default:
+      return 'bg-[#e0e3e5] text-[#434653]';
+  }
+};
 
+export const CampaignDetailHeader = ({
+  campaign,
+  onBack,
+  onEditCampaign,
+  onDeleteCampaign
+}: CampaignDetailHeaderProps) => {
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">{campaign.name}</h1>
-          <p className="mt-1 text-sm text-slate-500">{campaign.topic}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <CampaignStatusBadge status={campaign.status} />
-          <CampaignTypeBadge type={campaign.type} />
-          <CampaignChannelBadge channel={campaign.channel} />
+    <header className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0">
+        <button
+          type="button"
+          onClick={onBack}
+          className="group mb-2 inline-flex items-center text-xs font-medium text-[#434653] transition-colors hover:text-[#003c90] sm:text-sm"
+        >
+          <ArrowLeft className="mr-1 h-3.5 w-3.5 transition-transform group-hover:-translate-x-1 sm:h-4 sm:w-4" />
+          Back to Campaigns
+        </button>
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-3">
+          <h1 className="text-2xl font-bold tracking-tight text-[#191c1e] sm:text-3xl">{campaign.name}</h1>
+          <div className="flex flex-wrap gap-1.5">
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide sm:text-[11px] ${statusBadgeClass(campaign.status)}`}
+            >
+              {campaign.status}
+            </span>
+            <span className="rounded-full bg-[#d5e3fc] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#57657a] sm:text-[11px]">
+              {campaign.type}
+            </span>
+            <span className="rounded-full bg-[#e0e3e5] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#434653] sm:text-[11px]">
+              {formatChannel(campaign.channel)}
+            </span>
+          </div>
         </div>
       </div>
-
-      <div className="mt-4 grid gap-x-6 gap-y-3 border-t border-slate-200 pt-4 text-sm md:grid-cols-2">
-        <p className="text-slate-600">
-          <span className="font-medium text-slate-800">Campaign ID:</span> {campaign.id}
-        </p>
-        <p className="text-slate-600">
-          <span className="font-medium text-slate-800">Created By:</span> {campaign.createdBy}
-        </p>
-        <p className="text-slate-600">
-          <span className="font-medium text-slate-800">Period:</span> {campaign.startDate} - {campaign.endDate}
-        </p>
-        <p className="text-slate-600">
-          <span className="font-medium text-slate-800">Created At:</span> {createdAt}
-        </p>
-        <p className="text-slate-600">
-          <span className="font-medium text-slate-800">Last Updated:</span> {lastUpdated}
-        </p>
-        <p className="text-slate-600">
-          <span className="font-medium text-slate-800">Notes:</span> {campaign.notes || '-'}
-        </p>
+      <div className="flex shrink-0 flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={onDeleteCampaign}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-[linear-gradient(135deg,#991b1b_0%,#dc2626_100%)] px-5 py-2 text-xs font-bold text-white shadow-md shadow-red-600/25 transition-opacity hover:opacity-90 sm:text-sm"
+        >
+          <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={2.5} />
+          Delete
+        </button>
+        <button
+          type="button"
+          onClick={onEditCampaign}
+          className="rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-5 py-2 text-xs font-bold text-white shadow-md shadow-[#003c90]/20 transition-opacity hover:opacity-90 sm:text-sm"
+        >
+          Edit Campaign
+        </button>
       </div>
-    </section>
+    </header>
   );
 };

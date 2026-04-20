@@ -15,6 +15,8 @@ export interface Campaign {
   startDate: string;
   endDate: string;
   notes?: string;
+  /** Optional hero image for campaign detail (URL). */
+  coverImageUrl?: string;
   totalSubmissions: number;
   createdAt: string;
   updatedAt: string;
@@ -29,6 +31,13 @@ export interface Form {
   status: FormStatus;
   publishedAt: string;
   submissionCount: number;
+  /** Optional: shown in campaign detail Forms tab. */
+  fieldCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
+  /** Public URLs per channel or variant (shortlink row + QR). */
+  shortLinks?: { label: string; url: string }[];
 }
 
 export type SubmissionStatus = 'New' | 'Qualified' | 'Rejected';
@@ -71,6 +80,7 @@ export interface CampaignPayload {
   startDate: string;
   endDate: string;
   notes?: string;
+  coverImageUrl?: string;
 }
 
 export interface CampaignFormErrors {

@@ -19,14 +19,14 @@ export const CampaignDetailTabs = ({
   ];
 
   return (
-    <div className="border-b border-gray-200 px-6">
-      <div className="flex gap-6">
+    <div className="border-b border-gray-200 px-4 sm:px-5">
+      <div className="flex gap-5">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             type="button"
             onClick={() => onChangeTab(tab.key)}
-            className={`py-4 border-b-2 text-sm font-medium transition-colors ${
+            className={`border-b-2 py-3 text-xs font-medium transition-colors sm:text-sm ${
               activeTab === tab.key
                 ? 'border-black text-black'
                 : 'border-transparent text-gray-600 hover:text-gray-900'

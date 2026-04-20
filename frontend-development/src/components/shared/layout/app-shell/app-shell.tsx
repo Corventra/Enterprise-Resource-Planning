@@ -6,7 +6,7 @@ interface AppShellProps {
 
 export const AppShell = ({ children }: AppShellProps) => {
   return (
-    <div className="flex bg-slate-50 min-h-screen text-slate-900 font-sans">
+    <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
       {children}
     </div>
   );
