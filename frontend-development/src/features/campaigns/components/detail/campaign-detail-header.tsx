@@ -12,11 +12,11 @@ interface CampaignDetailHeaderProps {
 const statusBadgeClass = (status: CampaignStatus): string => {
   switch (status) {
     case 'Active':
-      return 'bg-[#006544] text-[#58e7ab]';
+      return 'bg-[#4edea3]/25 text-[#004b31]';
     case 'Draft':
-      return 'bg-[#d5e3fc] text-[#57657a]';
+      return 'bg-[#d9e2ff] text-[#00419c]';
     case 'Paused':
-      return 'bg-amber-100 text-amber-900';
+      return 'bg-[#e0e3e5] text-[#434653]';
     case 'Completed':
       return 'bg-[#e0e3e5] text-[#434653]';
     default:

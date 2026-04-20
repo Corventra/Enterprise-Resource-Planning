@@ -7,10 +7,10 @@ export const getCampaignBadgeColor = (
   value: CampaignStatus | CampaignType | Channel
 ): string => {
   const statusMap: Record<CampaignStatus, string> = {
-    Draft: 'bg-slate-100 text-slate-700 border-slate-200',
-    Active: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-    Paused: 'bg-amber-100 text-amber-700 border-amber-200',
-    Completed: 'bg-blue-100 text-blue-700 border-blue-200'
+    Draft: 'bg-[#d9e2ff] text-[#00419c] border-[#b0c6ff]',
+    Active: 'bg-[#4edea3]/25 text-[#004b31] border-[#4edea3]/40',
+    Paused: 'bg-[#e0e3e5] text-[#434653] border-[#c3c6d5]',
+    Completed: 'bg-[#e0e3e5] text-[#434653] border-[#c3c6d5]'
   };
 
   const typeMap: Record<CampaignType, string> = {

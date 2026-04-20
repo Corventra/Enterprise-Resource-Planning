@@ -30,6 +30,12 @@ export const sidebarNavItems: SidebarNavItem[] = [
     group: 'Main'
   },
   {
+    label: 'Lead Tracker',
+    path: '/lead-tracker',
+    icon: LineChart,
+    group: 'Main'
+  },
+  {
     label: 'Approval',
     path: '/approval',
     icon: CheckCircle2,
@@ -45,12 +51,6 @@ export const sidebarNavItems: SidebarNavItem[] = [
     label: 'Document Center',
     path: '/document-center',
     icon: FolderOpen,
-    group: 'Main'
-  },
-  {
-    label: 'Lead Tracker',
-    path: '/lead-tracker',
-    icon: LineChart,
     group: 'Main'
   },
   {
