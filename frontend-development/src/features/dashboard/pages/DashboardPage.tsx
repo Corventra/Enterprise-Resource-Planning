@@ -30,7 +30,7 @@ export const DashboardPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
           <button 
             onClick={handleLogout}
-            className="px-4 py-2 text-sm font-medium text-white bg-[#004A99] hover:bg-[#003a7a] rounded-lg transition-colors"
+            className="px-4 py-2 text-sm font-medium text-white bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] hover:bg-[linear-gradient(135deg,#002d6b_0%,#0c4190_100%)] rounded-lg transition-colors"
           >
             Logout
           </button>

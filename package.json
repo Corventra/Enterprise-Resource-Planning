@@ -1,5 +1,5 @@
 {
-  "name": "erp-system",
+  "name": "corventra",
   "private": true,
   "workspaces": [
     "frontend-development",

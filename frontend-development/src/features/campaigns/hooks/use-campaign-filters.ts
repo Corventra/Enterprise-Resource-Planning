@@ -14,7 +14,12 @@ export const useCampaignFilters = (campaigns: Campaign[], pageSize = 5) => {
 
   const filteredCampaigns = useMemo(() => {
     return campaigns.filter((campaign) => {
-      const matchSearch = campaign.name.toLowerCase().includes(filters.search.toLowerCase());
+      const q = filters.search.toLowerCase().trim();
+      const matchSearch =
+        q === '' ||
+        campaign.name.toLowerCase().includes(q) ||
+        campaign.topic.toLowerCase().includes(q) ||
+        campaign.id.toLowerCase().includes(q);
       const matchType = filters.type === 'All' || campaign.type === filters.type;
       const matchChannel = filters.channel === 'All' || campaign.channel === filters.channel;
       const matchStatus = filters.status === 'All' || campaign.status === filters.status;
@@ -47,6 +52,7 @@ export const useCampaignFilters = (campaigns: Campaign[], pageSize = 5) => {
     paginatedCampaigns,
     currentPage: normalizedPage,
     totalPages,
+    pageSize,
     setCurrentPage,
     updateFilter,
     resetFilters

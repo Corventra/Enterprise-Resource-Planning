@@ -63,7 +63,7 @@ export const FormBuilderTopBar = ({
             type="button"
             onClick={onPublish}
             disabled={isPublishing}
-            className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="inline-flex items-center gap-1 rounded-md bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-3 py-1.5 text-sm font-medium text-white hover:bg-[linear-gradient(135deg,#002d6b_0%,#0c4190_100%)] disabled:opacity-50"
           >
             <Send className="h-4 w-4" />
             {isPublishing ? 'Publishing...' : 'Publish'}

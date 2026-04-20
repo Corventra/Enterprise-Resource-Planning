@@ -13,15 +13,15 @@ export const SidebarItem = ({ item, isCollapsed }: SidebarItemProps) => {
     <NavLink
       to={item.path}
       className={({ isActive }) =>
-        `flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors text-sm font-medium ${
+        `flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
           isActive
-            ? 'bg-blue-50 text-blue-700'
+            ? 'bg-[#003c90]/10 text-[#003c90]'
             : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
         }`
       }
       title={isCollapsed ? item.label : undefined}
     >
-      {Icon && <Icon className="w-5 h-5 flex-shrink-0" />}
+      {Icon && <Icon className="h-5 w-5 shrink-0" />}
       {!isCollapsed && <span className="truncate">{item.label}</span>}
     </NavLink>
   );

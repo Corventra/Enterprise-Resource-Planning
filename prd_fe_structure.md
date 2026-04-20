@@ -1,6 +1,6 @@
 # PRD Struktur Folder Frontend ERP
 
-**Project:** ERP System  
+**Project:** Corventra  
 **Stack:** React + Vite + TypeScript + React Router + Tailwind CSS  
 **Dokumen:** Panduan struktur folder frontend  
 **Tujuan dokumen:** Menjadi acuan agar implementasi kode konsisten, rapi, scalable, dan sesuai kebutuhan sistem ERP.

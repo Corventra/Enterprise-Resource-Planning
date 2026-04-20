@@ -1,4 +1,4 @@
-import { Box } from 'lucide-react';
+import { CorventraLogo } from '../../corventra-logo';
 import { SidebarItem } from './sidebar-item';
 import { SidebarToggle } from './sidebar-toggle';
 import { sidebarNavItems } from '../../../../app/navigation/sidebar-nav';
@@ -28,10 +28,10 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse }: SidebarProps) => {
       {/* Brand Header */}
       <div className="relative flex items-center h-16 px-4 border-b border-slate-200">
         <div className={`flex items-center gap-3 overflow-hidden ${isCollapsed ? 'justify-center w-full' : ''}`}>
-          <div className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded flex items-center justify-center">
-            <Box className="w-5 h-5" />
-          </div>
-          {!isCollapsed && <span className="font-bold text-lg text-slate-800 tracking-tight">ERP System</span>}
+          <CorventraLogo
+            className={`shrink-0 object-contain ${isCollapsed ? 'h-8 w-8' : 'h-8 w-auto max-w-[140px]'}`}
+          />
+          {!isCollapsed && <span className="font-bold text-lg text-slate-800 tracking-tight">Corventra</span>}
         </div>
         <SidebarToggle isCollapsed={isCollapsed} onToggle={onToggleCollapse} />
       </div>

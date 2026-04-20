@@ -9,7 +9,7 @@ export const HeaderSearch = () => {
       <input
         type="search"
         className="block w-full p-2 pl-10 text-sm text-slate-900 border border-slate-200 rounded-lg bg-slate-50 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-colors"
-        placeholder="Search across ERP..."
+        placeholder="Search across Corventra..."
       />
     </div>
   );

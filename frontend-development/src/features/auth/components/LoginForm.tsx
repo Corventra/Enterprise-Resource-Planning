@@ -1,4 +1,5 @@
 import React from 'react';
+import { CorventraLogo } from '../../../components/shared/corventra-logo';
 import { useLoginForm } from '../hooks/useLoginForm';
 
 export const LoginForm: React.FC = () => {
@@ -7,10 +8,8 @@ export const LoginForm: React.FC = () => {
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="mb-8 lg:hidden flex items-center gap-3 justify-center">
-        <div className="w-8 h-8 bg-[#004A99] rounded-lg flex items-center justify-center text-white font-bold">
-          E
-        </div>
-        <span className="text-xl font-bold text-gray-900 tracking-tight">ERP System</span>
+        <CorventraLogo className="h-8 w-auto max-w-[160px]" />
+        <span className="text-xl font-bold text-gray-900 tracking-tight">Corventra</span>
       </div>
 
       <div className="bg-white px-8 py-10 shadow-lg rounded-2xl border border-gray-100/50">
@@ -90,7 +89,7 @@ export const LoginForm: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#004A99] hover:bg-[#003a7a] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#004A99] transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] hover:bg-[linear-gradient(135deg,#002d6b_0%,#0c4190_100%)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#003c90] transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <span className="flex items-center gap-2">

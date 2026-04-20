@@ -17,7 +17,7 @@ export const LoginPage: React.FC = () => {
 
         {/* Footer Area */}
         <footer className="mt-8 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-500">
-          <p>© {new Date().getFullYear()} ERP System. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Corventra. All rights reserved.</p>
           <div className="flex items-center justify-center gap-4">
             <a href="#" className="hover:text-gray-900 transition-colors">Privacy Policy</a>
             <a href="#" className="hover:text-gray-900 transition-colors">Terms of Service</a>
