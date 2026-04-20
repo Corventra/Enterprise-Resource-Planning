@@ -7,6 +7,7 @@ import { CampaignsPage } from '../../features/campaigns/pages/campaigns-page';
 import { CampaignDetailPage } from '../../features/campaigns/pages/campaign-detail-page';
 import { FormBuilderPage } from '../../features/forms/pages/form-builder-page';
 import { BankDataPage } from '../../features/bank-data/pages/bank-data-page';
+import { LeadTrackerPage } from '../../features/lead-tracker/pages/lead-tracker-page';
 
 export const AppRouter = () => {
   return (
@@ -20,6 +21,7 @@ export const AppRouter = () => {
         <Route path="/campaigns" element={<CampaignsPage />} />
         <Route path="/campaigns/:campaignId" element={<CampaignDetailPage />} />
         <Route path="/bank-data" element={<BankDataPage />} />
+        <Route path="/lead-tracker" element={<LeadTrackerPage />} />
         <Route path="/forms" element={<FormBuilderPage />} />
         <Route path="/forms/:formId" element={<FormBuilderPage />} />
       </Route>
