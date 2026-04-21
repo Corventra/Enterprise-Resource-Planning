@@ -102,6 +102,24 @@ export interface LeadWorkspaceEngagementLetter {
   notes: string;
 }
 
+export interface LeadWorkspaceEngagementLetterItem {
+  id: string;
+  title: string;
+  serviceName: string;
+  createdAt: string;
+  agreeFee: string;
+  paymentTypeFinal: string;
+  hasSubcon: boolean;
+  signedAt?: string;
+  status: 'DRAFT' | 'PENDING' | 'SENT' | 'AWAITING_SIGNATURE' | 'SIGNED' | 'REPLACED';
+  document: {
+    uploadedFileName?: string;
+    uploadedAt?: string;
+    uploadedSize?: string;
+    thumbnailUrl?: string;
+  };
+}
+
 export interface LeadWorkspaceNextStep {
   id: string;
   title: string;
@@ -131,6 +149,7 @@ export interface LeadWorkspace {
   proposal: LeadWorkspaceProposal;
   proposals: LeadWorkspaceProposalItem[];
   engagementLetter: LeadWorkspaceEngagementLetter;
+  engagementLetters: LeadWorkspaceEngagementLetterItem[];
   nextSteps: LeadWorkspaceNextStep[];
   winProbability: number;
 }

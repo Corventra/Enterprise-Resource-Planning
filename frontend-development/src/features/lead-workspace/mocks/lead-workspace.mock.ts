@@ -218,6 +218,46 @@ export const leadWorkspaceMock: LeadWorkspace[] = [
       owner: 'Laras Wijaya',
       notes: 'Preparing legal clauses based on latest proposal feedback.'
     },
+    engagementLetters: [
+      {
+        id: 'el-001',
+        title: 'Master Service Agreement',
+        serviceName: 'Enterprise Architecture Advisory',
+        createdAt: '2026-04-21T15:10:00.000Z',
+        agreeFee: 'IDR 1.250.000.000',
+        paymentTypeFinal: 'Milestone Based (30-40-30)',
+        hasSubcon: false,
+        status: 'SIGNED',
+        document: {
+          uploadedFileName: 'EL_Advisory_Final_v2.pdf',
+          uploadedAt: '2026-04-21T15:30:00.000Z',
+          uploadedSize: '2.4 MB',
+          thumbnailUrl: 'https://images.unsplash.com/photo-1576872381149-7847515ce5d8?auto=format&fit=crop&w=120&q=80'
+        }
+      },
+      {
+        id: 'el-002',
+        title: 'Amendment A - Scope Extension',
+        serviceName: 'Legal Consultancy',
+        createdAt: '2026-04-20T10:45:00.000Z',
+        agreeFee: 'IDR 450.000.000',
+        paymentTypeFinal: 'Two Terms',
+        hasSubcon: true,
+        status: 'PENDING',
+        document: {}
+      },
+      {
+        id: 'el-003',
+        title: 'Initial Engagement Draft',
+        serviceName: 'Drafting Service',
+        createdAt: '2026-04-18T13:20:00.000Z',
+        agreeFee: 'IDR 1.300.000.000',
+        paymentTypeFinal: 'Milestone Based',
+        hasSubcon: false,
+        status: 'REPLACED',
+        document: {}
+      }
+    ],
     nextSteps: [
       {
         id: 'step-001',
@@ -307,6 +347,7 @@ export const leadWorkspaceMock: LeadWorkspace[] = [
       owner: 'Reza Akbar',
       notes: 'Waiting proposal approval.'
     },
+    engagementLetters: [],
     nextSteps: [],
     winProbability: 61
   }
