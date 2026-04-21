@@ -19,7 +19,7 @@ export const handoverDetailMock: HandoverDetail = {
     { label: 'Proposal Reference', value: 'BD-PRO-2025-021' }
   ],
   backgroundSummary:
-    'PT MSM is a key tier-1 supplier of high-precision automotive components with expanding manufacturing footprints across Southeast Asia. The engagement focuses on Transfer Pricing documentation to align with BEPS Action 13 compliance requirements.',
+    'PT MSM merupakan perusahaan manufaktur komponen otomotif dengan transaksi afiliasi yang signifikan, melibatkan entitas di Singapura (pembelian bahan baku) dan Thailand (jasa manajemen). Pada meeting tanggal 24 Januari 2025, klien menyampaikan kebutuhan untuk menyusun Master File dan Local File Tahun Pajak 2024 dengan kualitas yang lebih komprehensif dibandingkan tahun sebelumnya. Klien mengalami review KPP pada tahun sebelumnya sehingga menginginkan dokumentasi yang lebih kuat, lengkap, dan sesuai praktik internasional.',
   scopeIncluded: [
     'Master File (Global Group Context)',
     'Local File (Specific for ID entity)',

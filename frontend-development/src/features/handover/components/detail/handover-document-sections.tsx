@@ -69,8 +69,9 @@ export const HandoverDocumentSections = ({ detail }: HandoverDocumentSectionsPro
             <p className={`${labelClass} mb-3 text-[#004b31]`}>3.1 Scope Included</p>
             <ul className="space-y-2">
               {detail.scopeIncluded.map((item) => (
-                <li key={item} className="text-sm font-medium text-[#191c1e]">
-                  - {item}
+                <li key={item} className="flex items-center gap-2 text-sm font-medium text-[#191c1e]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#006544]" />
+                  {item}
                 </li>
               ))}
             </ul>
@@ -79,8 +80,9 @@ export const HandoverDocumentSections = ({ detail }: HandoverDocumentSectionsPro
             <p className={`${labelClass} mb-3 text-[#ba1a1a]`}>3.2 Exclusions</p>
             <ul className="space-y-2">
               {detail.scopeExcluded.map((item) => (
-                <li key={item} className="text-sm font-medium text-[#737784]">
-                  - {item}
+                <li key={item} className="flex items-center gap-2 text-sm font-medium text-[#737784]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#737784]" />
+                  {item}
                 </li>
               ))}
             </ul>
@@ -98,7 +100,10 @@ export const HandoverDocumentSections = ({ detail }: HandoverDocumentSectionsPro
           </div>
         </div>
 
-        <div className="mt-7 overflow-hidden rounded-xl border border-[#e6e8ea]">
+        <div className="mt-7">
+          <p className={`${labelClass} mb-3`}>3.4 Timeline &amp; Milestones</p>
+        </div>
+        <div className="overflow-hidden rounded-xl border border-[#e6e8ea]">
           <table className="w-full text-left text-sm">
             <thead className="bg-[#f2f4f6] font-bold text-[#434653]">
               <tr>
@@ -175,7 +180,7 @@ export const HandoverDocumentSections = ({ detail }: HandoverDocumentSectionsPro
             </div>
           </div>
           <div>
-            <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-[#ba1a1a]">
+            <h3 id="outstanding-data" className="mb-4 scroll-mt-24 flex items-center gap-2 text-lg font-bold text-[#ba1a1a]">
               <span className="material-symbols-outlined">pending</span>
               6. Outstanding Data
             </h3>
@@ -216,14 +221,15 @@ export const HandoverDocumentSections = ({ detail }: HandoverDocumentSectionsPro
           ))}
         </ul>
 
-        <h3 className="mb-4 mt-7 flex items-center gap-2 text-lg font-bold text-[#003c90]">
+        <h3 id="communication" className="mb-4 mt-7 scroll-mt-24 flex items-center gap-2 text-lg font-bold text-[#003c90]">
           <span className="material-symbols-outlined">connect_without_contact</span>
           8. Communication Protocol
         </h3>
         <ul className="space-y-2">
           {detail.communicationProtocol.map((item) => (
-            <li key={item} className="text-sm font-medium text-[#191c1e]">
-              - {item}
+            <li key={item} className="flex items-center gap-2 text-sm font-medium text-[#191c1e]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#003c90]" />
+              {item}
             </li>
           ))}
         </ul>
@@ -277,7 +283,7 @@ export const HandoverDocumentSections = ({ detail }: HandoverDocumentSectionsPro
           </table>
         </div>
 
-        <h3 className="mb-4 mt-7 flex items-center gap-2 text-lg font-bold text-[#003c90]">
+        <h3 id="checklist" className="mb-4 mt-7 scroll-mt-24 flex items-center gap-2 text-lg font-bold text-[#003c90]">
           <span className="material-symbols-outlined">fact_check</span>
           10. Handover Checklist
         </h3>
@@ -318,6 +324,7 @@ export const HandoverDocumentSections = ({ detail }: HandoverDocumentSectionsPro
           ))}
         </div>
       </section>
+
     </div>
   );
 };
