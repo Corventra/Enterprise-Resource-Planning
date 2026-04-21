@@ -3,6 +3,7 @@ import {
   Megaphone,
   Landmark,
   LineChart,
+  Handshake,
   CheckCircle2,
   Receipt,
   FolderOpen,
@@ -33,6 +34,12 @@ export const sidebarNavItems: SidebarNavItem[] = [
     label: 'Lead Tracker',
     path: '/lead-tracker',
     icon: LineChart,
+    group: 'Main'
+  },
+  {
+    label: 'Handover',
+    path: '/handover',
+    icon: Handshake,
     group: 'Main'
   },
   {

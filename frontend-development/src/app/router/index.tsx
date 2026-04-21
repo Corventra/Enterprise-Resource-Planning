@@ -12,6 +12,8 @@ import { LeadWorkspacePage } from '../../features/lead-workspace/pages/lead-work
 import { MeetingPage } from '../../features/lead-workspace/pages/meeting-page';
 import { ProposalPage } from '../../features/lead-workspace/pages/proposal-page';
 import { EngagementLetterPage } from '../../features/lead-workspace/pages/engagement-letter-page';
+import { HandoverPage } from '../../features/handover/pages/handover-page';
+import { HandoverDetailPage } from '../../features/handover/pages/handover-detail-page';
 
 export const AppRouter = () => {
   return (
@@ -26,6 +28,8 @@ export const AppRouter = () => {
         <Route path="/campaigns/:campaignId" element={<CampaignDetailPage />} />
         <Route path="/bank-data" element={<BankDataPage />} />
         <Route path="/lead-tracker" element={<LeadTrackerPage />} />
+        <Route path="/handover" element={<HandoverPage />} />
+        <Route path="/handover/:handoverId" element={<HandoverDetailPage />} />
         <Route path="/lead-workspace/:leadId" element={<LeadWorkspacePage />}>
           <Route index element={<Navigate to="meeting" replace />} />
           <Route path="meeting" element={<MeetingPage />} />
