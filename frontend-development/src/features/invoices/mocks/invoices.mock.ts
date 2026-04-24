@@ -1,4 +1,4 @@
-import type { InvoiceItem } from '../types/invoice.types';
+import type { InvoiceDetail, InvoiceItem } from '../types/invoice.types';
 
 export const invoicesMock: InvoiceItem[] = [
   {
@@ -98,5 +98,118 @@ export const invoicesMock: InvoiceItem[] = [
     nextDueDate: null,
     paymentStatus: 'Closed',
     paymentProgress: 0
+  }
+];
+
+export const invoiceDetailsMock: InvoiceDetail[] = [
+  {
+    invoice: invoicesMock[0],
+    contractSummary: {
+      contractValue: 30000000,
+      installmentScheme: '2 Termin (50/50)',
+      engagementLetterReference: 'EL/2025/089',
+      engagementLetterDate: '2025-01-12'
+    },
+    financialSummary: {
+      dppContract: 30000000,
+      grossInvoiceTotal: 33300000,
+      netPaymentTotal: 32700000,
+      outstandingTotal: 0,
+      paymentProgress: 100
+    },
+    clientInfo: {
+      clientId: 'MJJ-9920',
+      projectName: 'Web Development Project',
+      picName: 'Bpk. Andi Wijaya',
+      email: 'andi.wijaya@majujaya.com',
+      phone: '+62 812-3456-7890',
+      address: 'Gedung Jaya Lt. 5, Jl. Thamrin No. 12, Jakarta'
+    },
+    installments: [
+      {
+        id: 'ins-001',
+        number: 1,
+        invoiceNumber: 'INV/MJJ/01/25',
+        termName: 'Down Payment (DP)',
+        percentage: 50,
+        taxScheme: 'PPN + PPh 23',
+        baseAmount: 15000000,
+        totalInvoice: 16650000,
+        settledAmount: 16650000,
+        outstandingAmount: 0,
+        issuedDate: '2025-01-01',
+        dueDate: '2025-01-15',
+        status: 'Paid'
+      },
+      {
+        id: 'ins-002',
+        number: 2,
+        invoiceNumber: 'INV/MJJ/02/25',
+        termName: 'Final Payment',
+        percentage: 50,
+        taxScheme: 'PPN + PPh 23',
+        baseAmount: 15000000,
+        totalInvoice: 16650000,
+        settledAmount: 16650000,
+        outstandingAmount: 0,
+        issuedDate: '2025-09-15',
+        dueDate: '2025-10-10',
+        status: 'Paid'
+      }
+    ],
+    paymentHistory: [
+      {
+        id: 'pay-001',
+        transactionDate: '2025-10-15',
+        installmentName: 'Final Payment',
+        amountReceived: 16350000,
+        pph23Amount: 300000,
+        taxScheme: 'PPN + PPh 23',
+        settledAmount: 16650000,
+        method: 'Bank Transfer (BCA)',
+        verifiedBy: 'Sarah Admin',
+        status: 'Verified'
+      },
+      {
+        id: 'pay-002',
+        transactionDate: '2025-01-12',
+        installmentName: 'Down Payment (DP)',
+        amountReceived: 16350000,
+        pph23Amount: 300000,
+        taxScheme: 'PPN + PPh 23',
+        settledAmount: 16650000,
+        method: 'Bank Transfer (BCA)',
+        verifiedBy: 'Sarah Admin',
+        status: 'Verified'
+      }
+    ],
+    timeline: [
+      {
+        id: 'tl-001',
+        title: 'Pembayaran Termin 2 Diverifikasi',
+        description: '15 Okt 2025 • Oleh Sarah Admin',
+        type: 'verified'
+      },
+      {
+        id: 'tl-002',
+        title: 'Invoice Termin 2 Terbit',
+        description: '15 Sep 2025 • Oleh System',
+        type: 'invoice'
+      },
+      {
+        id: 'tl-003',
+        title: 'Pembayaran Termin 1 Diverifikasi',
+        description: '12 Jan 2025 • Oleh Sarah Admin',
+        type: 'verified'
+      }
+    ],
+    relatedDocuments: [
+      { id: 'doc-001', name: 'EL - PT Maju Jaya.pdf', type: 'pdf' },
+      { id: 'doc-002', name: 'Invoice Termin 1.pdf', type: 'invoice' },
+      { id: 'doc-003', name: 'Faktur Pajak - JAN.pdf', type: 'tax' }
+    ],
+    internalNote:
+      'Client cukup responsif dan selalu membayar tepat waktu. Follow-up berikutnya fokus ke peluang maintenance kontrak lanjutan.',
+    internalNoteUpdatedAt: '2025-10-15'
   }
 ];

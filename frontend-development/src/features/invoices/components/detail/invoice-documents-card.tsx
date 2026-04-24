@@ -1,0 +1,29 @@
+import { Download, FileText } from 'lucide-react';
+import type { InvoiceRelatedDocument } from '../../types/invoice.types';
+
+interface InvoiceDocumentsCardProps {
+  documents: InvoiceRelatedDocument[];
+}
+
+export const InvoiceDocumentsCard = ({ documents }: InvoiceDocumentsCardProps) => {
+  return (
+    <section className="rounded-lg bg-white p-6 shadow-sm ring-1 ring-[#eceef0]">
+      <h3 className="mb-3 font-bold text-[#191c1e]">Dokumen Terkait</h3>
+      <div className="space-y-2">
+        {documents.map((doc) => (
+          <button
+            key={doc.id}
+            type="button"
+            className="flex w-full items-center justify-between rounded-md border border-[#e0e3e5] p-3 text-left hover:bg-[#f7f9fb]"
+          >
+            <span className="inline-flex items-center gap-2 text-xs font-medium text-[#191c1e]">
+              <FileText className="h-4 w-4 text-[#003c90]" />
+              {doc.name}
+            </span>
+            <Download className="h-4 w-4 text-[#737784]" />
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+};

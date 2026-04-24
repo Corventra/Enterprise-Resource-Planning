@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMemo } from 'react';
+import { useNavigate } from 'react-router';
 import { InvoiceFiltersSection } from '../components/list/invoice-filters';
 import { InvoicesSummaryCards } from '../components/list/invoices-summary-cards';
 import { InvoicesTable } from '../components/list/invoices-table';
@@ -7,6 +8,7 @@ import { useInvoiceFilters } from '../hooks/use-invoice-filters';
 import { useInvoicesList } from '../hooks/use-invoices-list';
 
 export const InvoicesPage = () => {
+  const navigate = useNavigate();
   const { invoices, isLoading, summary } = useInvoicesList();
   const {
     filters,
@@ -98,7 +100,11 @@ export const InvoicesPage = () => {
           Loading invoices...
         </div>
       ) : (
-        <InvoicesTable invoices={paginatedInvoices} footer={paginationFooter} />
+        <InvoicesTable
+          invoices={paginatedInvoices}
+          onView={(invoice) => navigate(`/invoice/${invoice.id}`)}
+          footer={paginationFooter}
+        />
       )}
     </div>
   );

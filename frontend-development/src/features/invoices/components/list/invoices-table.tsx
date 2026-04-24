@@ -4,6 +4,7 @@ import type { InvoiceItem, InvoicePaymentStatus } from '../../types/invoice.type
 
 interface InvoicesTableProps {
   invoices: InvoiceItem[];
+  onView: (invoice: InvoiceItem) => void;
   footer?: ReactNode;
 }
 
@@ -38,7 +39,7 @@ const formatMoney = (amount: number) => new Intl.NumberFormat('id-ID').format(am
 const formatDate = (date: string | null) =>
   date ? new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(date)) : '-';
 
-export const InvoicesTable = ({ invoices, footer }: InvoicesTableProps) => {
+export const InvoicesTable = ({ invoices, onView, footer }: InvoicesTableProps) => {
   return (
     <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-[#eceef0]/80">
       <div className="overflow-x-auto">
@@ -119,6 +120,7 @@ export const InvoicesTable = ({ invoices, footer }: InvoicesTableProps) => {
                   <div className="flex items-center justify-center gap-1">
                     <button
                       type="button"
+                      onClick={() => onView(invoice)}
                       className="rounded-md p-1.5 text-[#003c90] transition-colors hover:bg-[#d9e2ff] cursor-pointer"
                       aria-label="View invoice"
                     >

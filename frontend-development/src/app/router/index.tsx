@@ -16,6 +16,7 @@ import { HandoverPage } from '../../features/handover/pages/handover-page';
 import { HandoverDetailPage } from '../../features/handover/pages/handover-detail-page';
 import { HandoverUpdatePage } from '../../features/handover/pages/handover-update-page';
 import { InvoicesPage } from '../../features/invoices/pages/invoices-page';
+import { InvoiceDetailPage } from '../../features/invoices/pages/invoice-detail-page';
 
 export const AppRouter = () => {
   return (
@@ -34,6 +35,9 @@ export const AppRouter = () => {
         <Route path="/handover/:handoverId" element={<HandoverDetailPage />} />
         <Route path="/handover/:handoverId/edit" element={<HandoverUpdatePage />} />
         <Route path="/invoice" element={<InvoicesPage />} />
+        <Route path="/invoices" element={<InvoicesPage />} />
+        <Route path="/invoice/:invoiceId" element={<InvoiceDetailPage />} />
+        <Route path="/invoices/:invoiceId" element={<InvoiceDetailPage />} />
         <Route path="/lead-workspace/:leadId" element={<LeadWorkspacePage />}>
           <Route index element={<Navigate to="meeting" replace />} />
           <Route path="meeting" element={<MeetingPage />} />
