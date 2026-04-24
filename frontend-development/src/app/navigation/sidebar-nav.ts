@@ -49,8 +49,8 @@ export const sidebarNavItems: SidebarNavItem[] = [
     group: 'Main'
   },
   {
-    label: 'Invoices',
-    path: '/invoices',
+    label: 'Invoice',
+    path: '/invoice',
     icon: Receipt,
     group: 'Main'
   },

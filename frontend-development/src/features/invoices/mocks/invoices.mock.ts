@@ -1,0 +1,102 @@
+import type { InvoiceItem } from '../types/invoice.types';
+
+export const invoicesMock: InvoiceItem[] = [
+  {
+    id: 'inv-001',
+    invoiceCode: 'INV-001/DSK/WD/2025',
+    projectCode: 'PRJ-DSK-001',
+    clientName: 'PT Maju Jaya',
+    serviceType: 'Web Dev',
+    contractValue: 30000000,
+    totalInvoice: 33300000,
+    settledValue: 33300000,
+    outstandingValue: 0,
+    nextDueDate: null,
+    paymentStatus: 'Paid',
+    paymentProgress: 100
+  },
+  {
+    id: 'inv-002',
+    invoiceCode: 'INV-092/ENT/TX/2024',
+    projectCode: 'PRJ-ENT-092',
+    clientName: 'Global Solusindo',
+    serviceType: 'Tax',
+    contractValue: 125000000,
+    totalInvoice: 138750000,
+    settledValue: 45000000,
+    outstandingValue: 93750000,
+    nextDueDate: '2024-09-01',
+    paymentStatus: 'Overdue',
+    paymentProgress: 32
+  },
+  {
+    id: 'inv-003',
+    invoiceCode: 'INV-204/KRT/WD/2025',
+    projectCode: 'PRJ-KRT-204',
+    clientName: 'Karta Kreatif',
+    serviceType: 'Web Dev',
+    contractValue: 15000000,
+    totalInvoice: 16650000,
+    settledValue: 0,
+    outstandingValue: 16650000,
+    nextDueDate: null,
+    paymentStatus: 'Pending Verification',
+    paymentProgress: 0
+  },
+  {
+    id: 'inv-004',
+    invoiceCode: 'INV-210/GOJ/WD/2025',
+    projectCode: 'PRJ-GOJ-210',
+    clientName: 'Gojek Indonesia',
+    serviceType: 'Maintenance',
+    contractValue: 120000000,
+    totalInvoice: 133200000,
+    settledValue: 90000000,
+    outstandingValue: 43200000,
+    nextDueDate: '2025-10-22',
+    paymentStatus: 'Partially Paid',
+    paymentProgress: 67
+  },
+  {
+    id: 'inv-005',
+    invoiceCode: 'INV-215/MDR/SEC/2025',
+    projectCode: 'PRJ-MDR-215',
+    clientName: 'Bank Mandiri',
+    serviceType: 'Security',
+    contractValue: 75000000,
+    totalInvoice: 83250000,
+    settledValue: 0,
+    outstandingValue: 83250000,
+    nextDueDate: '2025-11-05',
+    paymentStatus: 'Sent',
+    paymentProgress: 0
+  },
+  {
+    id: 'inv-006',
+    invoiceCode: 'INV-DRAFT/552',
+    projectCode: 'PRJ-TLK-552',
+    clientName: 'Telkom Indonesia',
+    serviceType: 'Consulting',
+    contractValue: 85000000,
+    totalInvoice: 94350000,
+    settledValue: 0,
+    outstandingValue: 0,
+    nextDueDate: null,
+    paymentStatus: 'Draft',
+    paymentProgress: 0
+  },
+  {
+    id: 'inv-007',
+    invoiceCode: 'INV-012/CXL/APP/2024',
+    projectCode: 'PRJ-CXL-012',
+    clientName: 'Umbrella Corp',
+    serviceType: 'App Dev',
+    contractValue: 250000000,
+    totalInvoice: 277500000,
+    settledValue: 0,
+    outstandingValue: 0,
+    nextDueDate: null,
+    paymentStatus: 'Closed',
+    paymentProgress: 0
+  }
+];

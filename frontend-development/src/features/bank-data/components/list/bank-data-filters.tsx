@@ -10,7 +10,7 @@ interface BankDataFiltersProps {
 }
 
 const fieldFocus = 'focus:outline-none focus:ring-2 focus:ring-[#1d59c1]/20';
-const selectClassName = `rounded-lg border-none bg-white py-2 pl-3 pr-8 text-sm font-medium text-[#434653] shadow-sm ${fieldFocus}`;
+const selectClassName = `rounded-lg border-none bg-white py-2 pl-3 pr-8 text-xs font-semibold text-[#434653] shadow-sm ${fieldFocus}`;
 
 export const BankDataFiltersSection = ({
   filters,
@@ -20,8 +20,8 @@ export const BankDataFiltersSection = ({
   onReset
 }: BankDataFiltersProps) => {
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-xl bg-[#eceef0] p-4">
-      <div className="relative min-w-[200px] flex-1">
+    <div className="flex flex-wrap items-center gap-4 rounded-xl bg-[#f2f4f6] p-4">
+      <div className="relative min-w-[260px] flex-1">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#737784]" />
         <input
           type="search"
@@ -32,7 +32,7 @@ export const BankDataFiltersSection = ({
         />
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2">
         <select
           value={filters.source}
           onChange={(event) => onSourceChange(event.target.value as BankDataSource | 'All')}

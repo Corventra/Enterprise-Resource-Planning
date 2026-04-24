@@ -15,6 +15,7 @@ import { EngagementLetterPage } from '../../features/lead-workspace/pages/engage
 import { HandoverPage } from '../../features/handover/pages/handover-page';
 import { HandoverDetailPage } from '../../features/handover/pages/handover-detail-page';
 import { HandoverUpdatePage } from '../../features/handover/pages/handover-update-page';
+import { InvoicesPage } from '../../features/invoices/pages/invoices-page';
 
 export const AppRouter = () => {
   return (
@@ -32,6 +33,7 @@ export const AppRouter = () => {
         <Route path="/handover" element={<HandoverPage />} />
         <Route path="/handover/:handoverId" element={<HandoverDetailPage />} />
         <Route path="/handover/:handoverId/edit" element={<HandoverUpdatePage />} />
+        <Route path="/invoice" element={<InvoicesPage />} />
         <Route path="/lead-workspace/:leadId" element={<LeadWorkspacePage />}>
           <Route index element={<Navigate to="meeting" replace />} />
           <Route path="meeting" element={<MeetingPage />} />
