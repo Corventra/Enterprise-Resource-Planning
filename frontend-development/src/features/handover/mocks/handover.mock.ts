@@ -10,7 +10,7 @@ export const handoverMock: HandoverItem[] = [
     period: 'Januari - Maret 2025',
     engagementStatus: 'Signed',
     engagementStatusDate: '26 Jan 2025',
-    status: 'Submitted'
+    status: 'Waiting CEO Approval'
   },
   {
     id: 'ho-002',
@@ -32,7 +32,7 @@ export const handoverMock: HandoverItem[] = [
     period: 'Januari 2025',
     engagementStatus: 'Signed',
     engagementStatusDate: '15 Jan 2025',
-    status: 'Submitted'
+    status: 'Approved'
   },
   {
     id: 'ho-004',
@@ -54,7 +54,7 @@ export const handoverMock: HandoverItem[] = [
     period: 'Januari - Juni 2025',
     engagementStatus: 'Signed',
     engagementStatusDate: '05 Jan 2025',
-    status: 'Submitted'
+    status: 'Assigned to PM'
   },
   {
     id: 'ho-006',

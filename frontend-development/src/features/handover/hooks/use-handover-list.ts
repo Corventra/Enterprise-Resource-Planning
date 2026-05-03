@@ -19,13 +19,19 @@ export const useHandoverList = () => {
 
   const summary = useMemo(() => {
     const totalHandover = items.length;
-    const totalDraft = items.filter((item) => item.status === 'Draft').length;
-    const totalSubmitted = items.filter((item) => item.status === 'Submitted').length;
+    const totalDraft = items.filter(
+      (item) => item.status === 'Draft' || item.status === 'Revision Needed'
+    ).length;
+    const totalAwaitingApproval = items.filter((item) => item.status === 'Waiting CEO Approval').length;
+    const totalActive = items.filter((item) =>
+      ['Approved', 'Assigned to PM', 'In Project', 'Completed'].includes(item.status)
+    ).length;
 
     return {
       totalHandover,
       totalDraft,
-      totalSubmitted
+      totalAwaitingApproval,
+      totalActive
     };
   }, [items]);
 

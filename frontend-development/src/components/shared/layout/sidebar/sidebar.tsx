@@ -3,6 +3,7 @@ import { SidebarItem } from './sidebar-item';
 import { SidebarToggle } from './sidebar-toggle';
 import { sidebarNavItems } from '../../../../app/navigation/sidebar-nav';
 import type { SidebarNavItem } from '../../../../types/navigation';
+import { useAuth } from '../../../../app/store/auth-store';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -10,8 +11,13 @@ interface SidebarProps {
 }
 
 export const Sidebar = ({ isCollapsed, onToggleCollapse }: SidebarProps) => {
-  // Group items by their group property
-  const groupedItems = sidebarNavItems.reduce((acc, item) => {
+  const { role } = useAuth();
+
+  const visibleItems = sidebarNavItems.filter(
+    item => !item.permission || (role !== null && item.permission.includes(role))
+  );
+
+  const groupedItems = visibleItems.reduce((acc, item) => {
     const groupName = item.group || 'Others';
     if (!acc[groupName]) {
       acc[groupName] = [];

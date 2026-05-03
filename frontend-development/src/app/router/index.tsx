@@ -15,31 +15,107 @@ import { EngagementLetterPage } from '../../features/lead-workspace/pages/engage
 import { HandoverPage } from '../../features/handover/pages/handover-page';
 import { HandoverDetailPage } from '../../features/handover/pages/handover-detail-page';
 import { HandoverUpdatePage } from '../../features/handover/pages/handover-update-page';
+import { ApprovalCenterPage } from '../../features/approval/pages/approval-center-page';
+import { ProjectsPage } from '../../features/projects/pages/projects-page';
+import { ProjectDetailPage } from '../../features/projects/pages/project-detail-page';
+import { ProjectOverviewPage } from '../../features/projects/pages/project-overview-page';
+import { ProjectTimelinePage } from '../../features/projects/pages/project-timeline-page';
+import { ProjectTeamPage } from '../../features/projects/pages/project-team-page';
+import { ProjectDocumentsPage } from '../../features/projects/pages/project-documents-page';
+import { ProjectFinancialsPage } from '../../features/projects/pages/project-financials-page';
+import { KpiCenterPage } from '../../features/kpi/pages/kpi-center-page';
+import { KpiConsultantPage } from '../../features/kpi/pages/kpi-consultant-page';
+import { SettingsPage } from '../../features/settings/pages/settings-page';
+import { KpiConfigPage } from '../../features/settings/pages/kpi-config-page';
+import { TaskTemplatesPage } from '../../features/settings/pages/task-templates-page';
+import { AuthGuard } from '../guards/auth-guard';
+import { GuestGuard } from '../guards/guest-guard';
+import { PermissionGuard } from '../guards/permission-guard';
+import { PERMISSIONS, ROLES } from '../permissions';
 
 export const AppRouter = () => {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route element={<AuthLayout />}>
-        <Route path="/login" element={<LoginPage />} />
-      </Route>
-      <Route element={<AppShellLayout />}>
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/campaigns" element={<CampaignsPage />} />
-        <Route path="/campaigns/:campaignId" element={<CampaignDetailPage />} />
-        <Route path="/bank-data" element={<BankDataPage />} />
-        <Route path="/lead-tracker" element={<LeadTrackerPage />} />
-        <Route path="/handover" element={<HandoverPage />} />
-        <Route path="/handover/:handoverId" element={<HandoverDetailPage />} />
-        <Route path="/handover/:handoverId/edit" element={<HandoverUpdatePage />} />
-        <Route path="/lead-workspace/:leadId" element={<LeadWorkspacePage />}>
-          <Route index element={<Navigate to="meeting" replace />} />
-          <Route path="meeting" element={<MeetingPage />} />
-          <Route path="proposal" element={<ProposalPage />} />
-          <Route path="engagement-letter" element={<EngagementLetterPage />} />
+
+      <Route element={<GuestGuard />}>
+        <Route element={<AuthLayout />}>
+          <Route path="/login" element={<LoginPage />} />
         </Route>
-        <Route path="/forms" element={<FormBuilderPage />} />
-        <Route path="/forms/:formId" element={<FormBuilderPage />} />
+      </Route>
+
+      <Route element={<AuthGuard />}>
+        <Route element={<AppShellLayout />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+
+          <Route element={<PermissionGuard permissions={[PERMISSIONS.CAMPAIGN_MANAGE]} />}>
+            <Route path="/campaigns" element={<CampaignsPage />} />
+            <Route path="/campaigns/:campaignId" element={<CampaignDetailPage />} />
+            <Route path="/forms" element={<FormBuilderPage />} />
+            <Route path="/forms/:formId" element={<FormBuilderPage />} />
+          </Route>
+
+          <Route element={<PermissionGuard permissions={[PERMISSIONS.BANK_DATA_VIEW]} />}>
+            <Route path="/bank-data" element={<BankDataPage />} />
+          </Route>
+
+          <Route element={<PermissionGuard permissions={[PERMISSIONS.LEAD_VIEW]} />}>
+            <Route path="/lead-tracker" element={<LeadTrackerPage />} />
+            <Route path="/lead-workspace/:leadId" element={<LeadWorkspacePage />}>
+              <Route index element={<Navigate to="meeting" replace />} />
+              <Route path="meeting" element={<MeetingPage />} />
+              <Route path="proposal" element={<ProposalPage />} />
+              <Route path="engagement-letter" element={<EngagementLetterPage />} />
+            </Route>
+          </Route>
+
+          <Route element={<PermissionGuard permissions={[PERMISSIONS.HANDOVER_MANAGE, PERMISSIONS.HANDOVER_APPROVE]} />}>
+            <Route path="/handover" element={<HandoverPage />} />
+            <Route path="/handover/:handoverId" element={<HandoverDetailPage />} />
+            <Route path="/handover/:handoverId/edit" element={<HandoverUpdatePage />} />
+          </Route>
+
+          <Route element={<PermissionGuard roles={[ROLES.CEO, ROLES.COO]} />}>
+            <Route path="/approval" element={<ApprovalCenterPage />} />
+          </Route>
+
+          <Route element={<PermissionGuard permissions={[PERMISSIONS.PROJECT_VIEW]} />}>
+            <Route path="/projects" element={<ProjectsPage />} />
+            <Route path="/projects/:projectId" element={<ProjectDetailPage />}>
+              <Route index element={<Navigate to="overview" replace />} />
+              <Route path="overview" element={<ProjectOverviewPage />} />
+              <Route path="timeline" element={<ProjectTimelinePage />} />
+              <Route path="team" element={<ProjectTeamPage />} />
+              <Route path="documents" element={<ProjectDocumentsPage />} />
+              <Route element={<PermissionGuard permissions={[PERMISSIONS.PROJECT_VIEW_FINANCIALS]} />}>
+                <Route path="financials" element={<ProjectFinancialsPage />} />
+              </Route>
+            </Route>
+          </Route>
+
+          <Route
+            element={
+              <PermissionGuard
+                permissions={[
+                  PERMISSIONS.KPI_VIEW_OWN,
+                  PERMISSIONS.KPI_VIEW_TEAM,
+                  PERMISSIONS.KPI_VIEW_ALL
+                ]}
+              />
+            }
+          >
+            <Route path="/kpi" element={<KpiCenterPage />} />
+            <Route path="/kpi/consultant/:consultantId" element={<KpiConsultantPage />} />
+          </Route>
+
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route element={<PermissionGuard permissions={[PERMISSIONS.KPI_CONFIGURE]} />}>
+            <Route path="/settings/kpi-config" element={<KpiConfigPage />} />
+          </Route>
+          <Route element={<PermissionGuard permissions={[PERMISSIONS.TASK_TEMPLATE_MANAGE]} />}>
+            <Route path="/settings/task-templates" element={<TaskTemplatesPage />} />
+          </Route>
+        </Route>
       </Route>
     </Routes>
   );
