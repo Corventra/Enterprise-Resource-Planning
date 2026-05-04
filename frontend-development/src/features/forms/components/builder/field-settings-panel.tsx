@@ -82,11 +82,14 @@ export const FieldSettingsPanel = ({ field, onUpdateField }: FieldSettingsPanelP
               multiple
               value={field.fileUpload.allowedCategories}
               onChange={(event) => {
+                const fileUpload = field.fileUpload;
+                if (!fileUpload) return;
                 const values = Array.from(event.target.selectedOptions).map((option) => option.value);
                 onUpdateField(field.id, {
                   fileUpload: {
-                    ...field.fileUpload,
-                    allowedCategories: values as FileUploadCategory[]
+                    allowedCategories: values as FileUploadCategory[],
+                    maxFiles: fileUpload.maxFiles,
+                    maxSizeMb: fileUpload.maxSizeMb
                   }
                 });
               }}
@@ -107,11 +110,17 @@ export const FieldSettingsPanel = ({ field, onUpdateField }: FieldSettingsPanelP
                 type="number"
                 min={1}
                 value={field.fileUpload.maxFiles}
-                onChange={(event) =>
+                onChange={(event) => {
+                  const fileUpload = field.fileUpload;
+                  if (!fileUpload) return;
                   onUpdateField(field.id, {
-                    fileUpload: { ...field.fileUpload, maxFiles: Number(event.target.value) || 1 }
-                  })
-                }
+                    fileUpload: {
+                      allowedCategories: fileUpload.allowedCategories,
+                      maxFiles: Number(event.target.value) || 1,
+                      maxSizeMb: fileUpload.maxSizeMb
+                    }
+                  });
+                }}
                 className="h-9 w-full rounded-md border border-slate-200 px-2 text-sm"
               />
             </div>
@@ -121,11 +130,17 @@ export const FieldSettingsPanel = ({ field, onUpdateField }: FieldSettingsPanelP
                 type="number"
                 min={1}
                 value={field.fileUpload.maxSizeMb}
-                onChange={(event) =>
+                onChange={(event) => {
+                  const fileUpload = field.fileUpload;
+                  if (!fileUpload) return;
                   onUpdateField(field.id, {
-                    fileUpload: { ...field.fileUpload, maxSizeMb: Number(event.target.value) || 1 }
-                  })
-                }
+                    fileUpload: {
+                      allowedCategories: fileUpload.allowedCategories,
+                      maxFiles: fileUpload.maxFiles,
+                      maxSizeMb: Number(event.target.value) || 1
+                    }
+                  });
+                }}
                 className="h-9 w-full rounded-md border border-slate-200 px-2 text-sm"
               />
             </div>

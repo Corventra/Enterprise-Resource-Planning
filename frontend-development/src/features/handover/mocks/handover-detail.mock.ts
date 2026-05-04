@@ -4,7 +4,17 @@ export const handoverDetailMock: HandoverDetail = {
   id: 'ho-001',
   docCode: 'BD-HO-PT-MSM-2025-003',
   confidentiality: 'Strictly Confidential',
-  projectStatus: 'Active Project',
+  status: 'Waiting CEO Approval',
+  projectStatus: 'Awaiting CEO Approval',
+  approvalTrail: [
+    {
+      action: 'submitted',
+      actor: 'Andi Setiawan',
+      actorRole: 'BD',
+      at: '2026-04-25T08:00:00.000Z',
+      note: 'Memo lengkap, semua section terisi, KYC partial pending.'
+    }
+  ],
   title: 'DSK GLOBAL - PROJECT HANDOVER MEMO',
   subtitle: 'Menampilkan memo handover proyek secara lengkap.',
   projectInformation: [

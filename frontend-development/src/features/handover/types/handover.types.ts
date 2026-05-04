@@ -1,6 +1,39 @@
+import type { Role } from '../../../app/permissions';
+
 export type HandoverEngagementStatus = 'Signed' | 'Pending';
 
-export type HandoverStatus = 'Draft' | 'Submitted';
+export type HandoverStatus =
+  | 'Draft'
+  | 'Waiting CEO Approval'
+  | 'Revision Needed'
+  | 'Approved'
+  | 'Assigned to PM'
+  | 'In Project'
+  | 'Completed';
+
+export const HANDOVER_STATUS_OPTIONS: readonly HandoverStatus[] = [
+  'Draft',
+  'Waiting CEO Approval',
+  'Revision Needed',
+  'Approved',
+  'Assigned to PM',
+  'In Project',
+  'Completed'
+] as const;
+
+/**
+ * Tailwind class map for status badges. Use in any list/detail surface that
+ * shows a `HandoverStatus`. Update here only — components consume this map.
+ */
+export const handoverStatusStyleMap: Record<HandoverStatus, string> = {
+  Draft: 'bg-[#e0e3e5] text-[#434653]',
+  'Waiting CEO Approval': 'bg-amber-100 text-[#a16207]',
+  'Revision Needed': 'bg-orange-100 text-[#c2410c]',
+  Approved: 'bg-[#d5e3fc] text-[#003c90]',
+  'Assigned to PM': 'bg-[#4edea3]/30 text-[#004b31]',
+  'In Project': 'bg-[#006544]/15 text-[#006544]',
+  Completed: 'bg-[#006544]/25 text-[#003c2a]'
+};
 
 export interface HandoverItem {
   id: string;
@@ -13,6 +46,33 @@ export interface HandoverItem {
   engagementStatusDate: string;
   status: HandoverStatus;
 }
+
+export type HandoverApprovalAction =
+  | 'submitted'
+  | 'approved'
+  | 'revisionRequested'
+  | 'pmAssigned'
+  | 'consultantAssigned'
+  | 'projectStarted'
+  | 'completed';
+
+export interface HandoverApprovalTrailEntry {
+  action: HandoverApprovalAction;
+  actor: string;
+  actorRole: Role;
+  at: string;
+  note?: string;
+}
+
+export const HANDOVER_APPROVAL_ACTION_LABELS: Record<HandoverApprovalAction, string> = {
+  submitted: 'Submitted for CEO Approval',
+  approved: 'Approved by CEO',
+  revisionRequested: 'Revision Requested',
+  pmAssigned: 'PM Assigned',
+  consultantAssigned: 'Consultant Assigned',
+  projectStarted: 'Project Started',
+  completed: 'Project Completed'
+};
 
 export interface HandoverFilters {
   search: string;
@@ -62,7 +122,11 @@ export interface HandoverDetail {
   id: string;
   docCode: string;
   confidentiality: string;
+  /** Display-friendly status label (mirrors `status` for human-readable copy). */
   projectStatus: string;
+  /** Authoritative status mirrored from the parent `HandoverItem.status`. */
+  status: HandoverStatus;
+  approvalTrail?: HandoverApprovalTrailEntry[];
   title: string;
   subtitle: string;
   projectInformation: Array<{ label: string; value: string; accent?: 'primary' | 'success' }>;

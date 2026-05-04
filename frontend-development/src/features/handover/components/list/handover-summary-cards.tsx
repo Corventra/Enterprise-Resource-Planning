@@ -1,10 +1,11 @@
-import { FileText, PencilLine, Send } from 'lucide-react';
+import { CheckCircle2, FileText, Hourglass, PencilLine } from 'lucide-react';
 
 interface HandoverSummaryCardsProps {
   summary: {
     totalHandover: number;
     totalDraft: number;
-    totalSubmitted: number;
+    totalAwaitingApproval: number;
+    totalActive: number;
   };
 }
 
@@ -18,7 +19,7 @@ const cards = [
     iconClass: 'text-[#003c90] bg-[#003c90]/10'
   },
   {
-    label: 'Total Draft',
+    label: 'Drafts',
     valueKey: 'totalDraft' as const,
     hint: 'In Progress',
     hintClass: 'text-[#a16207]',
@@ -26,18 +27,26 @@ const cards = [
     iconClass: 'text-[#a16207] bg-amber-100'
   },
   {
-    label: 'Submitted',
-    valueKey: 'totalSubmitted' as const,
-    hint: 'Completed',
+    label: 'Awaiting Approval',
+    valueKey: 'totalAwaitingApproval' as const,
+    hint: 'CEO',
+    hintClass: 'text-[#003c90]',
+    icon: Hourglass,
+    iconClass: 'text-[#003c90] bg-[#d5e3fc]'
+  },
+  {
+    label: 'Approved & Active',
+    valueKey: 'totalActive' as const,
+    hint: 'In Pipeline',
     hintClass: 'text-[#006544]',
-    icon: Send,
+    icon: CheckCircle2,
     iconClass: 'text-[#004b31] bg-[#4edea3]/20'
   }
 ];
 
 export const HandoverSummaryCards = ({ summary }: HandoverSummaryCardsProps) => {
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
       {cards.map(({ label, valueKey, hint, hintClass, icon: Icon, iconClass }) => (
         <div key={valueKey} className="flex flex-col justify-between rounded-xl bg-white p-5 shadow-sm ring-1 ring-[#eceef0]">
           <div className="mb-4 flex items-center justify-between">

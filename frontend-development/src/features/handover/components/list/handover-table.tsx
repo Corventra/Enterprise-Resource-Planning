@@ -1,6 +1,6 @@
 import { Eye } from 'lucide-react';
 import type { ReactNode } from 'react';
-import type { HandoverItem } from '../../types/handover.types';
+import { handoverStatusStyleMap, type HandoverItem } from '../../types/handover.types';
 
 interface HandoverTableProps {
   items: HandoverItem[];
@@ -57,11 +57,7 @@ export const HandoverTable = ({ items, onView, footer }: HandoverTableProps) => 
                 </td>
                 <td className="px-4 py-3.5">
                   <span
-                    className={
-                      item.status === 'Submitted'
-                        ? 'inline-flex rounded-full bg-[#006544]/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#006544]'
-                        : 'inline-flex rounded-full bg-[#e0e3e5] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#434653]'
-                    }
+                    className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${handoverStatusStyleMap[item.status]}`}
                   >
                     {item.status}
                   </span>

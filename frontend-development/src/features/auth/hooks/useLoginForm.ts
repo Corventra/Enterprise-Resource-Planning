@@ -3,9 +3,11 @@ import type { ChangeEvent, FormEvent } from 'react';
 import { useNavigate } from 'react-router';
 import type { LoginFormValues, LoginFormErrors } from '../types/auth.types';
 import { authService } from '../services/auth.service';
+import { useAuth } from '../../../app/store/auth-store';
 
 export const useLoginForm = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState<LoginFormValues>({
     email: '',
     password: '',
@@ -52,8 +54,7 @@ export const useLoginForm = () => {
 
       try {
         const user = await authService.loginWithDummyAccount(formData);
-        console.log('Login successful:', user);
-        authService.setStoredAuthUser(user);
+        login(user);
         navigate('/dashboard');
       } catch (err: any) {
         setErrors((prev) => ({ ...prev, submit: err.message || 'Login failed' }));

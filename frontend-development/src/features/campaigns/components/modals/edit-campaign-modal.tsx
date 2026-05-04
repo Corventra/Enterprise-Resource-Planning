@@ -36,6 +36,10 @@ export const EditCampaignModal = ({ open, campaign, onClose, onSuccess }: EditCa
       endDate: noEndDate ? '' : formData.endDate
     };
 
+    if (!campaign) {
+      return;
+    }
+
     setIsSubmitting(true);
     await onSuccess(campaign.id, payload);
     setIsSubmitting(false);

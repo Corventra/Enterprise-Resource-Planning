@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { LeadTrackerEmptyState } from '../components/list/lead-tracker-empty-state';
 import { LeadTrackerFiltersSection } from '../components/list/lead-tracker-filters';
