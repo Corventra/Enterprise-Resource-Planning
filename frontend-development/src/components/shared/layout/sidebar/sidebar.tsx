@@ -3,6 +3,11 @@ import { SidebarItem } from './sidebar-item';
 import { SidebarToggle } from './sidebar-toggle';
 import { sidebarNavItems } from '../../../../app/navigation/sidebar-nav';
 import type { SidebarNavItem } from '../../../../types/navigation';
+import { ROLES } from '../../../../app/permissions';
+import { useAuth } from '../../../../app/store/auth-store';
+
+/** Staff Admin: invoice + document center only (dashboard tetap sebagai beranda). */
+const STAFF_ADMIN_NAV_PATHS = new Set(['/dashboard', '/invoice', '/document-center']);
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -10,8 +15,16 @@ interface SidebarProps {
 }
 
 export const Sidebar = ({ isCollapsed, onToggleCollapse }: SidebarProps) => {
-  // Group items by their group property
-  const groupedItems = sidebarNavItems.reduce((acc, item) => {
+  const { role } = useAuth();
+
+  const visibleItems = sidebarNavItems.filter((item) => {
+    if (role === ROLES.STAFF_ADMIN) {
+      return STAFF_ADMIN_NAV_PATHS.has(item.path);
+    }
+    return !item.permission || (role !== null && item.permission.includes(role));
+  });
+
+  const groupedItems = visibleItems.reduce((acc, item) => {
     const groupName = item.group || 'Others';
     if (!acc[groupName]) {
       acc[groupName] = [];

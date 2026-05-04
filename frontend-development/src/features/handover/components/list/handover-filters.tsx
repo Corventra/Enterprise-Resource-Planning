@@ -1,9 +1,10 @@
 import { Filter, Search } from 'lucide-react';
-import type {
-  HandoverEngagementStatus,
-  HandoverFilters,
-  HandoverItem,
-  HandoverStatus
+import {
+  HANDOVER_STATUS_OPTIONS,
+  type HandoverEngagementStatus,
+  type HandoverFilters,
+  type HandoverItem,
+  type HandoverStatus
 } from '../../types/handover.types';
 
 interface HandoverFiltersProps {
@@ -71,8 +72,11 @@ export const HandoverFiltersSection = ({
           aria-label="Filter by handover status"
         >
           <option value="All">All Status</option>
-          <option value="Draft">Draft</option>
-          <option value="Submitted">Submitted</option>
+          {HANDOVER_STATUS_OPTIONS.map((status) => (
+            <option key={status} value={status}>
+              {status}
+            </option>
+          ))}
         </select>
       </div>
 

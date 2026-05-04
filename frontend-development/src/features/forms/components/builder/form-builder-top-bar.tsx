@@ -1,4 +1,4 @@
-import { ArrowLeft, Eye, EyeOff, FileText, Save, Send } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Save, Send } from 'lucide-react';
 import type { FormBuilderMode } from '../../types/form-builder.types';
 
 interface FormBuilderTopBarProps {

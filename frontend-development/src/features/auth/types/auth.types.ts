@@ -1,9 +1,12 @@
-export type UserRole = 'MEO' | 'BD' | 'CEO' | 'STAFF_ADMIN';
+import type { Role } from '../../../app/permissions/roles';
+
+/** @deprecated Use `Role` from `app/permissions` instead. */
+export type UserRole = Role;
 
 export interface DummyUser {
   email: string;
   name: string;
-  role: UserRole;
+  role: Role;
 }
 
 export interface LoginFormValues {
