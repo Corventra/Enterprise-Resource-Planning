@@ -2,7 +2,11 @@ import type { KpiPeriodConfig } from '../types/kpi.types';
 
 /**
  * Default KPI config sesuai PRD Section 9.2 dan 9.8.
- * Bobot 35/25/15/25 (sum = 1.0) — di-approve CEO sebagai major change framework.
+ *
+ * IMPORTANT: Bobot 35/25/15/25 dan threshold (2 hari, 3 hari) adalah PROPOSAL AWAL
+ * berbasis best-practice industri konsultansi — bukan angka final dari SOP DSK
+ * (PRD Section 9.1). HRD wajib kalibrasi bersama CEO sebelum periode penilaian
+ * pertama dilakukan; perubahan bobot dimensi adalah major change → CEO approval.
  */
 export const kpiConfigMock: KpiPeriodConfig = {
   effectiveFrom: '2026-01-01',

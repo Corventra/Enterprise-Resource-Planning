@@ -33,7 +33,12 @@ export const PERMISSIONS = {
   KPI_FINALIZE_PERIOD: 'KPI_FINALIZE_PERIOD',
   KPI_RECOMPUTE: 'KPI_RECOMPUTE',
   KPI_EXPORT: 'KPI_EXPORT',
-  TASK_TEMPLATE_MANAGE: 'TASK_TEMPLATE_MANAGE'
+  TASK_TEMPLATE_MANAGE: 'TASK_TEMPLATE_MANAGE',
+
+  // Admin domain (Superadmin) — KF-15: pengelolaan akun pengguna & konfigurasi sistem
+  USER_MANAGE: 'USER_MANAGE',
+  SYSTEM_CONFIG: 'SYSTEM_CONFIG',
+  DEPARTMENT_MANAGE: 'DEPARTMENT_MANAGE'
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

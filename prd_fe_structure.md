@@ -9,7 +9,7 @@
 
 # 1. Latar Belakang
 
-Project ini adalah frontend untuk sistem ERP berbasis web (alur **lead-to-cash + project delivery + performance management**) untuk firma jasa profesional. Sistem memiliki 8 role utama:
+Project ini adalah frontend untuk sistem ERP berbasis web (alur **lead-to-cash + project delivery + performance management**) untuk firma jasa profesional. Sistem memiliki 9 role: 8 role bisnis + 1 role administrator teknis (Superadmin).
 
 | Role | Singkatan | Tanggung Jawab Utama |
 |---|---|---|
@@ -21,6 +21,7 @@ Project ini adalah frontend untuk sistem ERP berbasis web (alur **lead-to-cash +
 | Consultant | Consultant | Eksekutor project di lapangan: kerjakan deliverable, update progress milestone (input utama dimensi Task Completion, Timeliness, Update Compliance KPI). |
 | Staff Admin | STAFF_ADMIN | Administrasi dokumen & pendukung lintas fitur (Document Center, Invoices, dukungan handover). |
 | **Human Resources Department** | **HRD** | **Owner KPI framework**: configure bobot dimensi & threshold, finalize period snapshot, manual recompute, calibrate konsistensi rating antar PM, export KPI untuk payroll/HR. Tidak akses ke financials project (sama dengan PM/Consultant). |
+| **Superadmin** | **SUPERADMIN** | **Administrator teknis sistem** (KF-15): kelola akun pengguna (CRUD users, reset password) dan konfigurasi sistem (organisasi, session, audit trail, maintenance mode). Punya full access teknis ke seluruh modul aplikasi tapi **tidak terlibat di alur bisnis** — keberadaannya untuk operasional sysadmin/IT, bukan override keputusan bisnis. |
 
 > **Aturan visibility kritis:** PM, Consultant, **dan HRD** **tidak boleh** melihat data nominal/harga (`feeItems`, `paymentTerms`, `agreeFee`, `proposalFee`, `dealPrice`, `discount`, `successFee`, `billingSchedule`, `downPayment`, dll). Section harga di Project Detail harus di-gate dengan komponen `<RoleGate>` sehingga tidak di-render sama sekali untuk role tersebut, bukan sekadar disembunyikan dengan CSS. **HRD** secara konseptual punya ranah people/performance bukan komersial — sehingga harga adalah out-of-scope.
 
@@ -379,43 +380,48 @@ export const ROLES = {
   PM: 'PM',
   CONSULTANT: 'CONSULTANT',
   STAFF_ADMIN: 'STAFF_ADMIN',
-  HRD: 'HRD'
+  HRD: 'HRD',
+  SUPERADMIN: 'SUPERADMIN'
 } as const;
 export type Role = typeof ROLES[keyof typeof ROLES];
 ```
 
 ## 5.2 Permission Matrix
 
-| Aktivitas | MEO | BD | CEO | COO | PM | Consultant | Staff Admin | HRD |
-|---|---|---|---|---|---|---|---|---|
-| Lihat Dashboard | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Lihat Bank Data | ✓ (read) | ✓ | – | – | – | – | – | – |
-| Process Bank Data → Lead | – | ✓ | – | – | – | – | – | – |
-| Buat Campaign / Form | – | ✓ | – | – | – | – | – | – |
-| Edit Lead Workspace (meeting, proposal, EL) | – | ✓ | – | – | – | – | – | – |
-| Approve Proposal | – | – | ✓ | – | – | – | – | – |
-| Approve Engagement Letter | – | – | ✓ | – | – | – | – | – |
-| Submit Handover Memo | – | ✓ | – | – | – | – | ✓ | – |
-| Approve Handover Memo | – | – | ✓ | – | – | – | – | – |
-| Assign PM ke Project | – | – | – | ✓ | – | – | – | – |
-| Assign Consultant ke Project | – | – | – | – | ✓ | – | – | – |
-| Update milestone / deliverable Project | – | – | – | – | ✓ | ✓ | – | – |
-| Lihat **harga / nominal** (fee, billing, dll) | – | ✓ | ✓ | ✓ | ✗ | ✗ | ✓ | ✗ |
-| Lihat Project (tanpa harga) | – | – | ✓ | ✓ | ✓ (assigned) | ✓ (assigned) | – | ✓ (read-only) |
-| Document Center | – | – | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| **Lihat KPI sendiri** (own) | – | – | – | – | ✓ | ✓ | – | – |
-| **Lihat KPI tim** (PM's consultants) | – | – | – | – | ✓ | – | – | – |
-| **Lihat KPI semua consultant** | – | – | ✓ | ✓ | – | – | ✓ (audit) | ✓ (primary) |
-| **Rate quality task** (saat approve task selesai) | – | – | – | – | ✓ | – | – | – |
-| **Configure KPI** (bobot dimensi, threshold) | – | – | view + approve major | view | – | – | – | ✓ primary |
-| **Finalize KPI period** (lock snapshot) | – | – | ✓ | – | – | – | – | ✓ |
-| **Manual recompute KPI** (audit-logged) | – | – | – | ✓ (operational override) | – | – | – | ✓ |
-| **Manage Task Template** per service line | – | – | – | ✓ collaborative | – | – | – | ✓ collaborative |
-| **Export KPI report** (CSV/PDF) | – | – | – | – | – | – | ✓ (delegasi) | ✓ primary |
+| Aktivitas | MEO | BD | CEO | COO | PM | Consultant | Staff Admin | HRD | Superadmin |
+|---|---|---|---|---|---|---|---|---|---|
+| Lihat Dashboard | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Lihat Bank Data | ✓ (read) | ✓ | – | – | – | – | – | – | ✓ |
+| Process Bank Data → Lead | – | ✓ | – | – | – | – | – | – | ✓ |
+| Buat Campaign / Form | – | ✓ | – | – | – | – | – | – | ✓ |
+| Edit Lead Workspace (meeting, proposal, EL) | – | ✓ | – | – | – | – | – | – | ✓ |
+| Approve Proposal | – | – | ✓ | – | – | – | – | – | ✓ |
+| Approve Engagement Letter | – | – | ✓ | – | – | – | – | – | ✓ |
+| Submit Handover Memo | – | ✓ | – | – | – | – | ✓ | – | ✓ |
+| Approve Handover Memo | – | – | ✓ | – | – | – | – | – | ✓ |
+| Assign PM ke Project | – | – | – | ✓ | – | – | – | – | ✓ |
+| Assign Consultant ke Project | – | – | – | – | ✓ | – | – | – | ✓ |
+| Update milestone / deliverable Project | – | – | – | – | ✓ | ✓ | – | – | ✓ |
+| Lihat **harga / nominal** (fee, billing, dll) | – | ✓ | ✓ | ✓ | ✗ | ✗ | ✓ | ✗ | ✓ |
+| Lihat Project (tanpa harga) | – | – | ✓ | ✓ | ✓ (assigned) | ✓ (assigned) | – | ✓ (read-only) | ✓ |
+| Document Center | – | – | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **Lihat KPI sendiri** (own) | – | – | – | – | ✓ | ✓ | – | – | ✓ |
+| **Lihat KPI tim** (PM's consultants) | – | – | – | – | ✓ | – | – | – | ✓ |
+| **Lihat KPI semua consultant** | – | – | ✓ | ✓ | – | – | ✓ (audit) | ✓ (primary) | ✓ |
+| **Rate quality task** (saat approve task selesai) | – | – | – | – | ✓ | – | – | – | ✓ |
+| **Configure KPI** (bobot dimensi, threshold) | – | – | view + approve major | view | – | – | – | ✓ primary | ✓ |
+| **Finalize KPI period** (lock snapshot) | – | – | ✓ | – | – | – | – | ✓ | ✓ |
+| **Manual recompute KPI** (audit-logged) | – | – | – | ✓ (operational override) | – | – | – | ✓ | ✓ |
+| **Manage Task Template** per service line | – | – | – | ✓ collaborative | – | – | – | ✓ collaborative | ✓ |
+| **Export KPI report** (CSV/PDF) | – | – | – | – | – | – | ✓ (delegasi) | ✓ primary | ✓ |
+| **Manage User Account** (CRUD users, reset password) | – | – | – | – | – | – | – | – | ✓ primary |
+| **System Configuration** (org, session, audit, maintenance) | – | – | – | – | – | – | – | – | ✓ primary |
 
 ✓ = ada akses, ✗ = ada akses tapi data harga **wajib di-mask**, – = tidak ada akses sama sekali.
 
 > **HRD vs Staff Admin** — keduanya bersifat "admin" tapi domain berbeda. Staff Admin = operasional/dokumen (Handover, Invoice, Document Center). HRD = people/performance (KPI framework, rating calibration, payroll export). HRD **tidak** punya akses ke financials project, sedangkan Staff Admin boleh (untuk billing/invoicing).
+
+> **Superadmin** — administrator teknis sistem. Punya **full access teknis** ke seluruh modul aplikasi (matrix di atas semua ✓), plus dua kewenangan eksklusif: **User Account Management** (KF-15: tambah/edit/hapus user, reset password) dan **System Configuration** (organisasi, session timeout, audit trail, maintenance mode). Implementasinya: di [permission-map.ts](frontend-development/src/app/permissions/permission-map.ts) Superadmin di-map ke `Object.values(PERMISSIONS)` agar otomatis inherit semua permission existing maupun yang ditambahkan ke depan. Karena scope-nya teknis (bukan business), Superadmin **tidak** muncul di alur bisnis Handover→Project atau KPI — keberadaannya untuk membantu Sysadmin/IT sehari-hari, bukan untuk override keputusan bisnis.
 
 ## 5.3 Pola Penegakan Permission
 
@@ -690,9 +696,24 @@ Modul KPI dirancang sebagai **alat penilaian kinerja Consultant secara objektif,
 1. **Tidak ada role yang menghitung KPI secara manual.** Sistem (engine) yang menghitung otomatis berdasarkan raw data yang di-input role tertentu. Prinsip ini diperlukan untuk menjaga konsistensi antar-periode dan menghindari konflik kepentingan.
 2. **Setiap angka KPI dapat di-trace ke task-level data point** (`updateLog`, `qualityRating`, `completedAt`) — mendukung klaim "didukung oleh sumber data yang valid agar hasil evaluasi dapat dipertanggungjawabkan".
 
+### Positioning: Proposal Framework, Bukan SOP Final
+
+DSK Global Konsultama saat penelitian skripsi ini berlangsung **belum memiliki SOP KPI tertulis** yang formal untuk Consultant. Karena itu modul ini diposisikan sebagai:
+
+> **Rancangan framework KPI berbasis best-practice industri konsultansi + rujukan akademis (Karlina & Samanhudi, 2023), yang diusulkan untuk diadopsi DSK.**
+
+Konsekuensi positioning ini:
+
+- **Formula matematis** (`Σ(w_i × c_i)`, benefit/cost indicator) — bersumber dari rujukan akademis, dipertahankan apa adanya sebagai kerangka teoretis.
+- **Pilihan 4 dimensi** (Task Completion, Timeliness, Update Compliance, Output Quality) — best-practice generic firma konsultansi profesional, dipilih karena bisa di-derive otomatis dari data project monitoring (no double data entry).
+- **Bobot dimensi (35/25/15/25)** dan **threshold operasional** (on-time tolerance 2 hari, update gap 3 hari) — **proposal awal**, bukan angka final dari SOP DSK. Disediakan sebagai default yang reasonable, **wajib dikalibrasi HRD bersama CEO sebelum periode penilaian pertama** dilakukan.
+- **Task template Transfer Pricing** (10 langkah) — di-derive dari checklist operasional DSK yang diberikan stakeholder. Service line lain (Tax, Advisory, Audit) masih kosong sampai DSK definisikan workflow standar-nya via Settings.
+
+Implikasi untuk skripsi: kontribusi sistem **bukan** "mengotomatisasi SOP perusahaan yang sudah ada", melainkan "**merancang sistem KPI auditable yang dapat menjadi titik awal SOP DSK**, divalidasi formula akademis Karlina 2023". Konfigurabilitas (HRD edit bobot, threshold, dll) adalah fitur kunci — system tidak meng-hardcode asumsi awal.
+
 ## 9.2 Empat Dimensi KPI dan Bobot Default
 
-KPI Consultant dihitung dari 4 dimensi dengan bobot default **35 / 25 / 15 / 25** (total = 100%). Bobot ini dapat di-adjust oleh HRD; perubahan bobot dimensi (major change) wajib di-approve CEO.
+KPI Consultant dihitung dari 4 dimensi dengan bobot **proposal awal 35 / 25 / 15 / 25** (total = 100%). Bobot ini **bukan angka final dari SOP DSK** (lihat [Section 9.1](#91-tujuan-dan-rujukan-akademis)) — disediakan sebagai default reasonable yang harus dikalibrasi HRD bersama CEO sebelum periode penilaian pertama. Perubahan bobot dimensi (major change) selalu wajib di-approve CEO via flow di [`/settings/kpi-config`](frontend-development/src/features/settings/pages/kpi-config-page.tsx).
 
 | # | Dimensi | Bobot (`w_i`) | Tipe | Sumber Data | Formula Capaian (`c_i`) |
 |---|---|---:|---|---|---|
@@ -770,7 +791,9 @@ Project dengan workload lebih besar memberi bobot lebih besar — konsultan tida
 
 ## 9.8 Threshold Defaults
 
-| Threshold | Default | Tipe | Bisa Di-edit? |
+Nilai pada kolom "Default" adalah **proposal awal** untuk DSK ([Section 9.1](#91-tujuan-dan-rujukan-akademis)) — bukan angka final dari SOP, melainkan starting point reasonable yang harus dikalibrasi HRD setelah observasi periode pertama.
+
+| Threshold | Default (proposal) | Tipe | Bisa Di-edit? |
 |---|---|---|---|
 | On-time tolerance | ≤ 2 hari setelah `targetDate` | benefit | HRD via Settings |
 | Update gap target | 3 hari (max gap antar update) | cost | HRD via Settings |

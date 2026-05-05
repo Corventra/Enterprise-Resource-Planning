@@ -1,44 +1,106 @@
-import { ROLES, type Role } from '../../../app/permissions/roles';
-import type { DummyUser, LoginFormValues } from '../types/auth.types';
+import { apiGet, apiPost, tokenStorage } from '../../../services/api-client';
+import type { Permission } from '../../../app/permissions';
+import type { Role } from '../../../app/permissions/roles';
+import type { DummyUser, LoginFormValues, UserDepartment, UserRoleInfo } from '../types/auth.types';
 
-const DUMMY_ACCOUNTS: Array<{ email: string; password: string; role: Role; name: string }> = [
-  { email: 'meo@erp.local', password: '12345678', role: ROLES.MEO, name: 'MEO User' },
-  { email: 'bd@erp.local', password: '12345678', role: ROLES.BD, name: 'BD User' },
-  { email: 'ceo@erp.local', password: '12345678', role: ROLES.CEO, name: 'CEO User' },
-  { email: 'coo@erp.local', password: '12345678', role: ROLES.COO, name: 'COO User' },
-  { email: 'pm@erp.local', password: '12345678', role: ROLES.PM, name: 'PM User' },
-  { email: 'consultant@erp.local', password: '12345678', role: ROLES.CONSULTANT, name: 'Consultant User' },
-  { email: 'admin@erp.local', password: '12345678', role: ROLES.STAFF_ADMIN, name: 'Admin User' },
-  { email: 'hrd@erp.local', password: '12345678', role: ROLES.HRD, name: 'HRD User' }
-];
+const USER_STORAGE_KEY = 'erp_auth_user';
+
+interface BackendUserPayload {
+  id: number;
+  email: string;
+  name: string;
+  role: { id: number; code: string; name: string };
+  departments: Array<{ id: number; code: string; name: string; isPrimary: boolean }>;
+  permissions?: string[];
+}
+
+interface LoginResponse {
+  token: string;
+  user: BackendUserPayload;
+}
+
+interface MeResponse {
+  user: BackendUserPayload;
+}
+
+const toDummyUser = (payload: BackendUserPayload): DummyUser => ({
+  id: payload.id,
+  email: payload.email,
+  name: payload.name,
+  role: payload.role.code as Role,
+  roleInfo: { id: payload.role.id, code: payload.role.code as Role, name: payload.role.name } satisfies UserRoleInfo,
+  departments: payload.departments as UserDepartment[],
+  permissions: (payload.permissions ?? []) as Permission[]
+});
 
 export const authService = {
+  /**
+   * Real login via backend `/api/auth/login`. Nama method tetap
+   * `loginWithDummyAccount` supaya additive — caller di useLoginForm tidak
+   * perlu di-rename. Throw error dengan message dari backend kalau gagal.
+   */
   loginWithDummyAccount: async (credentials: LoginFormValues): Promise<DummyUser> => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const user = DUMMY_ACCOUNTS.find(
-          u => u.email === credentials.email && u.password === credentials.password
-        );
-
-        if (user) {
-          resolve({ email: user.email, name: user.name, role: user.role });
-        } else {
-          reject(new Error('Invalid email or password'));
-        }
-      }, 1000);
-    });
+    const res = await apiPost<LoginResponse>(
+      '/auth/login',
+      { email: credentials.email, password: credentials.password },
+      { withAuth: false }
+    );
+    tokenStorage.set(res.token);
+    return toDummyUser(res.user);
   },
 
+  /**
+   * Refresh user data dari backend pakai token yang sudah ada.
+   * Dipakai saat aplikasi load — verify token masih valid + ambil
+   * info terkini (department/role bisa berubah).
+   */
+  fetchCurrentUser: async (): Promise<DummyUser | null> => {
+    const token = tokenStorage.get();
+    if (!token) return null;
+    try {
+      const res = await apiGet<MeResponse>('/auth/me');
+      return toDummyUser(res.user);
+    } catch {
+      // Token expired / invalid — bersihkan
+      tokenStorage.clear();
+      return null;
+    }
+  },
+
+  /**
+   * Server-side logout (audit) + bersihkan token lokal. JWT stateless,
+   * jadi server tidak benar-benar revoke; ini sekedar contract bersih.
+   */
+  logout: async (): Promise<void> => {
+    try {
+      await apiPost('/auth/logout');
+    } catch {
+      /* tetap clear token meski request gagal */
+    }
+    tokenStorage.clear();
+  },
+
+  // ===== Local storage user data — tetap dipertahankan untuk hydrate awal =====
   setStoredAuthUser: (user: DummyUser) => {
-    localStorage.setItem('erp_auth_user', JSON.stringify(user));
+    try {
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+    } catch {
+      /* ignore */
+    }
   },
-
   getStoredAuthUser: (): DummyUser | null => {
-    const data = localStorage.getItem('erp_auth_user');
-    return data ? JSON.parse(data) : null;
+    try {
+      const data = localStorage.getItem(USER_STORAGE_KEY);
+      return data ? (JSON.parse(data) as DummyUser) : null;
+    } catch {
+      return null;
+    }
   },
-
   clearStoredAuthUser: () => {
-    localStorage.removeItem('erp_auth_user');
+    try {
+      localStorage.removeItem(USER_STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
   }
 };

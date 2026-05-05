@@ -39,3 +39,7 @@ backend-development/.env
 
 # misc
 *.local
+
+# seed data with plain credentials — NEVER commit
+**/seed-data.json
+**/scripts/seed-data.json

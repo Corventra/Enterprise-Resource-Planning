@@ -9,7 +9,10 @@ import {
   Receipt,
   FolderOpen,
   Settings,
-  TrendingUp
+  TrendingUp,
+  Users,
+  ShieldCheck,
+  Building2
 } from 'lucide-react';
 import type { SidebarNavItem } from '../../types/navigation';
 import { ROLES } from '../permissions';
@@ -89,5 +92,26 @@ export const sidebarNavItems: SidebarNavItem[] = [
     path: '/settings',
     icon: Settings,
     group: 'System'
+  },
+  {
+    label: 'User Management',
+    path: '/admin/users',
+    icon: Users,
+    group: 'Administration',
+    permission: [ROLES.SUPERADMIN]
+  },
+  {
+    label: 'Departments',
+    path: '/admin/departments',
+    icon: Building2,
+    group: 'Administration',
+    permission: [ROLES.SUPERADMIN]
+  },
+  {
+    label: 'System Settings',
+    path: '/admin/system-settings',
+    icon: ShieldCheck,
+    group: 'Administration',
+    permission: [ROLES.SUPERADMIN]
   }
 ];

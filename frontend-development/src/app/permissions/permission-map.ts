@@ -75,7 +75,10 @@ export const rolePermissionMap: Record<Role, Permission[]> = {
     PERMISSIONS.KPI_RECOMPUTE,
     PERMISSIONS.KPI_EXPORT,
     PERMISSIONS.TASK_TEMPLATE_MANAGE
-  ]
+  ],
+  // Superadmin = administrator teknis sistem (full access teknis).
+  // Otomatis ikut semua permission saat ini & yang ditambahkan ke depan.
+  [ROLES.SUPERADMIN]: Object.values(PERMISSIONS)
 };
 
 export const hasPermission = (role: Role | null, permission: Permission): boolean => {

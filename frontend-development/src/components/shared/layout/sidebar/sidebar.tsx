@@ -21,6 +21,9 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse }: SidebarProps) => {
     if (role === ROLES.STAFF_ADMIN) {
       return STAFF_ADMIN_NAV_PATHS.has(item.path);
     }
+    if (role === ROLES.SUPERADMIN) {
+      return true;
+    }
     return !item.permission || (role !== null && item.permission.includes(role));
   });
 
