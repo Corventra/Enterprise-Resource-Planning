@@ -6,7 +6,8 @@ export const ROLES = {
   PM: 'PM',
   CONSULTANT: 'CONSULTANT',
   STAFF_ADMIN: 'STAFF_ADMIN',
-  HRD: 'HRD'
+  HRD: 'HRD',
+  SUPERADMIN: 'SUPERADMIN'
 } as const;
 
 export type Role = (typeof ROLES)[keyof typeof ROLES];
@@ -19,5 +20,6 @@ export const ROLE_LABELS: Record<Role, string> = {
   PM: 'Project Manager',
   CONSULTANT: 'Consultant',
   STAFF_ADMIN: 'Staff Admin',
-  HRD: 'Human Resources Department'
+  HRD: 'Human Resources Department',
+  SUPERADMIN: 'Superadmin'
 };

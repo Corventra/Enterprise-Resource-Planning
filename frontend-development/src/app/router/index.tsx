@@ -31,6 +31,9 @@ import { KpiConsultantPage } from '../../features/kpi/pages/kpi-consultant-page'
 import { SettingsPage } from '../../features/settings/pages/settings-page';
 import { KpiConfigPage } from '../../features/settings/pages/kpi-config-page';
 import { TaskTemplatesPage } from '../../features/settings/pages/task-templates-page';
+import { UserManagementPage } from '../../features/admin/pages/user-management-page';
+import { DepartmentManagementPage } from '../../features/admin/pages/department-management-page';
+import { SystemSettingsPage } from '../../features/admin/pages/system-settings-page';
 import { AuthGuard } from '../guards/auth-guard';
 import { GuestGuard } from '../guards/guest-guard';
 import { PermissionGuard } from '../guards/permission-guard';
@@ -131,6 +134,16 @@ export const AppRouter = () => {
           </Route>
           <Route element={<PermissionGuard permissions={[PERMISSIONS.TASK_TEMPLATE_MANAGE]} />}>
             <Route path="/settings/task-templates" element={<TaskTemplatesPage />} />
+          </Route>
+
+          <Route element={<PermissionGuard permissions={[PERMISSIONS.USER_MANAGE]} />}>
+            <Route path="/admin/users" element={<UserManagementPage />} />
+          </Route>
+          <Route element={<PermissionGuard permissions={[PERMISSIONS.DEPARTMENT_MANAGE]} />}>
+            <Route path="/admin/departments" element={<DepartmentManagementPage />} />
+          </Route>
+          <Route element={<PermissionGuard permissions={[PERMISSIONS.SYSTEM_CONFIG]} />}>
+            <Route path="/admin/system-settings" element={<SystemSettingsPage />} />
           </Route>
         </Route>
       </Route>
