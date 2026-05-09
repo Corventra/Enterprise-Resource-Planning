@@ -9,6 +9,8 @@ import type { BankDataEntry } from '../../types/bank-data.types';
 interface BankDataEntryDetailModalProps {
   open: boolean;
   entry?: BankDataEntry;
+  /** Process & Archive — butuh BANK_DATA_PROCESS. */
+  allowMutations?: boolean;
   onClose: () => void;
   onProcess: (entry: BankDataEntry) => Promise<void> | void;
   onArchive: (entry: BankDataEntry) => Promise<void> | void;
@@ -35,6 +37,7 @@ const formatSubmittedAt = (iso: string) => {
 export const BankDataEntryDetailModal = ({
   open,
   entry,
+  allowMutations = false,
   onClose,
   onProcess,
   onArchive
@@ -124,22 +127,26 @@ export const BankDataEntryDetailModal = ({
           >
             Close
           </button>
-          <button
-            type="button"
-            onClick={async () => onProcess(entry)}
-            disabled={entry.status !== 'New'}
-            className="rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-4 py-2 text-sm font-bold text-white shadow-md shadow-[#003c90]/20 transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-35"
-          >
-            Process
-          </button>
-          <button
-            type="button"
-            onClick={async () => onArchive(entry)}
-            disabled={entry.status === 'Archived'}
-            className="rounded-lg bg-[linear-gradient(135deg,#991b1b_0%,#dc2626_100%)] px-4 py-2 text-sm font-bold text-white shadow-md shadow-red-600/25 transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-35"
-          >
-            Archive
-          </button>
+          {allowMutations ? (
+            <>
+              <button
+                type="button"
+                onClick={async () => onProcess(entry)}
+                disabled={entry.status !== 'New'}
+                className="rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-4 py-2 text-sm font-bold text-white shadow-md shadow-[#003c90]/20 transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-35"
+              >
+                Process
+              </button>
+              <button
+                type="button"
+                onClick={async () => onArchive(entry)}
+                disabled={entry.status === 'Archived'}
+                className="rounded-lg bg-[linear-gradient(135deg,#991b1b_0%,#dc2626_100%)] px-4 py-2 text-sm font-bold text-white shadow-md shadow-red-600/25 transition-opacity hover:opacity-90 disabled:pointer-events-none disabled:opacity-35"
+              >
+                Archive
+              </button>
+            </>
+          ) : null}
         </div>
       </SidePanelDialogFooter>
     </SidePanelDialog>

@@ -6,6 +6,7 @@ import type { FormBuilderField } from '../../types/form-builder.types';
 interface SortableFieldCardProps {
   field: FormBuilderField;
   isSelected: boolean;
+  readOnly?: boolean;
   onSelect: (fieldId: string) => void;
   onDelete: (fieldId: string) => void;
 }
@@ -13,12 +14,13 @@ interface SortableFieldCardProps {
 export const SortableFieldCard = ({
   field,
   isSelected,
+  readOnly,
   onSelect,
   onDelete
 }: SortableFieldCardProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: field.id,
-    disabled: field.isCore
+    disabled: field.isCore || readOnly
   });
 
   const style = {
@@ -37,18 +39,20 @@ export const SortableFieldCard = ({
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            {...attributes}
-            {...listeners}
-            onClick={(event) => event.stopPropagation()}
-            className={`rounded p-0.5 ${
-              field.isCore ? 'cursor-not-allowed text-gray-300' : 'cursor-grab text-gray-400 active:cursor-grabbing'
-            }`}
-            aria-label={`Drag ${field.label}`}
-          >
-            <GripVertical className="h-4 w-4" />
-          </button>
+          {!readOnly ? (
+            <button
+              type="button"
+              {...attributes}
+              {...listeners}
+              onClick={(event) => event.stopPropagation()}
+              className={`rounded p-0.5 ${
+                field.isCore ? 'cursor-not-allowed text-gray-300' : 'cursor-grab text-gray-400 active:cursor-grabbing'
+              }`}
+              aria-label={`Drag ${field.label}`}
+            >
+              <GripVertical className="h-4 w-4" />
+            </button>
+          ) : null}
           <div>
             <p className="text-sm font-semibold text-slate-900">
               {field.label}
@@ -64,7 +68,7 @@ export const SortableFieldCard = ({
             </p>
           </div>
         </div>
-        {!field.isCore && (
+        {!field.isCore && !readOnly ? (
           <button
             type="button"
             onClick={(event) => {
@@ -75,7 +79,7 @@ export const SortableFieldCard = ({
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
-        )}
+        ) : null}
       </div>
       {field.placeholder && <p className="mt-2 text-xs italic text-gray-500">Placeholder: {field.placeholder}</p>}
       {field.note && <p className="mt-1 text-xs text-slate-500">{field.note}</p>}

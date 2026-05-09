@@ -1,4 +1,5 @@
 import { BadgeCheck, Download, FileBadge2, FileText } from 'lucide-react';
+import { useLeadWorkspacePermissions } from '../hooks/use-lead-workspace-permissions';
 import type { LeadWorkspaceProposalItem } from '../types/lead-workspace.types';
 
 interface ProposalDetailSectionProps {
@@ -32,6 +33,7 @@ const statusLabelMap = {
 } as const;
 
 export const ProposalDetailSection = ({ proposal }: ProposalDetailSectionProps) => {
+  const { canViewLeadWorkspace, canManageLeadWorkspace, canApproveProposal } = useLeadWorkspacePermissions();
   return (
     <aside className="col-span-12 flex flex-col gap-4 lg:col-span-5">
       <div className="flex items-center justify-between">
@@ -71,6 +73,21 @@ export const ProposalDetailSection = ({ proposal }: ProposalDetailSectionProps) 
                 <span className="text-xs text-[#515f74]">{proposal.paymentType}</span>
               </div>
             </div>
+
+            {proposal.detail.status === 'WAITING_CEO_APPROVAL' && canApproveProposal ? (
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-100 bg-amber-50/90 px-5 py-3">
+                <p className="text-sm font-medium text-amber-950">Proposal menunggu persetujuan.</p>
+                <button
+                  type="button"
+                  className="rounded-lg bg-[#003c90] px-4 py-2 text-xs font-bold text-white shadow-sm transition-opacity hover:opacity-90"
+                  onClick={() => {
+                    /* Integrasi API approval menyusul */
+                  }}
+                >
+                  Approve proposal
+                </button>
+              </div>
+            ) : null}
 
             <div className="flex-1 space-y-6 overflow-y-auto px-8 pb-8">
               <section className="rounded-xl mt-5 border border-[#c3c6d5]/30 p-6">
@@ -193,20 +210,33 @@ export const ProposalDetailSection = ({ proposal }: ProposalDetailSectionProps) 
                 <h4 className="mb-4 text-xs font-black uppercase tracking-widest text-[#434653]">Attachments</h4>
                 {proposal.detail.attachments.length > 0 ? (
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    {proposal.detail.attachments.map((attachment) => (
-                      <button
-                        key={attachment}
-                        type="button"
-                        className="group flex items-center gap-3 rounded-lg bg-[#eceef0] p-3 text-left transition-colors hover:bg-[#e0e3e5]"
-                      >
-                        <FileText className="h-4 w-4 text-[#515f74]" />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-xs font-bold text-[#191c1e]">{attachment}</p>
-                          <p className="text-[10px] text-[#737784]">Attachment</p>
+                    {proposal.detail.attachments.map((attachment) =>
+                      canManageLeadWorkspace ? (
+                        <button
+                          key={attachment}
+                          type="button"
+                          className="group flex items-center gap-3 rounded-lg bg-[#eceef0] p-3 text-left transition-colors hover:bg-[#e0e3e5]"
+                        >
+                          <FileText className="h-4 w-4 text-[#515f74]" />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-xs font-bold text-[#191c1e]">{attachment}</p>
+                            <p className="text-[10px] text-[#737784]">Attachment</p>
+                          </div>
+                          <Download className="h-4 w-4 text-[#737784] group-hover:text-[#003c90]" />
+                        </button>
+                      ) : canViewLeadWorkspace ? (
+                        <div
+                          key={attachment}
+                          className="flex items-center gap-3 rounded-lg border border-[#eceef0] bg-[#f8fafc] p-3"
+                        >
+                          <FileText className="h-4 w-4 text-[#515f74]" />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-xs font-bold text-[#191c1e]">{attachment}</p>
+                            <p className="text-[10px] text-[#737784]">Attachment</p>
+                          </div>
                         </div>
-                        <Download className="h-4 w-4 text-[#737784] group-hover:text-[#003c90]" />
-                      </button>
-                    ))}
+                      ) : null
+                    )}
                   </div>
                 ) : (
                   <p className="text-sm text-[#737784]">-</p>

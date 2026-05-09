@@ -4,7 +4,9 @@ import { PERMISSIONS, type Permission } from './permissions';
 export const rolePermissionMap: Record<Role, Permission[]> = {
   [ROLES.MEO]: [
     PERMISSIONS.BANK_DATA_VIEW,
+    PERMISSIONS.CAMPAIGN_VIEW,
     PERMISSIONS.CAMPAIGN_MANAGE,
+    PERMISSIONS.FORM_VIEW,
     PERMISSIONS.FORM_MANAGE,
     PERMISSIONS.LEAD_VIEW
   ],
@@ -18,6 +20,9 @@ export const rolePermissionMap: Record<Role, Permission[]> = {
     PERMISSIONS.DOCUMENT_VIEW
   ],
   [ROLES.CEO]: [
+    PERMISSIONS.BANK_DATA_VIEW,
+    PERMISSIONS.CAMPAIGN_VIEW,
+    PERMISSIONS.FORM_VIEW,
     PERMISSIONS.LEAD_VIEW,
     PERMISSIONS.LEAD_TRACKER_VIEW,
     PERMISSIONS.PROPOSAL_APPROVE,

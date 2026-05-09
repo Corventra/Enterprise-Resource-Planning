@@ -54,9 +54,16 @@ export const AppRouter = () => {
         <Route element={<AppShellLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
 
-          <Route element={<PermissionGuard permissions={[PERMISSIONS.CAMPAIGN_MANAGE]} />}>
+          <Route
+            element={
+              <PermissionGuard permissions={[PERMISSIONS.CAMPAIGN_VIEW, PERMISSIONS.CAMPAIGN_MANAGE]} />
+            }
+          >
             <Route path="/campaigns" element={<CampaignsPage />} />
             <Route path="/campaigns/:campaignId" element={<CampaignDetailPage />} />
+          </Route>
+
+          <Route element={<PermissionGuard permissions={[PERMISSIONS.FORM_VIEW, PERMISSIONS.FORM_MANAGE]} />}>
             <Route path="/forms" element={<FormBuilderPage />} />
             <Route path="/forms/:formId" element={<FormBuilderPage />} />
           </Route>

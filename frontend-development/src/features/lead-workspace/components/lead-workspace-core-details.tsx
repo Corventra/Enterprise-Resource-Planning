@@ -1,4 +1,5 @@
 import { Link, Mail, Phone } from 'lucide-react';
+import { useLeadWorkspacePermissions } from '../hooks/use-lead-workspace-permissions';
 import type { LeadWorkspace } from '../types/lead-workspace.types';
 
 interface LeadWorkspaceCoreDetailsProps {
@@ -18,13 +19,16 @@ const formatDate = (iso: string) => {
 };
 
 export const LeadWorkspaceCoreDetails = ({ workspace }: LeadWorkspaceCoreDetailsProps) => {
+  const { canManageLeadWorkspace } = useLeadWorkspacePermissions();
   return (
     <section className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-[#eceef0] lg:col-span-8">
       <div className="mb-5 flex items-center justify-between">
         <h3 className="text-lg font-bold text-[#191c1e]">Core Lead Details</h3>
-        <button type="button" className="text-sm font-semibold text-[#003c90] hover:underline">
-          Edit details
-        </button>
+        {canManageLeadWorkspace ? (
+          <button type="button" className="text-sm font-semibold text-[#003c90] hover:underline">
+            Edit details
+          </button>
+        ) : null}
       </div>
       <div className="grid grid-cols-1 gap-y-6 gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
         <div>

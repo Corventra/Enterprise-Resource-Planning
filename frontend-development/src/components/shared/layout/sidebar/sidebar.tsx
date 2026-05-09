@@ -15,7 +15,7 @@ interface SidebarProps {
 }
 
 export const Sidebar = ({ isCollapsed, onToggleCollapse }: SidebarProps) => {
-  const { role } = useAuth();
+  const { role, canAny } = useAuth();
 
   const visibleItems = sidebarNavItems.filter((item) => {
     if (role === ROLES.STAFF_ADMIN) {
@@ -24,7 +24,14 @@ export const Sidebar = ({ isCollapsed, onToggleCollapse }: SidebarProps) => {
     if (role === ROLES.SUPERADMIN) {
       return true;
     }
-    return !item.permission || (role !== null && item.permission.includes(role));
+    const roleGate = item.permission?.length;
+    const permGate = item.anyPermission?.length;
+    if (!roleGate && !permGate) {
+      return true;
+    }
+    const roleOk = !!(item.permission && role !== null && item.permission.includes(role));
+    const permOk = !!(item.anyPermission?.length && canAny(item.anyPermission));
+    return roleOk || permOk;
   });
 
   const groupedItems = visibleItems.reduce((acc, item) => {

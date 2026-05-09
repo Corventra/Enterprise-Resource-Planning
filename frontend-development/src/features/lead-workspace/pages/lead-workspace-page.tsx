@@ -1,5 +1,7 @@
 import { ArrowLeft } from 'lucide-react';
 import { Navigate, Outlet, useNavigate, useParams } from 'react-router';
+import { PERMISSIONS } from '../../../app/permissions';
+import { useAuth } from '../../../app/store/auth-store';
 import { LeadWorkspaceCoreDetails } from '../components/lead-workspace-core-details';
 import { LeadWorkspaceProposalSummaryCard } from '../components/lead-workspace-proposal-summary-card';
 import { LeadWorkspaceTabs } from '../components/lead-workspace-tabs';
@@ -13,10 +15,15 @@ export type LeadWorkspaceOutletContext = {
 export const LeadWorkspacePage = () => {
   const navigate = useNavigate();
   const { leadId } = useParams();
+  const { can } = useAuth();
   const { workspace, isLoading } = useLeadWorkspace(leadId);
 
   if (!leadId) {
     return <Navigate to="/lead-tracker" replace />;
+  }
+
+  if (!can(PERMISSIONS.LEAD_VIEW)) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   if (isLoading) {

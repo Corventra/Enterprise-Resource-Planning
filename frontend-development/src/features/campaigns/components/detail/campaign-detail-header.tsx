@@ -4,6 +4,7 @@ import { formatChannel } from '../../utils/format-channel';
 
 interface CampaignDetailHeaderProps {
   campaign: Campaign;
+  canManageCampaigns: boolean;
   onBack: () => void;
   onEditCampaign: () => void;
   onDeleteCampaign: () => void;
@@ -26,6 +27,7 @@ const statusBadgeClass = (status: CampaignStatus): string => {
 
 export const CampaignDetailHeader = ({
   campaign,
+  canManageCampaigns,
   onBack,
   onEditCampaign,
   onDeleteCampaign
@@ -58,23 +60,25 @@ export const CampaignDetailHeader = ({
           </div>
         </div>
       </div>
-      <div className="flex shrink-0 flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={onDeleteCampaign}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-[linear-gradient(135deg,#991b1b_0%,#dc2626_100%)] px-5 py-2 text-xs font-bold text-white shadow-md shadow-red-600/25 transition-opacity hover:opacity-90 sm:text-sm"
-        >
-          <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={2.5} />
-          Delete
-        </button>
-        <button
-          type="button"
-          onClick={onEditCampaign}
-          className="rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-5 py-2 text-xs font-bold text-white shadow-md shadow-[#003c90]/20 transition-opacity hover:opacity-90 sm:text-sm"
-        >
-          Edit Campaign
-        </button>
-      </div>
+      {canManageCampaigns ? (
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={onDeleteCampaign}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[linear-gradient(135deg,#991b1b_0%,#dc2626_100%)] px-5 py-2 text-xs font-bold text-white shadow-md shadow-red-600/25 transition-opacity hover:opacity-90 sm:text-sm"
+          >
+            <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" strokeWidth={2.5} />
+            Delete
+          </button>
+          <button
+            type="button"
+            onClick={onEditCampaign}
+            className="rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-5 py-2 text-xs font-bold text-white shadow-md shadow-[#003c90]/20 transition-opacity hover:opacity-90 sm:text-sm"
+          >
+            Edit Campaign
+          </button>
+        </div>
+      ) : null}
     </header>
   );
 };
