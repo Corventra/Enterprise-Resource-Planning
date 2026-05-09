@@ -5,6 +5,8 @@ import { BankDataTableRowActions } from './bank-data-table-row-actions';
 
 interface BankDataTableProps {
   entries: BankDataEntry[];
+  /** Process / archive — butuh BANK_DATA_PROCESS (view-only users tidak melihat aksi). */
+  allowMutations?: boolean;
   onView: (entry: BankDataEntry) => void;
   onProcess: (entry: BankDataEntry) => void;
   onArchive: (entry: BankDataEntry) => void;
@@ -39,7 +41,14 @@ const formatSubmitted = (iso: string) => {
   });
 };
 
-export const BankDataTable = ({ entries, onView, onProcess, onArchive, footer }: BankDataTableProps) => {
+export const BankDataTable = ({
+  entries,
+  allowMutations = false,
+  onView,
+  onProcess,
+  onArchive,
+  footer
+}: BankDataTableProps) => {
   return (
     <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-[#eceef0]/80">
       <div className="overflow-x-auto">
@@ -92,6 +101,7 @@ export const BankDataTable = ({ entries, onView, onProcess, onArchive, footer }:
                 </td>
                 <td className="py-3.5 pl-4 pr-5 align-middle">
                   <BankDataTableRowActions
+                    allowMutations={allowMutations}
                     onView={() => onView(entry)}
                     onProcess={() => onProcess(entry)}
                     onArchive={() => onArchive(entry)}

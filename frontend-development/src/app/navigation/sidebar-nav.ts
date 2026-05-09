@@ -15,7 +15,7 @@ import {
   Building2
 } from 'lucide-react';
 import type { SidebarNavItem } from '../../types/navigation';
-import { ROLES } from '../permissions';
+import { PERMISSIONS, ROLES } from '../permissions';
 
 export const sidebarNavItems: SidebarNavItem[] = [
   {
@@ -29,28 +29,28 @@ export const sidebarNavItems: SidebarNavItem[] = [
     path: '/campaigns',
     icon: Megaphone,
     group: 'Main',
-    permission: [ROLES.MEO]
+    anyPermission: [PERMISSIONS.CAMPAIGN_VIEW, PERMISSIONS.CAMPAIGN_MANAGE]
   },
   {
     label: 'Bank Data',
     path: '/bank-data',
     icon: Landmark,
     group: 'Main',
-    permission: [ROLES.MEO, ROLES.BD]
+    anyPermission: [PERMISSIONS.BANK_DATA_VIEW]
   },
   {
     label: 'Lead Tracker',
     path: '/lead-tracker',
     icon: LineChart,
     group: 'Main',
-    permission: [ROLES.BD, ROLES.CEO, ROLES.COO]
+    anyPermission: [PERMISSIONS.LEAD_TRACKER_VIEW]
   },
   {
     label: 'Handover',
     path: '/handover',
     icon: Handshake,
     group: 'Main',
-    permission: [ROLES.BD, ROLES.CEO, ROLES.COO]
+    anyPermission: [PERMISSIONS.HANDOVER_MANAGE, PERMISSIONS.HANDOVER_APPROVE]
   },
   {
     label: 'Approval',
@@ -64,28 +64,28 @@ export const sidebarNavItems: SidebarNavItem[] = [
     path: '/projects',
     icon: Briefcase,
     group: 'Main',
-    permission: [ROLES.COO, ROLES.PM, ROLES.CONSULTANT, ROLES.CEO, ROLES.HRD]
+    anyPermission: [PERMISSIONS.PROJECT_VIEW]
   },
   {
     label: 'KPI',
     path: '/kpi',
     icon: TrendingUp,
     group: 'Main',
-    permission: [ROLES.HRD, ROLES.CEO, ROLES.COO, ROLES.PM, ROLES.CONSULTANT]
+    anyPermission: [PERMISSIONS.KPI_VIEW_OWN, PERMISSIONS.KPI_VIEW_TEAM, PERMISSIONS.KPI_VIEW_ALL]
   },
   {
     label: 'Invoice',
     path: '/invoice',
     icon: Receipt,
     group: 'Main',
-    permission: [ROLES.STAFF_ADMIN]
+    anyPermission: [PERMISSIONS.INVOICE_MANAGE]
   },
   {
     label: 'Document Center',
     path: '/document-center',
     icon: FolderOpen,
     group: 'Main',
-    permission: [ROLES.BD, ROLES.CEO, ROLES.COO, ROLES.PM, ROLES.CONSULTANT, ROLES.STAFF_ADMIN, ROLES.HRD]
+    anyPermission: [PERMISSIONS.DOCUMENT_VIEW]
   },
   {
     label: 'Settings',
@@ -98,20 +98,20 @@ export const sidebarNavItems: SidebarNavItem[] = [
     path: '/admin/users',
     icon: Users,
     group: 'Administration',
-    permission: [ROLES.SUPERADMIN]
+    anyPermission: [PERMISSIONS.USER_MANAGE]
   },
   {
     label: 'Departments',
     path: '/admin/departments',
     icon: Building2,
     group: 'Administration',
-    permission: [ROLES.SUPERADMIN]
+    anyPermission: [PERMISSIONS.DEPARTMENT_MANAGE]
   },
   {
     label: 'System Settings',
     path: '/admin/system-settings',
     icon: ShieldCheck,
     group: 'Administration',
-    permission: [ROLES.SUPERADMIN]
+    anyPermission: [PERMISSIONS.SYSTEM_CONFIG]
   }
 ];

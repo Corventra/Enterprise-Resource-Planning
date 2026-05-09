@@ -1,4 +1,5 @@
 import { Building2, Plus, Video, VideoIcon } from 'lucide-react';
+import { useLeadWorkspacePermissions } from '../hooks/use-lead-workspace-permissions';
 import type { LeadWorkspaceMeetingItem } from '../types/lead-workspace.types';
 
 interface MeetingHistorySectionProps {
@@ -25,19 +26,22 @@ const platformIcon = (mode: string) => {
 };
 
 export const MeetingHistorySection = ({ meetings, selectedMeetingId, onSelectMeeting }: MeetingHistorySectionProps) => {
+  const { canManageLeadWorkspace } = useLeadWorkspacePermissions();
   return (
     <div className="col-span-12 flex flex-col gap-4 lg:col-span-7">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold tracking-tight text-[#191c1e]">Meeting</h2>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="inline-flex items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-[#003c90]/20 transition-opacity hover:opacity-90 sm:text-sm"
-          >
-            <Plus className="h-4 w-4" />
-            Schedule Meeting
-          </button>
-        </div>
+        {canManageLeadWorkspace ? (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-[#003c90]/20 transition-opacity hover:opacity-90 sm:text-sm"
+            >
+              <Plus className="h-4 w-4" />
+              Schedule Meeting
+            </button>
+          </div>
+        ) : null}
       </div>
 
       <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-[#eceef0]">

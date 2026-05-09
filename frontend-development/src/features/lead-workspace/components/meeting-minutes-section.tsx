@@ -1,4 +1,5 @@
 import { Building2, CalendarDays, Download, Share2, Video, VideoIcon } from 'lucide-react';
+import { useLeadWorkspacePermissions } from '../hooks/use-lead-workspace-permissions';
 import type { LeadWorkspaceMeetingItem } from '../types/lead-workspace.types';
 
 interface MeetingMinutesSectionProps {
@@ -23,17 +24,20 @@ const platformIcon = (mode: string) => {
 };
 
 export const MeetingMinutesSection = ({ selectedMeeting }: MeetingMinutesSectionProps) => {
+  const { canManageLeadWorkspace } = useLeadWorkspacePermissions();
   return (
     <aside className="col-span-12 flex flex-col gap-4 lg:col-span-5">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold tracking-tight text-[#191c1e]">Minutes</h2>
-        <button
-          type="button"
-          className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold text-[#003c90] transition-colors hover:bg-[#003c90]/5 sm:text-sm"
-        >
-          <CalendarDays className="h-4 w-4" />
-          Edit Notulensi
-        </button>
+        {canManageLeadWorkspace ? (
+          <button
+            type="button"
+            className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold text-[#003c90] transition-colors hover:bg-[#003c90]/5 sm:text-sm"
+          >
+            <CalendarDays className="h-4 w-4" />
+            Edit Notulensi
+          </button>
+        ) : null}
       </div>
 
       <div className="flex flex-1 flex-col overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-[#eceef0]">
@@ -217,22 +221,24 @@ export const MeetingMinutesSection = ({ selectedMeeting }: MeetingMinutesSection
 
             <div className="flex items-center justify-between border-t border-slate-100 bg-white px-4 py-3">
               <div className="text-[11px] italic text-[#737784]">Last synced with Cloud at 14:20 PM</div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  className="rounded-lg p-2 text-[#434653] transition-colors hover:bg-[#f2f4f6]"
-                  aria-label="Share minutes"
-                >
-                  <Share2 className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  className="rounded-lg p-2 text-[#434653] transition-colors hover:bg-[#f2f4f6]"
-                  aria-label="Download minutes"
-                >
-                  <Download className="h-4 w-4" />
-                </button>
-              </div>
+              {canManageLeadWorkspace ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="rounded-lg p-2 text-[#434653] transition-colors hover:bg-[#f2f4f6]"
+                    aria-label="Share minutes"
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-lg p-2 text-[#434653] transition-colors hover:bg-[#f2f4f6]"
+                    aria-label="Download minutes"
+                  >
+                    <Download className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : null}
             </div>
           </>
         ) : (

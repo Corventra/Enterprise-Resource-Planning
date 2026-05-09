@@ -6,6 +6,7 @@ import { CampaignTableRowActions } from './campaign-table-row-actions';
 
 interface CampaignsTableProps {
   campaigns: Campaign[];
+  canManageCampaigns: boolean;
   onView: (campaign: Campaign) => void;
   onEdit: (campaign: Campaign) => void;
   onDelete: (campaign: Campaign) => void;
@@ -48,7 +49,14 @@ const statusPillClass = (status: CampaignStatus): string => {
 const thBase =
   'border-none px-4 py-3 align-middle text-[11px] font-bold uppercase tracking-wider text-[#737784] first:pl-5 last:pr-5';
 
-export const CampaignsTable = ({ campaigns, onView, onEdit, onDelete, footer }: CampaignsTableProps) => {
+export const CampaignsTable = ({
+  campaigns,
+  canManageCampaigns,
+  onView,
+  onEdit,
+  onDelete,
+  footer
+}: CampaignsTableProps) => {
   return (
     <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-[#eceef0]/80">
       <div className="overflow-x-auto">
@@ -61,7 +69,7 @@ export const CampaignsTable = ({ campaigns, onView, onEdit, onDelete, footer }: 
               <th className={`${thBase} text-left`}>Channel</th>
               <th className={`${thBase} text-center`}>Status</th>
               <th className={`${thBase} text-center`}>Submissions</th>
-              <th className={`${thBase} text-center`}>Actions</th>
+              <th className={`${thBase} text-center`}>{canManageCampaigns ? 'Actions' : 'View'}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#eceef0]">
@@ -103,6 +111,7 @@ export const CampaignsTable = ({ campaigns, onView, onEdit, onDelete, footer }: 
                 </td>
                 <td className="py-3.5 pl-4 pr-5 align-middle">
                   <CampaignTableRowActions
+                    canManageCampaigns={canManageCampaigns}
                     onView={() => onView(campaign)}
                     onEdit={() => onEdit(campaign)}
                     onDelete={() => onDelete(campaign)}

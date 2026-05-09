@@ -1,4 +1,7 @@
-import { useNavigate, useParams, useSearchParams } from 'react-router';
+import { useEffect } from 'react';
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
+import { PERMISSIONS } from '../../../app/permissions';
+import { useAuth } from '../../../app/store/auth-store';
 import { FormBuilderCanvas } from '../components/builder/form-builder-canvas';
 import { FormBuilderSettingsPanel } from '../components/builder/form-builder-settings-panel';
 import { FormBuilderTopBar } from '../components/builder/form-builder-top-bar';
@@ -8,6 +11,9 @@ import type { FormBuilderField } from '../types/form-builder.types';
 
 export const FormBuilderPage = () => {
   const navigate = useNavigate();
+  const { can } = useAuth();
+  const canViewForms = can(PERMISSIONS.FORM_VIEW) || can(PERMISSIONS.FORM_MANAGE);
+  const canManageForms = can(PERMISSIONS.FORM_MANAGE);
   const { formId } = useParams();
   const [searchParams] = useSearchParams();
   const campaignId = searchParams.get('campaignId') || undefined;
@@ -41,6 +47,12 @@ export const FormBuilderPage = () => {
       onReorder: reorderFields
     });
 
+  useEffect(() => {
+    if (!canManageForms) {
+      setMode('preview');
+    }
+  }, [canManageForms, setMode]);
+
   if (isLoading || !form) {
     return (
       <div className="rounded-lg border border-slate-200 bg-white p-6 text-sm text-slate-500">
@@ -48,6 +60,12 @@ export const FormBuilderPage = () => {
       </div>
     );
   }
+
+  if (!canViewForms) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  const readOnly = !canManageForms;
 
   return (
     <div className="space-y-4 rounded-lg">
@@ -57,6 +75,7 @@ export const FormBuilderPage = () => {
         mode={mode}
         isSaving={isSaving}
         isPublishing={isPublishing}
+        canManageForms={canManageForms}
         onBack={() => navigate(-1)}
         onToggleMode={() => setMode(mode === 'edit' ? 'preview' : 'edit')}
         onSaveDraft={() => void saveDraft()}
@@ -67,6 +86,7 @@ export const FormBuilderPage = () => {
         <FormBuilderCanvas
           form={form}
           mode={mode}
+          readOnly={readOnly}
           selectedFieldId={selectedFieldId}
           publicLink={publicLink}
           activeFieldId={activeFieldId}
@@ -85,6 +105,7 @@ export const FormBuilderPage = () => {
 
         <FormBuilderSettingsPanel
           selectedField={selectedField}
+          readOnly={readOnly}
           onUpdateField={(fieldId: string, payload: Partial<FormBuilderField>) => updateField(fieldId, payload)}
         />
       </div>

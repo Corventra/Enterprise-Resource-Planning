@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { Navigate, useNavigate } from 'react-router';
+import { useCampaignPermissions } from '../hooks/use-campaign-permissions';
 import { CampaignEmptyState } from '../components/list/campaign-empty-state';
 import { CampaignFiltersSection } from '../components/list/campaign-filters';
 import { CampaignsSummaryCards } from '../components/list/campaigns-summary-cards';
@@ -14,6 +15,7 @@ import type { Campaign } from '../types/campaign.types';
 
 export const CampaignsPage = () => {
   const navigate = useNavigate();
+  const { canViewCampaignArea, canManageCampaigns } = useCampaignPermissions();
   const { campaigns, isLoading, summary, createCampaign, updateCampaign, deleteCampaign } = useCampaignsList();
   const {
     filters,
@@ -32,6 +34,10 @@ export const CampaignsPage = () => {
   const [deletingCampaign, setDeletingCampaign] = useState<Campaign | undefined>();
 
   const pageNumbers = useMemo(() => Array.from({ length: totalPages }, (_, index) => index + 1), [totalPages]);
+
+  if (!canViewCampaignArea) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const rangeStart = filteredCampaigns.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const rangeEnd = Math.min(currentPage * pageSize, filteredCampaigns.length);
@@ -92,14 +98,16 @@ export const CampaignsPage = () => {
             Manage campaign initiatives, monitor submissions, and update campaign lifecycle.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-5 py-2 text-sm font-bold text-white shadow-md shadow-[#003c90]/20 transition-opacity hover:opacity-90"
-        >
-          <Plus className="h-4 w-4" strokeWidth={2.5} />
-          Create Campaign
-        </button>
+        {canManageCampaigns ? (
+          <button
+            type="button"
+            onClick={() => setShowCreateModal(true)}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-5 py-2 text-sm font-bold text-white shadow-md shadow-[#003c90]/20 transition-opacity hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" strokeWidth={2.5} />
+            Create Campaign
+          </button>
+        ) : null}
       </header>
 
       <CampaignsSummaryCards summary={summary} />
@@ -118,10 +126,13 @@ export const CampaignsPage = () => {
           Loading campaigns...
         </div>
       ) : filteredCampaigns.length === 0 ? (
-        <CampaignEmptyState onCreate={() => setShowCreateModal(true)} />
+        <CampaignEmptyState
+          onCreate={canManageCampaigns ? () => setShowCreateModal(true) : undefined}
+        />
       ) : (
         <CampaignsTable
           campaigns={paginatedCampaigns}
+          canManageCampaigns={canManageCampaigns}
           onView={(campaign) => navigate(`/campaigns/${campaign.id}`)}
           onEdit={(campaign) => setEditingCampaign(campaign)}
           onDelete={(campaign) => setDeletingCampaign(campaign)}

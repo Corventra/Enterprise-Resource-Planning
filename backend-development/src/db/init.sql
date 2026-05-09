@@ -256,6 +256,7 @@ INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM ro
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'BD'), (SELECT id FROM permissions WHERE code = 'LEAD_MANAGE'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'BD'), (SELECT id FROM permissions WHERE code = 'HANDOVER_MANAGE'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'BD'), (SELECT id FROM permissions WHERE code = 'DOCUMENT_VIEW'));
+INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'CEO'), (SELECT id FROM permissions WHERE code = 'BANK_DATA_VIEW'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'CEO'), (SELECT id FROM permissions WHERE code = 'LEAD_VIEW'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'CEO'), (SELECT id FROM permissions WHERE code = 'LEAD_TRACKER_VIEW'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'CEO'), (SELECT id FROM permissions WHERE code = 'PROPOSAL_APPROVE'));

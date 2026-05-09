@@ -18,6 +18,7 @@ interface FormBuilderCanvasProps {
   form: FormBuilderDocument;
   selectedFieldId: string | null;
   mode: 'edit' | 'preview';
+  readOnly?: boolean;
   publicLink: string;
   activeFieldId: string | null;
   sensors: SensorDescriptor<any>[];
@@ -37,6 +38,7 @@ export const FormBuilderCanvas = ({
   form,
   selectedFieldId,
   mode,
+  readOnly,
   publicLink,
   activeFieldId,
   sensors,
@@ -51,6 +53,7 @@ export const FormBuilderCanvas = ({
   onDragOver,
   onDragEnd
 }: FormBuilderCanvasProps) => {
+  const metaLocked = mode === 'preview' || readOnly;
   const headerPreviewSrc = form.headerImageUrl || '';
   const activeField = form.fields.find((field) => field.id === activeFieldId);
 
@@ -62,7 +65,7 @@ export const FormBuilderCanvas = ({
             <ImagePlus className="h-4 w-4 text-gray-600" />
             Header Image
           </div>
-          {form.headerImageUrl && (
+          {form.headerImageUrl && !readOnly ? (
             <button
               type="button"
               onClick={onRemoveHeaderImage}
@@ -70,7 +73,7 @@ export const FormBuilderCanvas = ({
             >
               <X className="h-4 w-4" />
             </button>
-          )}
+          ) : null}
         </div>
         {headerPreviewSrc ? (
           <img
@@ -81,14 +84,16 @@ export const FormBuilderCanvas = ({
         ) : (
           <p className="mb-3 text-sm text-gray-500">No header image selected.</p>
         )}
-        <button
-          type="button"
-          onClick={() => onUploadHeaderImage('header-image.png')}
-          className="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-        >
-          <ImagePlus className="h-4 w-4" />
-          Upload
-        </button>
+        {!readOnly ? (
+          <button
+            type="button"
+            onClick={() => onUploadHeaderImage('header-image.png')}
+            className="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            <ImagePlus className="h-4 w-4" />
+            Upload
+          </button>
+        ) : null}
       </article>
 
       <article className="rounded-lg border border-slate-200 bg-white p-4">
@@ -99,7 +104,7 @@ export const FormBuilderCanvas = ({
               value={form.title}
               onChange={(event) => onSetMetadata('title', event.target.value)}
               className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm"
-              disabled={mode === 'preview'}
+              disabled={metaLocked}
             />
           </div>
           <div>
@@ -111,6 +116,7 @@ export const FormBuilderCanvas = ({
               onChange={(value) => onSetMetadata('description', value)}
               placeholder="Describe the purpose of this form..."
               rows={4}
+              readOnly={readOnly}
             />
           </div>
           <div>
@@ -122,6 +128,7 @@ export const FormBuilderCanvas = ({
               onChange={(value) => onSetMetadata('successMessage', value)}
               placeholder="Message shown after user submits form."
               rows={3}
+              readOnly={readOnly}
             />
           </div>
           <div className="grid gap-3 md:grid-cols-2">
@@ -131,7 +138,7 @@ export const FormBuilderCanvas = ({
                 value={form.publicSlug}
                 onChange={(event) => onSetMetadata('publicSlug', event.target.value)}
                 className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm"
-                disabled={mode === 'preview'}
+                disabled={metaLocked}
               />
             </div>
             <div>
@@ -161,6 +168,7 @@ export const FormBuilderCanvas = ({
                   key={field.id}
                   field={field}
                   isSelected={selectedFieldId === field.id}
+                  readOnly={readOnly}
                   onSelect={onSelectField}
                   onDelete={onDeleteField}
                 />
@@ -178,7 +186,7 @@ export const FormBuilderCanvas = ({
         </DndContext>
       </article>
 
-      {mode === 'edit' && <FieldPalette onAddField={onAddField} />}
+      {mode === 'edit' && !readOnly ? <FieldPalette onAddField={onAddField} /> : null}
 
       {mode === 'preview' && (
         <article className="rounded-lg border border-slate-200 bg-white p-4">

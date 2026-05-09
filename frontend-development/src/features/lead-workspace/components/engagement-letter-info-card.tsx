@@ -1,4 +1,5 @@
 import { Info } from 'lucide-react';
+import { useLeadWorkspacePermissions } from '../hooks/use-lead-workspace-permissions';
 import type { LeadWorkspaceEngagementLetterItem } from '../types/lead-workspace.types';
 
 interface EngagementLetterInfoCardProps {
@@ -13,6 +14,8 @@ const formatDateTime = (iso?: string) => {
 };
 
 export const EngagementLetterInfoCard = ({ engagementLetter }: EngagementLetterInfoCardProps) => {
+  const { canApproveEngagementLetter } = useLeadWorkspacePermissions();
+
   if (!engagementLetter) {
     return (
       <div className="rounded-xl bg-white p-6 text-sm text-[#737784] shadow-sm ring-1 ring-[#eceef0]">
@@ -59,6 +62,21 @@ export const EngagementLetterInfoCard = ({ engagementLetter }: EngagementLetterI
           <p className="mt-1 text-sm font-semibold text-[#191c1e]">{formatDateTime(engagementLetter.signedAt)}</p>
         </div>
       </div>
+
+      {engagementLetter.status === 'PENDING' && canApproveEngagementLetter ? (
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-100 bg-amber-50/90 px-4 py-3">
+          <p className="text-sm font-medium text-amber-950">Engagement letter menunggu persetujuan.</p>
+          <button
+            type="button"
+            className="rounded-lg bg-[#003c90] px-4 py-2 text-xs font-bold text-white shadow-sm transition-opacity hover:opacity-90"
+            onClick={() => {
+              /* Integrasi API approval menyusul */
+            }}
+          >
+            Approve engagement letter
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 };

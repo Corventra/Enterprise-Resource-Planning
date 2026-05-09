@@ -1,5 +1,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { PERMISSIONS } from '../../../app/permissions';
+import { useAuth } from '../../../app/store/auth-store';
 import { BankDataEmptyState } from '../components/list/bank-data-empty-state';
 import { BankDataFiltersSection } from '../components/list/bank-data-filters';
 import { BankDataSummaryCards } from '../components/list/bank-data-summary-cards';
@@ -10,6 +12,8 @@ import { useBankDataList } from '../hooks/use-bank-data-list';
 import type { BankDataEntry } from '../types/bank-data.types';
 
 export const BankDataPage = () => {
+  const { can } = useAuth();
+  const allowBankDataMutations = can(PERMISSIONS.BANK_DATA_PROCESS);
   const { entries, isLoading, summary, processEntry, archiveEntry } = useBankDataList();
   const [selectedEntry, setSelectedEntry] = useState<BankDataEntry | undefined>();
   const {
@@ -109,6 +113,7 @@ export const BankDataPage = () => {
       ) : (
         <BankDataTable
           entries={paginatedEntries}
+          allowMutations={allowBankDataMutations}
           onView={onViewEntry}
           onProcess={async (entry) => {
             await processEntry(entry.id);
@@ -123,6 +128,7 @@ export const BankDataPage = () => {
       <BankDataEntryDetailModal
         open={Boolean(selectedEntry)}
         entry={selectedEntry}
+        allowMutations={allowBankDataMutations}
         onClose={() => setSelectedEntry(undefined)}
         onProcess={async (entry) => {
           await processEntry(entry.id);

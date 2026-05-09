@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useEffect, useMemo, useState } from 'react';
+import { Navigate, useNavigate, useParams } from 'react-router';
+import { useCampaignPermissions } from '../hooks/use-campaign-permissions';
 import { CampaignDetailHeader } from '../components/detail/campaign-detail-header';
 import { CampaignDetailSpecifications } from '../components/detail/campaign-detail-specifications';
 import { CampaignDetailSummaryCards } from '../components/detail/campaign-detail-summary-cards';
@@ -18,19 +19,30 @@ import type { Form, Submission } from '../types/campaign.types';
 export const CampaignDetailPage = () => {
   const navigate = useNavigate();
   const { campaignId } = useParams();
+  const { canViewCampaignArea, canManageCampaigns, canViewForms, canManageForms } = useCampaignPermissions();
   const { campaign, forms, submissions, bankDataEntries, isLoading, deleteForm, updateForm, refetch } =
     useCampaignDetail(campaignId);
 
-  const [activeTab, setActiveTab] = useState<CampaignDetailTab>('forms');
+  const [activeTab, setActiveTab] = useState<CampaignDetailTab>(() => (canViewForms ? 'forms' : 'submissions'));
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | undefined>();
   const [deletingForm, setDeletingForm] = useState<Form | undefined>();
   const [showEditCampaign, setShowEditCampaign] = useState(false);
   const [showDeleteCampaign, setShowDeleteCampaign] = useState(false);
 
+  useEffect(() => {
+    if (!canViewForms && activeTab === 'forms') {
+      setActiveTab('submissions');
+    }
+  }, [canViewForms, activeTab]);
+
   const qualifiedSubmissions = useMemo(
     () => submissions.filter((submission) => submission.status === 'Qualified').length,
     [submissions]
   );
+
+  if (!canViewCampaignArea) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   if (isLoading) {
     return (
@@ -59,6 +71,7 @@ export const CampaignDetailPage = () => {
     <div className="space-y-5">
       <CampaignDetailHeader
         campaign={campaign}
+        canManageCampaigns={canManageCampaigns}
         onBack={() => navigate('/campaigns')}
         onEditCampaign={() => setShowEditCampaign(true)}
         onDeleteCampaign={() => setShowDeleteCampaign(true)}
@@ -83,16 +96,18 @@ export const CampaignDetailPage = () => {
         <CampaignDetailTabs
           activeTab={activeTab}
           onChangeTab={setActiveTab}
+          showFormsTab={canViewForms}
           formsCount={forms.length}
           submissionsCount={submissions.length}
         />
 
         <div className="px-4 pb-4 sm:px-5 sm:pb-5">
-          {activeTab === 'forms' && (
+          {activeTab === 'forms' && canViewForms && (
             <FormsTab
               campaignId={campaign.id}
               campaignName={campaign.name}
               forms={forms}
+              canManageForms={canManageForms}
               onCreateForm={() => {
                 const campaignNameParam = encodeURIComponent(campaign.name);
                 navigate(`/forms?campaignId=${campaign.id}&campaignName=${campaignNameParam}`);

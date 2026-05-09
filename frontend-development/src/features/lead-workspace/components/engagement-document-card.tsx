@@ -1,4 +1,5 @@
 import { FileText, Upload } from 'lucide-react';
+import { useLeadWorkspacePermissions } from '../hooks/use-lead-workspace-permissions';
 import type { LeadWorkspaceEngagementLetterItem } from '../types/lead-workspace.types';
 
 interface EngagementDocumentCardProps {
@@ -13,6 +14,7 @@ const formatDateTime = (iso?: string) => {
 };
 
 export const EngagementDocumentCard = ({ engagementLetter }: EngagementDocumentCardProps) => {
+  const { canManageLeadWorkspace } = useLeadWorkspacePermissions();
   if (!engagementLetter) return null;
 
   const hasUploadedDocument = Boolean(engagementLetter.document.uploadedFileName);
@@ -28,7 +30,7 @@ export const EngagementDocumentCard = ({ engagementLetter }: EngagementDocumentC
         </h3>
       </div>
 
-      {!hasUploadedDocument && (
+      {!hasUploadedDocument && canManageLeadWorkspace && (
         <div className="rounded-xl border-2 border-dashed border-[#c3c6d5] bg-[#f7f9fb] p-8 text-center">
           <div className="mx-auto mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#003c90]/10">
             <Upload className="h-5 w-5 text-[#003c90]" />
@@ -37,6 +39,12 @@ export const EngagementDocumentCard = ({ engagementLetter }: EngagementDocumentC
           <p className="mt-1 text-xs text-[#737784]">Drag and drop your document here, or browse</p>
           <p className="mt-3 text-[10px] font-bold uppercase tracking-widest text-[#737784]">PDF, DOC, DOCX - Max 10MB</p>
         </div>
+      )}
+
+      {!hasUploadedDocument && !canManageLeadWorkspace && (
+        <p className="rounded-xl border border-[#eceef0] bg-[#f8fafc] p-6 text-center text-sm text-[#737784]">
+          Belum ada dokumen yang diunggah.
+        </p>
       )}
 
       {hasUploadedDocument ? (

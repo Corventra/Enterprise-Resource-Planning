@@ -7,6 +7,7 @@ interface FormsTabProps {
   campaignId: string;
   campaignName: string;
   forms: Form[];
+  canManageForms: boolean;
   onDeleteForm: (form: Form) => void;
   onToggleStatus: (form: Form) => void;
   onCreateForm: () => void;
@@ -37,12 +38,14 @@ const FormCard = ({
   form,
   campaignId,
   campaignName,
+  canManageForms,
   onDeleteForm,
   onToggleStatus
 }: {
   form: Form;
   campaignId: string;
   campaignName: string;
+  canManageForms: boolean;
   onDeleteForm: (form: Form) => void;
   onToggleStatus: (form: Form) => void;
 }) => {
@@ -109,13 +112,15 @@ const FormCard = ({
           <p className="text-[11px] font-bold uppercase tracking-wide text-[#434653] sm:text-xs">
             Shortlink <span className="font-normal text-[#737784]">(custom path · auto from title)</span>
           </p>
-          <button
-            type="button"
-            onClick={goEdit}
-            className="text-xs font-semibold text-[#003c90] transition-colors hover:text-[#0f52ba]"
-          >
-            Custom
-          </button>
+          {canManageForms ? (
+            <button
+              type="button"
+              onClick={goEdit}
+              className="text-xs font-semibold text-[#003c90] transition-colors hover:text-[#0f52ba]"
+            >
+              Custom
+            </button>
+          ) : null}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -189,53 +194,55 @@ const FormCard = ({
         </div>
       </div>
 
-      <div className="mt-6 flex flex-wrap items-center gap-1 border-t border-[#eceef0] pt-4">
-        <button
-          type="button"
-          onClick={() => onToggleStatus(form)}
-          title={form.status === 'Active' ? 'Pause (archive form)' : 'Resume form'}
-          aria-label={form.status === 'Active' ? 'Pause form' : 'Resume form'}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-[#737784] transition-colors hover:bg-[#eceef0] hover:text-[#003c90] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1d59c1]/30"
-        >
-          {form.status === 'Active' ? (
-            <Pause className="h-4 w-4" strokeWidth={2.25} />
-          ) : (
-            <Play className="h-4 w-4" strokeWidth={2.25} />
-          )}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            if (form.status === 'Active') {
-              onToggleStatus(form);
-            }
-          }}
-          disabled={form.status !== 'Active'}
-          title="End publishing (archive)"
-          aria-label="End publishing"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-[#737784] transition-colors hover:bg-[#eceef0] hover:text-[#003c90] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1d59c1]/30 disabled:pointer-events-none disabled:opacity-35"
-        >
-          <Square className="h-4 w-4" strokeWidth={2.25} />
-        </button>
-        <button
-          type="button"
-          onClick={goEdit}
-          title="Edit form"
-          aria-label="Edit form"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-[#737784] transition-colors hover:bg-[#eceef0] hover:text-[#003c90] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1d59c1]/30"
-        >
-          <Pencil className="h-4 w-4" strokeWidth={2.25} />
-        </button>
-        <button
-          type="button"
-          onClick={() => onDeleteForm(form)}
-          title="Delete form"
-          aria-label="Delete form"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-[#737784] transition-colors hover:bg-red-50 hover:text-[#dc2626] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-200"
-        >
-          <Trash2 className="h-4 w-4" strokeWidth={2.25} />
-        </button>
-      </div>
+      {canManageForms ? (
+        <div className="mt-6 flex flex-wrap items-center gap-1 border-t border-[#eceef0] pt-4">
+          <button
+            type="button"
+            onClick={() => onToggleStatus(form)}
+            title={form.status === 'Active' ? 'Pause (archive form)' : 'Resume form'}
+            aria-label={form.status === 'Active' ? 'Pause form' : 'Resume form'}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-[#737784] transition-colors hover:bg-[#eceef0] hover:text-[#003c90] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1d59c1]/30"
+          >
+            {form.status === 'Active' ? (
+              <Pause className="h-4 w-4" strokeWidth={2.25} />
+            ) : (
+              <Play className="h-4 w-4" strokeWidth={2.25} />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (form.status === 'Active') {
+                onToggleStatus(form);
+              }
+            }}
+            disabled={form.status !== 'Active'}
+            title="End publishing (archive)"
+            aria-label="End publishing"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-[#737784] transition-colors hover:bg-[#eceef0] hover:text-[#003c90] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1d59c1]/30 disabled:pointer-events-none disabled:opacity-35"
+          >
+            <Square className="h-4 w-4" strokeWidth={2.25} />
+          </button>
+          <button
+            type="button"
+            onClick={goEdit}
+            title="Edit form"
+            aria-label="Edit form"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-[#737784] transition-colors hover:bg-[#eceef0] hover:text-[#003c90] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1d59c1]/30"
+          >
+            <Pencil className="h-4 w-4" strokeWidth={2.25} />
+          </button>
+          <button
+            type="button"
+            onClick={() => onDeleteForm(form)}
+            title="Delete form"
+            aria-label="Delete form"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-[#737784] transition-colors hover:bg-red-50 hover:text-[#dc2626] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-200"
+          >
+            <Trash2 className="h-4 w-4" strokeWidth={2.25} />
+          </button>
+        </div>
+      ) : null}
     </article>
   );
 };
@@ -244,6 +251,7 @@ export const FormsTab = ({
   campaignId,
   campaignName,
   forms,
+  canManageForms,
   onDeleteForm,
   onToggleStatus,
   onCreateForm
@@ -252,14 +260,16 @@ export const FormsTab = ({
     <section className="pt-4">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-base font-bold text-[#191c1e] sm:text-lg">Campaign Forms</h3>
-        <button
-          type="button"
-          onClick={onCreateForm}
-          className="inline-flex items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-4 py-2 text-xs font-bold text-white shadow-md shadow-[#003c90]/20 transition-opacity hover:opacity-90 sm:px-5 sm:text-sm"
-        >
-          <Plus className="h-4 w-4" strokeWidth={2.5} />
-          Create Form
-        </button>
+        {canManageForms ? (
+          <button
+            type="button"
+            onClick={onCreateForm}
+            className="inline-flex items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-4 py-2 text-xs font-bold text-white shadow-md shadow-[#003c90]/20 transition-opacity hover:opacity-90 sm:px-5 sm:text-sm"
+          >
+            <Plus className="h-4 w-4" strokeWidth={2.5} />
+            Create Form
+          </button>
+        ) : null}
       </div>
 
       {forms.length === 0 ? (
@@ -274,6 +284,7 @@ export const FormsTab = ({
               form={form}
               campaignId={campaignId}
               campaignName={campaignName}
+              canManageForms={canManageForms}
               onDeleteForm={onDeleteForm}
               onToggleStatus={onToggleStatus}
             />
