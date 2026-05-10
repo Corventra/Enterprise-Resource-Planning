@@ -1,3 +1,4 @@
+const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const authRoutes = require("./routes/auth.routes");
@@ -18,6 +19,14 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "..", "uploads"), {
+    index: false,
+    fallthrough: true
+  })
+);
 
 app.get("/api/health", (req, res) => {
   res.json({

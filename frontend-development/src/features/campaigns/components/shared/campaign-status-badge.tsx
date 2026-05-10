@@ -1,8 +1,7 @@
-import type { CampaignStatus } from '../../types/campaign.types';
 import { getCampaignBadgeColor } from '../../utils/get-campaign-badge-color';
 
 interface CampaignStatusBadgeProps {
-  status: CampaignStatus;
+  status: string;
 }
 
 export const CampaignStatusBadge = ({ status }: CampaignStatusBadgeProps) => {

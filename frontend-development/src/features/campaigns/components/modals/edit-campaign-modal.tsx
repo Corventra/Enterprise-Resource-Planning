@@ -1,54 +1,85 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   SidePanelDialog,
   SidePanelDialogBody,
   SidePanelDialogFooter,
   SidePanelDialogHeader
 } from '../../../../components/ui/side-panel-dialog';
+import { ApiError } from '../../../../services/api-client';
 import { CampaignForm } from '../forms/campaign-form';
 import { useCampaignForm } from '../../hooks/use-campaign-form';
-import type { Campaign, CampaignPayload } from '../../types/campaign.types';
-import { validateCampaignPayload } from '../../utils/campaign-validation';
+import type { Campaign, CampaignLookupTopic, CampaignLookupType, CampaignSubmitInput } from '../../types/campaign.types';
+import { validateCampaignFormValues } from '../../utils/campaign-validation';
 
 interface EditCampaignModalProps {
   open: boolean;
   campaign?: Campaign;
+  typeOptions: CampaignLookupType[];
+  topicOptions: CampaignLookupTopic[];
   onClose: () => void;
-  onSuccess: (campaignId: string, payload: CampaignPayload) => Promise<void> | void;
+  onSuccess: (campaignId: string, input: CampaignSubmitInput) => Promise<void> | void;
 }
 
-export const EditCampaignModal = ({ open, campaign, onClose, onSuccess }: EditCampaignModalProps) => {
-  const { formData, setField, errors, setErrors, noEndDate, setNoEndDate, availableChannels, resetForm } =
-    useCampaignForm({ initialCampaign: campaign });
+export const EditCampaignModal = ({
+  open,
+  campaign,
+  typeOptions,
+  topicOptions,
+  onClose,
+  onSuccess
+}: EditCampaignModalProps) => {
+  const { formData, setField, errors, setErrors, noEndDate, setNoEndDate, resetForm } = useCampaignForm({
+    initialCampaign: campaign
+  });
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open && campaign?.id) {
+      setImageFile(null);
+      setSubmitError(null);
+    }
+  }, [open, campaign?.id]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setSubmitError(null);
 
-    const validationErrors = validateCampaignPayload({ payload: formData, noEndDate });
+    const validationErrors = validateCampaignFormValues({ values: formData, noEndDate });
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
 
-    const payload: CampaignPayload = {
-      ...formData,
-      endDate: noEndDate ? '' : formData.endDate
-    };
-
     if (!campaign) {
       return;
     }
 
+    const input: CampaignSubmitInput = {
+      values: formData,
+      noEndDate,
+      imageFile
+    };
+
     setIsSubmitting(true);
-    await onSuccess(campaign.id, payload);
-    setIsSubmitting(false);
-    resetForm();
-    onClose();
+    try {
+      await onSuccess(campaign.id, input);
+      resetForm();
+      setImageFile(null);
+      onClose();
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : 'Failed to update campaign.';
+      setSubmitError(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleClose = () => {
     resetForm();
+    setImageFile(null);
+    setSubmitError(null);
     onClose();
   };
 
@@ -58,12 +89,12 @@ export const EditCampaignModal = ({ open, campaign, onClose, onSuccess }: EditCa
 
   return (
     <SidePanelDialog open={open} onOpenChange={(nextOpen) => !nextOpen && handleClose()}>
-      <SidePanelDialogHeader
-        title="Edit Campaign"
-        description="Update campaign data and keep timeline accurate."
-      />
+      <SidePanelDialogHeader title="Edit Campaign" description="Update campaign data and timeline." />
       <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
         <SidePanelDialogBody>
+          {submitError ? (
+            <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{submitError}</p>
+          ) : null}
           <CampaignForm
             mode="edit"
             value={formData}
@@ -71,7 +102,10 @@ export const EditCampaignModal = ({ open, campaign, onClose, onSuccess }: EditCa
             errors={errors}
             noEndDate={noEndDate}
             onNoEndDateChange={setNoEndDate}
-            availableChannels={availableChannels}
+            typeOptions={typeOptions}
+            topicOptions={topicOptions}
+            imageFile={imageFile}
+            onImageChange={setImageFile}
           />
         </SidePanelDialogBody>
 

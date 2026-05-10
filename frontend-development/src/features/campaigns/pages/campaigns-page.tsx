@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router';
+import { useAuth } from '../../../app/store/auth-store';
 import { useCampaignPermissions } from '../hooks/use-campaign-permissions';
 import { CampaignEmptyState } from '../components/list/campaign-empty-state';
 import { CampaignFiltersSection } from '../components/list/campaign-filters';
@@ -11,12 +12,14 @@ import { DeleteCampaignConfirmDialog } from '../components/modals/delete-campaig
 import { EditCampaignModal } from '../components/modals/edit-campaign-modal';
 import { useCampaignFilters } from '../hooks/use-campaign-filters';
 import { useCampaignsList } from '../hooks/use-campaigns-list';
-import type { Campaign } from '../types/campaign.types';
+import { getCampaignTopics, getCampaignTypes } from '../services/campaigns-api';
+import type { Campaign, CampaignLookupTopic, CampaignLookupType } from '../types/campaign.types';
 
 export const CampaignsPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { canViewCampaignArea, canManageCampaigns } = useCampaignPermissions();
-  const { campaigns, isLoading, summary, createCampaign, updateCampaign, deleteCampaign } = useCampaignsList();
+  const { campaigns, isLoading, summary, createCampaign, updateCampaign, archiveCampaign } = useCampaignsList();
   const {
     filters,
     filteredCampaigns,
@@ -24,16 +27,40 @@ export const CampaignsPage = () => {
     currentPage,
     totalPages,
     pageSize,
+    typeFilterOptions,
     setCurrentPage,
     updateFilter,
     resetFilters
   } = useCampaignFilters(campaigns);
 
+  const [lookups, setLookups] = useState<{
+    types: CampaignLookupType[];
+    topics: CampaignLookupTopic[];
+  }>({ types: [], topics: [] });
+
+  useEffect(() => {
+    if (!canViewCampaignArea) return;
+    let cancelled = false;
+    void Promise.all([getCampaignTypes(), getCampaignTopics()])
+      .then(([types, topics]) => {
+        if (!cancelled) setLookups({ types, topics });
+      })
+      .catch(() => {
+        if (!cancelled) setLookups({ types: [], topics: [] });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [canViewCampaignArea]);
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | undefined>();
-  const [deletingCampaign, setDeletingCampaign] = useState<Campaign | undefined>();
+  const [archivingCampaign, setArchivingCampaign] = useState<Campaign | undefined>();
 
   const pageNumbers = useMemo(() => Array.from({ length: totalPages }, (_, index) => index + 1), [totalPages]);
+
+  const canOwnerManageCampaign = (campaign: Campaign) =>
+    canManageCampaigns && user?.id != null && Number(user.id) === Number(campaign.createdById);
 
   if (!canViewCampaignArea) {
     return <Navigate to="/dashboard" replace />;
@@ -114,9 +141,9 @@ export const CampaignsPage = () => {
 
       <CampaignFiltersSection
         filters={filters}
+        typeFilterOptions={typeFilterOptions}
         onSearchChange={(value) => updateFilter('search', value)}
         onTypeChange={(value) => updateFilter('type', value)}
-        onChannelChange={(value) => updateFilter('channel', value)}
         onStatusChange={(value) => updateFilter('status', value)}
         onReset={resetFilters}
       />
@@ -126,43 +153,46 @@ export const CampaignsPage = () => {
           Loading campaigns...
         </div>
       ) : filteredCampaigns.length === 0 ? (
-        <CampaignEmptyState
-          onCreate={canManageCampaigns ? () => setShowCreateModal(true) : undefined}
-        />
+        <CampaignEmptyState onCreate={canManageCampaigns ? () => setShowCreateModal(true) : undefined} />
       ) : (
         <CampaignsTable
           campaigns={paginatedCampaigns}
-          canManageCampaigns={canManageCampaigns}
+          canOwnerManageCampaign={canOwnerManageCampaign}
           onView={(campaign) => navigate(`/campaigns/${campaign.id}`)}
           onEdit={(campaign) => setEditingCampaign(campaign)}
-          onDelete={(campaign) => setDeletingCampaign(campaign)}
+          onArchive={(campaign) => setArchivingCampaign(campaign)}
           footer={paginationFooter}
         />
       )}
 
       <CreateCampaignModal
         open={showCreateModal}
+        typeOptions={lookups.types}
+        topicOptions={lookups.topics}
         onClose={() => setShowCreateModal(false)}
-        onSuccess={async (payload) => {
-          await createCampaign(payload);
+        onSuccess={async (input) => {
+          await createCampaign(input);
         }}
       />
 
       <EditCampaignModal
+        key={editingCampaign?.id ?? 'closed'}
         open={Boolean(editingCampaign)}
         campaign={editingCampaign}
+        typeOptions={lookups.types}
+        topicOptions={lookups.topics}
         onClose={() => setEditingCampaign(undefined)}
-        onSuccess={async (campaignId, payload) => {
-          await updateCampaign(campaignId, payload);
+        onSuccess={async (campaignId, input) => {
+          await updateCampaign(campaignId, input);
         }}
       />
 
       <DeleteCampaignConfirmDialog
-        open={Boolean(deletingCampaign)}
-        campaign={deletingCampaign}
-        onClose={() => setDeletingCampaign(undefined)}
+        open={Boolean(archivingCampaign)}
+        campaign={archivingCampaign}
+        onClose={() => setArchivingCampaign(undefined)}
         onConfirm={async (campaignId) => {
-          await deleteCampaign(campaignId);
+          await archiveCampaign(campaignId);
         }}
       />
     </div>

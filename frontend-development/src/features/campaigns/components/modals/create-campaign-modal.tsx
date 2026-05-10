@@ -1,60 +1,88 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   SidePanelDialog,
   SidePanelDialogBody,
   SidePanelDialogFooter,
   SidePanelDialogHeader
 } from '../../../../components/ui/side-panel-dialog';
+import { ApiError } from '../../../../services/api-client';
 import { CampaignForm } from '../forms/campaign-form';
 import { useCampaignForm } from '../../hooks/use-campaign-form';
-import type { CampaignPayload } from '../../types/campaign.types';
-import { validateCampaignPayload } from '../../utils/campaign-validation';
+import type { CampaignLookupTopic, CampaignLookupType, CampaignSubmitInput } from '../../types/campaign.types';
+import { validateCampaignFormValues } from '../../utils/campaign-validation';
 
 interface CreateCampaignModalProps {
   open: boolean;
+  typeOptions: CampaignLookupType[];
+  topicOptions: CampaignLookupTopic[];
   onClose: () => void;
-  onSuccess: (payload: CampaignPayload) => Promise<void> | void;
+  onSuccess: (input: CampaignSubmitInput) => Promise<void> | void;
 }
 
-export const CreateCampaignModal = ({ open, onClose, onSuccess }: CreateCampaignModalProps) => {
-  const { formData, setField, errors, setErrors, noEndDate, setNoEndDate, availableChannels, resetForm } =
-    useCampaignForm({});
+export const CreateCampaignModal = ({
+  open,
+  typeOptions,
+  topicOptions,
+  onClose,
+  onSuccess
+}: CreateCampaignModalProps) => {
+  const { formData, setField, errors, setErrors, noEndDate, setNoEndDate, resetForm } = useCampaignForm({});
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      setImageFile(null);
+      setSubmitError(null);
+    }
+  }, [open]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setSubmitError(null);
 
-    const validationErrors = validateCampaignPayload({ payload: formData, noEndDate });
+    const validationErrors = validateCampaignFormValues({ values: formData, noEndDate });
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
 
-    const payload: CampaignPayload = {
-      ...formData,
-      endDate: noEndDate ? '' : formData.endDate
+    const input: CampaignSubmitInput = {
+      values: formData,
+      noEndDate,
+      imageFile
     };
 
     setIsSubmitting(true);
-    await onSuccess(payload);
-    setIsSubmitting(false);
-    resetForm();
-    onClose();
+    try {
+      await onSuccess(input);
+      resetForm();
+      setImageFile(null);
+      onClose();
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : 'Failed to create campaign.';
+      setSubmitError(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleClose = () => {
     resetForm();
+    setImageFile(null);
+    setSubmitError(null);
     onClose();
   };
 
   return (
     <SidePanelDialog open={open} onOpenChange={(nextOpen) => !nextOpen && handleClose()}>
-      <SidePanelDialogHeader
-        title="Create Campaign"
-        description="Fill campaign details and save as draft or active."
-      />
+      <SidePanelDialogHeader title="Create Campaign" description="Fill campaign details and save." />
       <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
         <SidePanelDialogBody>
+          {submitError ? (
+            <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{submitError}</p>
+          ) : null}
           <CampaignForm
             mode="create"
             value={formData}
@@ -62,7 +90,10 @@ export const CreateCampaignModal = ({ open, onClose, onSuccess }: CreateCampaign
             errors={errors}
             noEndDate={noEndDate}
             onNoEndDateChange={setNoEndDate}
-            availableChannels={availableChannels}
+            typeOptions={typeOptions}
+            topicOptions={topicOptions}
+            imageFile={imageFile}
+            onImageChange={setImageFile}
           />
         </SidePanelDialogBody>
 

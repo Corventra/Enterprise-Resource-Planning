@@ -1,4 +1,5 @@
 const campaignsRepo = require('../repositories/campaigns.repo');
+const { safeUnlinkOldUploadFile } = require('../utils/file');
 const { ValidationError, requireString } = require('../utils/validation');
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -52,9 +53,7 @@ const optionalNullableString = (value, fieldName, max) => {
   return t;
 };
 
-/**
- * Payload sama untuk POST dan PATCH (semua field yang boleh di-set).
- */
+/** Field teks POST/PATCH; gambar lewat multipart field `image`, bukan body. */
 const parseWritePayload = (body) => {
   const b = body || {};
   const campaign_type_id = requirePositiveInt(b.campaign_type_id, 'campaign_type_id');
@@ -63,16 +62,19 @@ const parseWritePayload = (body) => {
   const start_date = requireIsoDate(b.start_date, 'start_date');
   const end_date = optionalIsoDate(b.end_date, 'end_date');
   const notes = optionalNullableString(b.notes, 'notes', 65535);
-  const image_path = optionalNullableString(b.image_path, 'image_path', 255);
   return {
     campaign_type_id,
     topic_id,
     name,
     start_date,
     end_date,
-    notes,
-    image_path
+    notes
   };
+};
+
+const imagePathFromUploadedFile = (file) => {
+  if (!file || !file.filename) return null;
+  return `/uploads/campaigns/${file.filename}`;
 };
 
 const assertOwnership = (campaign, userId) => {
@@ -125,6 +127,7 @@ const create = async (req, res) => {
     const userId = getUserIdFromRequest(req, res);
     if (userId === null) return;
     const p = parseWritePayload(req.body);
+    const imagePath = imagePathFromUploadedFile(req.file);
     const campaign_id = await campaignsRepo.create({
       campaignTypeId: p.campaign_type_id,
       topicId: p.topic_id,
@@ -133,7 +136,7 @@ const create = async (req, res) => {
       startDate: p.start_date,
       endDate: p.end_date,
       notes: p.notes,
-      imagePath: p.image_path,
+      imagePath,
       createdBy: userId
     });
     const campaign = await campaignsRepo.findByIdWithJoins(campaign_id);
@@ -155,6 +158,8 @@ const update = async (req, res) => {
     }
 
     const p = parseWritePayload(req.body);
+    const oldImagePath = existing.image_path;
+    const newImagePath = req.file ? imagePathFromUploadedFile(req.file) : existing.image_path;
     await campaignsRepo.update(campaign_id, {
       campaignTypeId: p.campaign_type_id,
       topicId: p.topic_id,
@@ -162,8 +167,13 @@ const update = async (req, res) => {
       startDate: p.start_date,
       endDate: p.end_date,
       notes: p.notes,
-      imagePath: p.image_path
+      imagePath: newImagePath
     });
+
+    if (req.file && oldImagePath && oldImagePath !== newImagePath) {
+      await safeUnlinkOldUploadFile(oldImagePath);
+    }
+
     const campaign = await campaignsRepo.findByIdWithJoins(campaign_id);
     return res.json({ campaign });
   } catch (e) {

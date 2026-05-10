@@ -4,7 +4,6 @@ import type { Campaign, CampaignFilters } from '../types/campaign.types';
 const defaultFilters: CampaignFilters = {
   search: '',
   type: 'All',
-  channel: 'All',
   status: 'All'
 };
 
@@ -12,19 +11,26 @@ export const useCampaignFilters = (campaigns: Campaign[], pageSize = 5) => {
   const [filters, setFilters] = useState<CampaignFilters>(defaultFilters);
   const [currentPage, setCurrentPage] = useState(1);
 
+  const typeFilterOptions = useMemo(() => {
+    const uniq = Array.from(new Set(campaigns.map((c) => c.campaignTypeName)))
+      .filter(Boolean)
+      .sort();
+    return ['All', ...uniq];
+  }, [campaigns]);
+
   const filteredCampaigns = useMemo(() => {
     return campaigns.filter((campaign) => {
       const q = filters.search.toLowerCase().trim();
       const matchSearch =
         q === '' ||
         campaign.name.toLowerCase().includes(q) ||
-        campaign.topic.toLowerCase().includes(q) ||
+        campaign.topicName.toLowerCase().includes(q) ||
+        campaign.campaignCode.toLowerCase().includes(q) ||
         campaign.id.toLowerCase().includes(q);
-      const matchType = filters.type === 'All' || campaign.type === filters.type;
-      const matchChannel = filters.channel === 'All' || campaign.channel === filters.channel;
+      const matchType = filters.type === 'All' || campaign.campaignTypeName === filters.type;
       const matchStatus = filters.status === 'All' || campaign.status === filters.status;
 
-      return matchSearch && matchType && matchChannel && matchStatus;
+      return matchSearch && matchType && matchStatus;
     });
   }, [campaigns, filters]);
 
@@ -53,6 +59,7 @@ export const useCampaignFilters = (campaigns: Campaign[], pageSize = 5) => {
     currentPage: normalizedPage,
     totalPages,
     pageSize,
+    typeFilterOptions,
     setCurrentPage,
     updateFilter,
     resetFilters

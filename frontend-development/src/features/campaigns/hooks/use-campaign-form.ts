@@ -1,27 +1,22 @@
-import { useEffect, useMemo, useState } from 'react';
-import type { Campaign, CampaignFormErrors, CampaignPayload } from '../types/campaign.types';
-import { channelOptionsByType } from '../utils/campaign-form-options';
+import { useState } from 'react';
+import type { Campaign, CampaignFormErrors, CampaignFormValues } from '../types/campaign.types';
 
-const defaultPayload: CampaignPayload = {
+const defaultValues: CampaignFormValues = {
   name: '',
-  type: 'Acquisition',
-  status: 'Draft',
-  channel: 'Email',
-  topic: '',
+  campaignTypeId: '',
+  topicId: '',
   startDate: '',
   endDate: '',
   notes: ''
 };
 
-const mapCampaignToPayload = (campaign: Campaign): CampaignPayload => ({
+const mapCampaignToFormValues = (campaign: Campaign): CampaignFormValues => ({
   name: campaign.name,
-  type: campaign.type,
-  status: campaign.status,
-  channel: campaign.channel,
-  topic: campaign.topic,
+  campaignTypeId: campaign.campaignTypeId,
+  topicId: campaign.topicId,
   startDate: campaign.startDate,
-  endDate: campaign.endDate,
-  notes: campaign.notes || ''
+  endDate: campaign.endDate ?? '',
+  notes: campaign.notes?.trim() ?? ''
 });
 
 interface UseCampaignFormInput {
@@ -29,29 +24,14 @@ interface UseCampaignFormInput {
 }
 
 export const useCampaignForm = ({ initialCampaign }: UseCampaignFormInput) => {
-  const initialPayload = initialCampaign ? mapCampaignToPayload(initialCampaign) : defaultPayload;
-  const [formData, setFormData] = useState<CampaignPayload>(initialPayload);
+  const [formData, setFormData] = useState<CampaignFormValues>(() =>
+    initialCampaign ? mapCampaignToFormValues(initialCampaign) : defaultValues
+  );
   const [errors, setErrors] = useState<CampaignFormErrors>({});
   const [noEndDate, setNoEndDate] = useState(Boolean(initialCampaign && !initialCampaign.endDate));
 
-  const availableChannels = useMemo(() => {
-    return channelOptionsByType[formData.type];
-  }, [formData.type]);
-
-  const setField = <K extends keyof CampaignPayload>(key: K, value: CampaignPayload[K]) => {
-    setFormData((prev) => {
-      const next = { ...prev, [key]: value };
-
-      if (key === 'type') {
-        const validChannels = channelOptionsByType[value as CampaignPayload['type']];
-        if (!validChannels.includes(next.channel)) {
-          next.channel = validChannels[0];
-        }
-      }
-
-      return next;
-    });
-
+  const setField = <K extends keyof CampaignFormValues>(key: K, value: CampaignFormValues[K]) => {
+    setFormData((prev) => ({ ...prev, [key]: value }));
     setErrors((prev) => ({ ...prev, [key]: undefined }));
   };
 
@@ -64,22 +44,15 @@ export const useCampaignForm = ({ initialCampaign }: UseCampaignFormInput) => {
   };
 
   const resetForm = () => {
-    setFormData(initialPayload);
+    setFormData(initialCampaign ? mapCampaignToFormValues(initialCampaign) : defaultValues);
     setNoEndDate(Boolean(initialCampaign && !initialCampaign.endDate));
     setErrors({});
   };
-
-  useEffect(() => {
-    setFormData(initialCampaign ? mapCampaignToPayload(initialCampaign) : defaultPayload);
-    setNoEndDate(Boolean(initialCampaign && !initialCampaign.endDate));
-    setErrors({});
-  }, [initialCampaign]);
 
   return {
     formData,
     errors,
     noEndDate,
-    availableChannels,
     setField,
     setErrors,
     setNoEndDate: setNoEndDateValue,
