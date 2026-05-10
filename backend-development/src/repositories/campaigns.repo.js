@@ -14,6 +14,7 @@ const mapTopicRow = (row) => ({
 
 const mapCampaignRow = (row) => ({
   campaign_id: row.campaign_id,
+  campaign_code: row.campaign_code,
   name: row.name,
   status: row.status,
   start_date: row.start_date,
@@ -55,6 +56,7 @@ const listActiveTopics = async () => {
 const baseSelect = `
   SELECT
     c.campaign_id,
+    c.campaign_code,
     c.name,
     c.status,
     c.start_date,
@@ -87,6 +89,8 @@ const findByIdWithJoins = async (campaignId) => {
   return rows.length === 0 ? null : mapCampaignRow(rows[0]);
 };
 
+const formatCampaignCode = (campaignId) => `cmp-${String(campaignId).padStart(3, '0')}`;
+
 const create = async ({
   campaignTypeId,
   topicId,
@@ -98,23 +102,39 @@ const create = async ({
   imagePath,
   createdBy
 }) => {
-  const [result] = await pool.execute(
-    `INSERT INTO campaigns (
-      campaign_type_id, topic_id, name, status, start_date, end_date, notes, image_path, created_by
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      campaignTypeId,
-      topicId,
-      name,
-      status,
-      startDate,
-      endDate,
-      notes,
-      imagePath,
-      createdBy
-    ]
-  );
-  return result.insertId;
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [result] = await connection.execute(
+      `INSERT INTO campaigns (
+        campaign_type_id, topic_id, name, status, start_date, end_date, notes, image_path, created_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        campaignTypeId,
+        topicId,
+        name,
+        status,
+        startDate,
+        endDate,
+        notes,
+        imagePath,
+        createdBy
+      ]
+    );
+    const campaignId = result.insertId;
+    const campaignCode = formatCampaignCode(campaignId);
+    await connection.execute(`UPDATE campaigns SET campaign_code = ? WHERE campaign_id = ?`, [
+      campaignCode,
+      campaignId
+    ]);
+    await connection.commit();
+    return campaignId;
+  } catch (e) {
+    await connection.rollback();
+    throw e;
+  } finally {
+    connection.release();
+  }
 };
 
 const update = async (campaignId, patch) => {

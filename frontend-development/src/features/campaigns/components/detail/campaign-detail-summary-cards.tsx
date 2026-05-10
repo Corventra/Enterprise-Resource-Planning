@@ -1,10 +1,9 @@
-import { BadgeCheck, FileText, Landmark, Send } from 'lucide-react';
+import { BadgeCheck, FileText, Send } from 'lucide-react';
 
 interface CampaignDetailSummaryCardsProps {
   formsCount: number;
   submissionsCount: number;
   qualifiedSubmissions: number;
-  bankEntriesCount: number;
 }
 
 const cards = [
@@ -31,27 +30,18 @@ const cards = [
     borderClass: 'border-l-[#004b31]',
     iconClass: 'text-[#004b31]',
     Icon: BadgeCheck
-  },
-  {
-    key: 'bank',
-    label: 'Bank data',
-    valueKey: 'bankEntriesCount' as const,
-    borderClass: 'border-l-[#ba1a1a]',
-    iconClass: 'text-[#ba1a1a]',
-    Icon: Landmark
   }
 ] as const;
 
 export const CampaignDetailSummaryCards = ({
   formsCount,
   submissionsCount,
-  qualifiedSubmissions,
-  bankEntriesCount
+  qualifiedSubmissions
 }: CampaignDetailSummaryCardsProps) => {
-  const values = { formsCount, submissionsCount, qualifiedSubmissions, bankEntriesCount };
+  const values = { formsCount, submissionsCount, qualifiedSubmissions };
 
   return (
-    <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
       {cards.map(({ key, label, valueKey, borderClass, iconClass, Icon }) => (
         <article
           key={key}
