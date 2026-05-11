@@ -8,6 +8,7 @@ if (!SECRET) {
   throw new Error('JWT_SECRET tidak diset di .env');
 }
 
+/** Token tidak di-refresh otomatis; field seperti `permissions` hanya berubah setelah login ulang (token baru). */
 const sign = (payload) => jwt.sign(payload, SECRET, { expiresIn: EXPIRES_IN });
 
 const verify = (token) => jwt.verify(token, SECRET);

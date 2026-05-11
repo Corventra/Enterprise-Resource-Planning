@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { campaignsService } from '../services/campaigns-service';
-import type { BankDataEntry, Campaign, CampaignSubmitInput, Form, Submission } from '../types/campaign.types';
+import { getCampaignSubmissionsCount } from '../../forms/services/form-submissions-api';
+import type { BankDataEntry, Campaign, CampaignSubmitInput, Form } from '../types/campaign.types';
 
 interface CampaignDetailState {
   campaign?: Campaign;
   forms: Form[];
-  submissions: Submission[];
+  submissionsCount: number;
   bankDataEntries: BankDataEntry[];
 }
 
@@ -13,7 +14,7 @@ export const useCampaignDetail = (campaignId?: string) => {
   const [state, setState] = useState<CampaignDetailState>({
     campaign: undefined,
     forms: [],
-    submissions: [],
+    submissionsCount: 0,
     bankDataEntries: []
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -26,24 +27,24 @@ export const useCampaignDetail = (campaignId?: string) => {
 
     setIsLoading(true);
     try {
-      const [campaign, forms, submissions, bankDataEntries] = await Promise.all([
+      const [campaign, forms, bankDataEntries, submissionsCount] = await Promise.all([
         campaignsService.getById(campaignId),
         campaignsService.getFormsByCampaign(campaignId),
-        campaignsService.getSubmissionsByCampaign(campaignId),
-        campaignsService.getBankDataEntries(campaignId)
+        campaignsService.getBankDataEntries(campaignId),
+        getCampaignSubmissionsCount(campaignId).catch(() => 0)
       ]);
 
       setState({
         campaign,
         forms,
-        submissions,
+        submissionsCount,
         bankDataEntries
       });
     } catch {
       setState({
         campaign: undefined,
         forms: [],
-        submissions: [],
+        submissionsCount: 0,
         bankDataEntries: []
       });
     } finally {

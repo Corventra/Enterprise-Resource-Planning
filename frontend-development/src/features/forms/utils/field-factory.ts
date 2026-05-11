@@ -8,6 +8,7 @@ const createDefaultOptions = () => [
   { id: `${Date.now()}-2`, label: 'Option 2', value: 'option_2' }
 ];
 
+/** Hanya untuk UI sebelum persist — backend akan mengabaikan id lokal. */
 export const createFieldByType = (type: FormFieldType): FormBuilderField => {
   const common = {
     id: generateFieldId(),
@@ -16,7 +17,9 @@ export const createFieldByType = (type: FormFieldType): FormBuilderField => {
     note: '',
     placeholder: '',
     required: false,
-    isCore: false
+    isCore: false,
+    isLocked: false,
+    isSystem: false
   } satisfies Omit<FormBuilderField, 'options' | 'fileUpload'>;
 
   if (type === 'dropdown' || type === 'radio' || type === 'checkbox') {

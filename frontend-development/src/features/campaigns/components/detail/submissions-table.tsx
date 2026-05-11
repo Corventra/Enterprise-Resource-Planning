@@ -1,65 +1,64 @@
-import type { Submission } from '../../types/campaign.types';
+import type { FormSubmissionListItem } from '../../../forms/types/form-submissions.types';
+import { formatSubmissionSourceLabel } from '../../../forms/utils/submission-source-label';
 
 interface SubmissionsTableProps {
-  submissions: Submission[];
-  onViewSubmission: (submission: Submission) => void;
+  submissions: FormSubmissionListItem[];
+  onViewSubmission: (submissionId: number) => void;
 }
+
+const formatSubmittedAt = (iso: string) => {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
 
 export const SubmissionsTable = ({ submissions, onViewSubmission }: SubmissionsTableProps) => {
   if (submissions.length === 0) {
     return (
-      <div className="rounded-lg border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
-        No submissions found.
+      <div className="rounded-xl border border-dashed border-[#c3c6d5] bg-[#f7f9fb]/50 px-4 py-10 text-center text-sm text-[#737784]">
+        Belum ada submission untuk form ini.
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-slate-200">
-          <thead className="bg-slate-50">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Name
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Company
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Email
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Submitted At
-              </th>
-              <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Action
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {submissions.map((submission) => (
-              <tr key={submission.id} className="hover:bg-slate-50/70">
-                <td className="px-4 py-3 text-sm font-medium text-slate-900">{submission.customerName}</td>
-                <td className="px-4 py-3 text-sm text-slate-700">{submission.company}</td>
-                <td className="px-4 py-3 text-sm text-slate-700">{submission.email}</td>
-                <td className="px-4 py-3 text-sm text-slate-600">
-                  {new Date(submission.submittedAt).toLocaleString()}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <button
-                    type="button"
-                    onClick={() => onViewSubmission(submission)}
-                    className="rounded-md border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
-                  >
-                    View Detail
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <div className="space-y-3">
+      {submissions.map((submission) => {
+        const source = formatSubmissionSourceLabel(submission);
+        return (
+          <article
+            key={submission.submission_id}
+            className="rounded-xl border border-[#eceef0] bg-white p-4 shadow-sm sm:p-5"
+          >
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0 flex-1 space-y-2">
+                <h4 className="text-sm font-bold text-[#191c1e] sm:text-base">
+                  Respons ke-{submission.response_number}
+                </h4>
+                <p className="text-sm leading-relaxed text-[#434653]">“{submission.summary_text}”</p>
+                <p className="text-xs text-[#737784] sm:text-sm">
+                  {source}
+                  <span className="mx-1.5 text-[#c3c6d5]">•</span>
+                  {formatSubmittedAt(submission.submitted_at)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onViewSubmission(submission.submission_id)}
+                className="inline-flex shrink-0 items-center justify-center rounded-lg border border-[#c3c6d5] bg-white px-3 py-2 text-xs font-semibold text-[#434653] hover:bg-[#f7f9fb] sm:text-sm"
+              >
+                View
+              </button>
+            </div>
+          </article>
+        );
+      })}
     </div>
   );
 };

@@ -19,7 +19,7 @@ export const FieldPalette = ({ onAddField }: FieldPaletteProps) => {
   return (
     <section className="rounded-lg border-2 border-dashed border-gray-300 bg-white p-6">
       <h3 className="text-sm font-semibold text-gray-700">Add Field:</h3>
-      <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
         {fieldItems.map((item) => (
           <button
             key={item.type}

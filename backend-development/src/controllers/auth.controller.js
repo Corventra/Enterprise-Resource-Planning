@@ -47,6 +47,7 @@ const login = async (req, res) => {
     return res.status(401).json({ error: 'Email atau password salah.' });
   }
 
+  // Permission list untuk token: snapshot saat login. Perubahan di DB/resolver baru dipakai route guard setelah login ulang.
   const rolePermissionsFromDb = await permissionRepo.listCodesByRoleId(user.role.id);
   const permissions = resolveEffectivePermissions({
     roleCode: user.role.code,
@@ -80,6 +81,7 @@ const me = async (req, res) => {
     if (!user || !user.isActive) {
       return res.status(401).json({ error: 'User tidak aktif atau tidak ditemukan' });
     }
+    // Selalu resolve dari DB + resolver terbaru (untuk tampilan /me). requirePermission tetap membaca permissions di JWT.
     const rolePermissionsFromDb = await permissionRepo.listCodesByRoleId(user.role.id);
     const permissions = resolveEffectivePermissions({
       roleCode: user.role.code,
