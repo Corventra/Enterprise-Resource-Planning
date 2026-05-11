@@ -1,4 +1,4 @@
-import { formsMock } from '../mocks/forms.mock';
+import { deleteDraftForm, getCampaignForms } from '../../forms/services/forms-api';
 import { bankDataEntriesMock, submissionsMock } from '../mocks/submissions.mock';
 import type { BankDataEntry, Campaign, Form, Submission } from '../types/campaign.types';
 import {
@@ -11,7 +11,6 @@ import {
 
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
-let formsStore: Form[] = clone(formsMock);
 let submissionsStore: Submission[] = clone(submissionsMock);
 const bankDataStore: BankDataEntry[] = clone(bankDataEntriesMock);
 
@@ -57,32 +56,36 @@ export const campaignsService = {
   },
 
   async getFormsByCampaign(campaignId: string): Promise<Form[]> {
-    return clone(formsStore.filter((form) => form.campaignId === campaignId));
+    const rows = await getCampaignForms(campaignId);
+    return rows.map((r) => ({
+      id: String(r.form_id),
+      campaignId: String(r.campaign_id),
+      name: r.title,
+      status:
+        r.status === 'PUBLISHED'
+          ? 'Active'
+          : r.status === 'INACTIVE'
+            ? 'Inactive'
+            : ('Draft' as const),
+      publishedAt: r.published_at ?? '',
+      formCode: r.form_code ?? undefined,
+      submissionCount: 0,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+      createdBy: String(r.created_by),
+      backendFormStatus: r.status,
+      isAcceptingResponses: r.is_accepting_responses,
+      formCategory: r.form_category
+    }));
   },
 
-  async updateForm(formId: string, payload: Partial<Form>): Promise<Form> {
-    const target = formsStore.find((form) => form.id === formId);
-    if (!target) {
-      throw new Error('Form not found');
-    }
-
-    const updatedForm: Form = {
-      ...target,
-      ...payload
-    };
-
-    formsStore = formsStore.map((form) => (form.id === formId ? updatedForm : form));
-    return clone(updatedForm);
+  /** Phase A: tidak ada endpoint ubah status form di backend — noop untuk kompat hook lama. */
+  async updateForm(_formId: string, _payload: Partial<Form>): Promise<Form> {
+    throw new Error('Update form status belum tersedia pada Phase A.');
   },
 
   async deleteForm(formId: string): Promise<void> {
-    const target = formsStore.find((form) => form.id === formId);
-    if (!target) {
-      return;
-    }
-
-    formsStore = formsStore.filter((form) => form.id !== formId);
-    submissionsStore = submissionsStore.filter((submission) => submission.formId !== formId);
+    await deleteDraftForm(formId);
   },
 
   async getBankDataEntries(campaignId: string): Promise<BankDataEntry[]> {

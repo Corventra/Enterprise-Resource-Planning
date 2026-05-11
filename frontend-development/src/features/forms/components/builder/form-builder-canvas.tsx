@@ -1,4 +1,3 @@
-import { ImagePlus, Link2, X } from 'lucide-react';
 import { DndContext, DragOverlay } from '@dnd-kit/core';
 import type {
   CollisionDetection,
@@ -9,26 +8,33 @@ import type {
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import type { FormBuilderDocument, FormFieldType } from '../../types/form-builder.types';
-import { markersToHtml } from '../../utils/form-rich-text';
+import { getFormDisplayBadge } from '../../utils/form-display-status';
+import { isFieldPinnedForDnD } from '../../utils/local-draft-fields';
 import { FieldPalette } from './field-palette';
-import { SortableFieldCard } from './sortable-field-card';
-import { RichTextEditor } from '../editors/rich-text-editor';
+import { FormHeaderImageField } from './form-header-image-field';
+import { SortableFieldCard, StaticFormFieldCard } from './sortable-field-card';
+import { HtmlRichTextEditor } from '../editors/html-rich-text-editor';
 
 interface FormBuilderCanvasProps {
   form: FormBuilderDocument;
   selectedFieldId: string | null;
-  mode: 'edit' | 'preview';
+  /** View-only / non-owner */
   readOnly?: boolean;
-  publicLink: string;
+  /** Konten read-only (PUBLISHED / INACTIVE, atau kombinasi readOnly parent) */
+  canvasLocked?: boolean;
+  isCreateMode: boolean;
+  formPersisted: boolean;
+  sortableFieldIds: string[];
   activeFieldId: string | null;
   sensors: SensorDescriptor<any>[];
   collisionDetection: CollisionDetection;
   onSetMetadata: <K extends keyof FormBuilderDocument>(key: K, value: FormBuilderDocument[K]) => void;
+  headerImageFile: File | null;
+  onHeaderImageSelect: (file: File | null) => void;
+  onHeaderImageClear: () => void;
   onSelectField: (fieldId: string) => void;
   onAddField: (type: FormFieldType) => void;
   onDeleteField: (fieldId: string) => void;
-  onUploadHeaderImage: (fileName: string) => void;
-  onRemoveHeaderImage: () => void;
   onDragStart: (event: DragStartEvent) => void;
   onDragOver: (event: DragOverEvent) => void;
   onDragEnd: (event: DragEndEvent) => void;
@@ -37,116 +43,151 @@ interface FormBuilderCanvasProps {
 export const FormBuilderCanvas = ({
   form,
   selectedFieldId,
-  mode,
   readOnly,
-  publicLink,
+  canvasLocked = false,
+  isCreateMode,
+  formPersisted,
+  sortableFieldIds,
   activeFieldId,
   sensors,
   collisionDetection,
   onSetMetadata,
+  headerImageFile,
+  onHeaderImageSelect,
+  onHeaderImageClear,
   onSelectField,
   onAddField,
   onDeleteField,
-  onUploadHeaderImage,
-  onRemoveHeaderImage,
   onDragStart,
   onDragOver,
   onDragEnd
 }: FormBuilderCanvasProps) => {
-  const metaLocked = mode === 'preview' || readOnly;
-  const headerPreviewSrc = form.headerImageUrl || '';
+  const metaLocked = Boolean(readOnly) || canvasLocked;
+  const categoryLocked = formPersisted || metaLocked;
+  const pinnedFields = form.fields.filter((f) => isFieldPinnedForDnD(f));
+  const sortableFields = form.fields.filter((f) => !isFieldPinnedForDnD(f));
   const activeField = form.fields.find((field) => field.id === activeFieldId);
+  const interactionLocked = Boolean(readOnly) || canvasLocked;
+  const showFieldPalette = !interactionLocked;
 
   return (
     <section className="space-y-4">
-      <article className="rounded-lg border border-gray-200 bg-white p-6">
-        <div className="mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
-            <ImagePlus className="h-4 w-4 text-gray-600" />
-            Header Image
-          </div>
-          {form.headerImageUrl && !readOnly ? (
-            <button
-              type="button"
-              onClick={onRemoveHeaderImage}
-              className="rounded-md p-1.5 text-red-600 hover:bg-red-50"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          ) : null}
-        </div>
-        {headerPreviewSrc ? (
-          <img
-            src={headerPreviewSrc}
-            alt="Form header"
-            className="mb-3 max-h-56 w-full rounded-lg border border-gray-200 object-cover"
-          />
-        ) : (
-          <p className="mb-3 text-sm text-gray-500">No header image selected.</p>
-        )}
-        {!readOnly ? (
-          <button
-            type="button"
-            onClick={() => onUploadHeaderImage('header-image.png')}
-            className="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-          >
-            <ImagePlus className="h-4 w-4" />
-            Upload
-          </button>
-        ) : null}
-      </article>
+      <FormHeaderImageField
+        headerImagePath={form.headerImageUrl || ''}
+        pendingFile={headerImageFile}
+        disabled={metaLocked}
+        onSelectFile={onHeaderImageSelect}
+        onClear={onHeaderImageClear}
+      />
 
       <article className="rounded-lg border border-slate-200 bg-white p-4">
         <div className="grid gap-4">
+          {formPersisted ? (
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Status</span>
+              {(() => {
+                const b = getFormDisplayBadge(form.backendStatus, form.isAcceptingResponses);
+                const cls =
+                  b.tone === 'inactive'
+                    ? 'bg-slate-200 text-slate-800'
+                    : b.tone === 'draft'
+                      ? 'bg-sky-100 text-sky-900'
+                      : b.tone === 'paused'
+                        ? 'bg-amber-100 text-amber-950 ring-1 ring-amber-200'
+                        : 'bg-emerald-100 text-emerald-900';
+                return (
+                  <span className={`rounded-md px-2 py-0.5 text-xs font-semibold ${cls}`}>{b.label}</span>
+                );
+              })()}
+              {form.publicSlug ? (
+                <span className="text-xs text-slate-500">
+                  Kode: <span className="font-mono text-slate-700">{form.publicSlug}</span>
+                </span>
+              ) : null}
+            </div>
+          ) : null}
+
+          <div>
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Form category
+            </label>
+            <select
+              value={form.formCategory}
+              onChange={(event) =>
+                onSetMetadata('formCategory', event.target.value as FormBuilderDocument['formCategory'])
+              }
+              className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm disabled:bg-slate-50 disabled:text-slate-600"
+              disabled={categoryLocked}
+            >
+              <option value="GENERAL">General</option>
+              <option value="LEAD_CAPTURE">Lead capture</option>
+            </select>
+            {formPersisted ? (
+              <p className="mt-1 text-xs text-slate-500">Kategori tidak dapat diubah setelah form dibuat.</p>
+            ) : isCreateMode ? (
+              <p className="mt-1 text-xs text-slate-500">
+                Pilih kategori sebelum menyimpan. Lead capture menampilkan 5 field wajib di atas; Anda bisa
+                menambah field kustom di bawahnya.
+              </p>
+            ) : null}
+          </div>
+
           <div>
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Form Title</label>
             <input
               value={form.title}
               onChange={(event) => onSetMetadata('title', event.target.value)}
-              className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm"
+              className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm placeholder:text-slate-400"
               disabled={metaLocked}
+              placeholder="Contoh: Form Konsultasi Pajak Gratis"
             />
           </div>
           <div>
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
               Form Description
             </label>
-            <RichTextEditor
+            <HtmlRichTextEditor
               value={form.description}
-              onChange={(value) => onSetMetadata('description', value)}
-              placeholder="Describe the purpose of this form..."
-              rows={4}
-              readOnly={readOnly}
+              onChange={(html) => onSetMetadata('description', html)}
+              placeholder="Jelaskan tujuan atau konteks formulir ini…"
+              readOnly={metaLocked}
             />
           </div>
           <div>
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
               Success Message
             </label>
-            <RichTextEditor
+            <HtmlRichTextEditor
               value={form.successMessage}
-              onChange={(value) => onSetMetadata('successMessage', value)}
-              placeholder="Message shown after user submits form."
-              rows={3}
-              readOnly={readOnly}
+              onChange={(html) => onSetMetadata('successMessage', html)}
+              placeholder="Pesan yang ditampilkan setelah pengisi mengirim formulir…"
+              readOnly={metaLocked}
             />
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Public Slug</label>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Success link URL
+              </label>
               <input
-                value={form.publicSlug}
-                onChange={(event) => onSetMetadata('publicSlug', event.target.value)}
+                value={form.successLinkUrl}
+                onChange={(event) => onSetMetadata('successLinkUrl', event.target.value)}
                 className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm"
                 disabled={metaLocked}
+                placeholder="https://"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Public Link</label>
-              <div className="inline-flex h-10 w-full items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-600">
-                <Link2 className="h-4 w-4" />
-                {publicLink}
-              </div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Success link label
+              </label>
+              <input
+                value={form.successLinkLabel}
+                onChange={(event) => onSetMetadata('successLinkLabel', event.target.value)}
+                className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm"
+                disabled={metaLocked}
+                placeholder="Tombol / teks tautan"
+              />
             </div>
           </div>
         </div>
@@ -161,14 +202,27 @@ export const FormBuilderCanvas = ({
           onDragOver={onDragOver}
           onDragEnd={onDragEnd}
         >
-          <SortableContext items={form.fields.map((field) => field.id)} strategy={verticalListSortingStrategy}>
-            <div className="mt-3 space-y-2">
-              {form.fields.map((field) => (
+          <div className="mt-3 space-y-2">
+            {pinnedFields.map((field) => (
+              <StaticFormFieldCard
+                key={field.id}
+                field={field}
+                isSelected={selectedFieldId === field.id}
+                readOnly={interactionLocked}
+                onSelect={onSelectField}
+                onDelete={onDeleteField}
+              />
+            ))}
+          </div>
+          <SortableContext items={sortableFieldIds} strategy={verticalListSortingStrategy}>
+            <div className="mt-2 space-y-2">
+              {sortableFields.map((field) => (
                 <SortableFieldCard
                   key={field.id}
                   field={field}
                   isSelected={selectedFieldId === field.id}
-                  readOnly={readOnly}
+                  readOnly={interactionLocked}
+                  dragDisabled={interactionLocked}
                   onSelect={onSelectField}
                   onDelete={onDeleteField}
                 />
@@ -186,28 +240,7 @@ export const FormBuilderCanvas = ({
         </DndContext>
       </article>
 
-      {mode === 'edit' && !readOnly ? <FieldPalette onAddField={onAddField} /> : null}
-
-      {mode === 'preview' && (
-        <article className="rounded-lg border border-slate-200 bg-white p-4">
-          <h3 className="text-sm font-semibold text-slate-900">Preview</h3>
-          <div className="prose prose-sm mt-3 max-w-none text-slate-700">
-            <h2>{form.title}</h2>
-            <p dangerouslySetInnerHTML={{ __html: markersToHtml(form.description) }} />
-          </div>
-          <div className="mt-4 space-y-3">
-            {form.fields.map((field) => (
-              <div key={field.id} className="rounded-md border border-slate-200 p-3">
-                <p className="text-sm font-medium text-slate-900">
-                  {field.label}
-                  {field.required ? ' *' : ''}
-                </p>
-                {field.placeholder && <p className="mt-1 text-xs text-slate-500">{field.placeholder}</p>}
-              </div>
-            ))}
-          </div>
-        </article>
-      )}
+      {showFieldPalette ? <FieldPalette onAddField={onAddField} /> : null}
     </section>
   );
 };

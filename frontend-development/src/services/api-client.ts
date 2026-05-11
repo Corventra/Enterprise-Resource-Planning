@@ -97,10 +97,12 @@ const request = async <T>(method: string, path: string, opts: RequestOptions = {
     : await res.text().catch(() => null);
 
   if (!res.ok) {
-    const message =
-      (payload && typeof payload === 'object' && 'error' in payload && typeof (payload as { error: unknown }).error === 'string')
-        ? (payload as { error: string }).error
-        : `Request gagal (HTTP ${res.status})`;
+    let message = `Request gagal (HTTP ${res.status})`;
+    if (payload && typeof payload === 'object') {
+      const p = payload as { error?: unknown; message?: unknown };
+      if (typeof p.error === 'string') message = p.error;
+      else if (typeof p.message === 'string') message = p.message;
+    }
     throw new ApiError(message, res.status, payload);
   }
 
@@ -141,10 +143,12 @@ const requestFormData = async <T>(method: string, path: string, formData: FormDa
     : await res.text().catch(() => null);
 
   if (!res.ok) {
-    const message =
-      payload && typeof payload === 'object' && 'error' in payload && typeof (payload as { error: unknown }).error === 'string'
-        ? (payload as { error: string }).error
-        : `Request gagal (HTTP ${res.status})`;
+    let message = `Request gagal (HTTP ${res.status})`;
+    if (payload && typeof payload === 'object') {
+      const p = payload as { error?: unknown; message?: unknown };
+      if (typeof p.error === 'string') message = p.error;
+      else if (typeof p.message === 'string') message = p.message;
+    }
     throw new ApiError(message, res.status, payload);
   }
 

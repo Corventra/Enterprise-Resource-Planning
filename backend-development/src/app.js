@@ -6,6 +6,12 @@ const usersRoutes = require("./routes/users.routes");
 const lookupRoutes = require("./routes/lookup.routes");
 const departmentsRoutes = require("./routes/departments.routes");
 const campaignsRoutes = require("./routes/campaigns.routes");
+const {
+  campaignFormsRouter,
+  formBuilderRouter,
+  fieldOptionsRouter,
+} = require("./routes/forms.routes");
+const publicFormsRoutes = require("./routes/public-forms.routes");
 
 const app = express();
 
@@ -39,7 +45,11 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/lookup", lookupRoutes);
 app.use("/api/departments", departmentsRoutes);
+app.use("/api/campaigns", campaignFormsRouter);
 app.use("/api/campaigns", campaignsRoutes);
+app.use("/api/forms", formBuilderRouter);
+app.use("/api/fields", fieldOptionsRouter);
+app.use("/api/public/forms", publicFormsRoutes);
 
 // Fallback 404 untuk path /api/* yang tidak match
 app.use("/api", (req, res) => {

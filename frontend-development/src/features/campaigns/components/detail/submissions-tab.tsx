@@ -1,34 +1,89 @@
-import { useMemo, useState } from 'react';
-import type { Submission } from '../../types/campaign.types';
+import { useEffect, useMemo, useState } from 'react';
+import { getFormSubmissions } from '../../../forms/services/form-submissions-api';
+import type { FormSubmissionListItem } from '../../../forms/types/form-submissions.types';
+import { formatSubmissionSourceLabel } from '../../../forms/utils/submission-source-label';
+import type { Form } from '../../types/campaign.types';
 import { SubmissionsTable } from './submissions-table';
 import { SubmissionsToolbar } from './submissions-toolbar';
 
 interface SubmissionsTabProps {
-  submissions: Submission[];
-  onViewSubmission: (submission: Submission) => void;
+  forms: Form[];
+  selectedFormId: string | null;
+  onSelectedFormChange: (formId: string | null) => void;
+  onViewSubmission: (formId: string, submissionId: number) => void;
 }
 
-type SortBy = 'submittedAt' | 'customerName';
+type SortBy = 'submittedAt' | 'responseNumber';
 type SortOrder = 'asc' | 'desc';
 
-export const SubmissionsTab = ({ submissions, onViewSubmission }: SubmissionsTabProps) => {
+const formatSubmittedAtExport = (iso: string) => {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString('id-ID');
+};
+
+export const SubmissionsTab = ({
+  forms,
+  selectedFormId,
+  onSelectedFormChange,
+  onViewSubmission
+}: SubmissionsTabProps) => {
+  const [submissions, setSubmissions] = useState<FormSubmissionListItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('submittedAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const filteredSubmissions = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    if (!query) {
-      return submissions;
+  const selectedForm = useMemo(
+    () => forms.find((form) => form.id === selectedFormId) ?? null,
+    [forms, selectedFormId]
+  );
+
+  useEffect(() => {
+    if (!selectedFormId) {
+      setSubmissions([]);
+      setLoadError(null);
+      setIsLoading(false);
+      return;
     }
 
+    let cancelled = false;
+    setIsLoading(true);
+    setLoadError(null);
+    void getFormSubmissions(selectedFormId)
+      .then((rows) => {
+        if (!cancelled) setSubmissions(rows);
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setSubmissions([]);
+          setLoadError(e instanceof Error ? e.message : 'Gagal memuat submissions.');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedFormId]);
+
+  const filteredSubmissions = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return submissions;
+
     return submissions.filter((submission) => {
+      const source = formatSubmissionSourceLabel(submission).toLowerCase();
+      const responseLabel = `respons ke-${submission.response_number}`.toLowerCase();
       return (
-        submission.customerName.toLowerCase().includes(query) ||
-        submission.email.toLowerCase().includes(query) ||
-        submission.company.toLowerCase().includes(query)
+        submission.summary_text.toLowerCase().includes(query) ||
+        source.includes(query) ||
+        responseLabel.includes(query) ||
+        String(submission.response_number).includes(query)
       );
     });
   }, [searchQuery, submissions]);
@@ -37,12 +92,12 @@ export const SubmissionsTab = ({ submissions, onViewSubmission }: SubmissionsTab
     const next = [...filteredSubmissions];
     next.sort((a, b) => {
       if (sortBy === 'submittedAt') {
-        const dateDiff = new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime();
+        const dateDiff = new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime();
         return sortOrder === 'asc' ? dateDiff : -dateDiff;
       }
 
-      const nameDiff = a.customerName.localeCompare(b.customerName);
-      return sortOrder === 'asc' ? nameDiff : -nameDiff;
+      const numberDiff = a.response_number - b.response_number;
+      return sortOrder === 'asc' ? numberDiff : -numberDiff;
     });
     return next;
   }, [filteredSubmissions, sortBy, sortOrder]);
@@ -54,6 +109,13 @@ export const SubmissionsTab = ({ submissions, onViewSubmission }: SubmissionsTab
 
   const showingFrom = sortedSubmissions.length === 0 ? 0 : pageStart + 1;
   const showingTo = sortedSubmissions.length === 0 ? 0 : pageStart + paginatedSubmissions.length;
+  const sortValue = `${sortBy}:${sortOrder}`;
+
+  const handleFormChange = (formId: string) => {
+    onSelectedFormChange(formId || null);
+    setSearchQuery('');
+    setCurrentPage(1);
+  };
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
@@ -73,36 +135,36 @@ export const SubmissionsTab = ({ submissions, onViewSubmission }: SubmissionsTab
   };
 
   const handleExportCSV = () => {
-    const header = ['Name', 'Company', 'Email', 'Phone', 'Status', 'Submitted At'];
+    const header = ['Respons', 'Ringkasan', 'Source', 'Submitted At'];
     const rows = sortedSubmissions.map((submission) => [
-      submission.customerName,
-      submission.company,
-      submission.email,
-      submission.phone,
-      submission.status,
-      new Date(submission.submittedAt).toISOString()
+      `Respons ke-${submission.response_number}`,
+      submission.summary_text,
+      formatSubmissionSourceLabel(submission),
+      formatSubmittedAtExport(submission.submitted_at)
     ]);
 
     const csvContent = [header, ...rows]
       .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
       .join('\n');
 
+    const slug = selectedForm?.name?.trim().replace(/\s+/g, '-').toLowerCase() || selectedFormId || 'form';
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', 'campaign-submissions.csv');
+    link.setAttribute('download', `submissions-${slug}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
 
-  const sortValue = `${sortBy}:${sortOrder}`;
-
   return (
     <section className="space-y-4 pt-5">
       <SubmissionsToolbar
+        forms={forms}
+        selectedFormId={selectedFormId}
+        onFormChange={handleFormChange}
         searchQuery={searchQuery}
         onSearchChange={handleSearchChange}
         onExport={handleExportCSV}
@@ -115,29 +177,57 @@ export const SubmissionsTab = ({ submissions, onViewSubmission }: SubmissionsTab
         onItemsPerPageChange={handleItemsPerPageChange}
       />
 
-      <SubmissionsTable submissions={paginatedSubmissions} onViewSubmission={onViewSubmission} />
+      {selectedForm ? (
+        <div>
+          <h3 className="text-base font-bold text-[#191c1e] sm:text-lg">
+            Submissions — {selectedForm.name}
+          </h3>
+          <p className="mt-1 text-xs text-[#737784] sm:text-sm">
+            {selectedForm.formCategory === 'LEAD_CAPTURE' ? 'Lead capture' : 'General'}
+          </p>
+        </div>
+      ) : null}
 
-      <div className="flex items-center justify-end gap-2">
-        <button
-          type="button"
-          disabled={normalizedCurrentPage === 1}
-          onClick={() => setCurrentPage(normalizedCurrentPage - 1)}
-          className="rounded-md border border-slate-200 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-100 disabled:opacity-40"
-        >
-          Previous
-        </button>
-        <span className="text-xs text-slate-600">
-          Page {normalizedCurrentPage} of {totalPages}
-        </span>
-        <button
-          type="button"
-          disabled={normalizedCurrentPage === totalPages}
-          onClick={() => setCurrentPage(normalizedCurrentPage + 1)}
-          className="rounded-md border border-slate-200 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-100 disabled:opacity-40"
-        >
-          Next
-        </button>
-      </div>
+      {!selectedFormId ? (
+        <div className="rounded-xl border border-dashed border-[#c3c6d5] bg-[#f7f9fb]/50 px-4 py-10 text-center text-sm text-[#737784]">
+          Pilih form untuk melihat submissions.
+        </div>
+      ) : isLoading ? (
+        <div className="rounded-xl border border-[#eceef0] bg-white px-4 py-10 text-center text-sm text-[#737784]">
+          Memuat submissions…
+        </div>
+      ) : loadError ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-6 text-sm text-red-800">{loadError}</div>
+      ) : (
+        <>
+          <SubmissionsTable
+            submissions={paginatedSubmissions}
+            onViewSubmission={(submissionId) => onViewSubmission(selectedFormId, submissionId)}
+          />
+
+          <div className="flex items-center justify-end gap-2">
+            <button
+              type="button"
+              disabled={normalizedCurrentPage === 1}
+              onClick={() => setCurrentPage(normalizedCurrentPage - 1)}
+              className="rounded-md border border-slate-200 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-100 disabled:opacity-40"
+            >
+              Previous
+            </button>
+            <span className="text-xs text-slate-600">
+              Page {normalizedCurrentPage} of {totalPages}
+            </span>
+            <button
+              type="button"
+              disabled={normalizedCurrentPage === totalPages}
+              onClick={() => setCurrentPage(normalizedCurrentPage + 1)}
+              className="rounded-md border border-slate-200 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-100 disabled:opacity-40"
+            >
+              Next
+            </button>
+          </div>
+        </>
+      )}
     </section>
   );
 };

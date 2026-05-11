@@ -6,9 +6,11 @@ import { arrayMove } from '@dnd-kit/sortable';
 interface UseFormBuilderDndInput {
   fieldIds: string[];
   onReorder: (nextFieldIds: string[]) => void;
+  /** true = jangan kirim reorder (mis. Phase A ada field terkunci). */
+  disabled?: boolean;
 }
 
-export const useFormBuilderDnd = ({ fieldIds, onReorder }: UseFormBuilderDndInput) => {
+export const useFormBuilderDnd = ({ fieldIds, onReorder, disabled }: UseFormBuilderDndInput) => {
   const [activeFieldId, setActiveFieldId] = useState<string | null>(null);
   const [overFieldId, setOverFieldId] = useState<string | null>(null);
 
@@ -22,6 +24,11 @@ export const useFormBuilderDnd = ({ fieldIds, onReorder }: UseFormBuilderDndInpu
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
+    if (disabled) {
+      setActiveFieldId(null);
+      setOverFieldId(null);
+      return;
+    }
     const { active, over } = event;
 
     if (!over || active.id === over.id) {

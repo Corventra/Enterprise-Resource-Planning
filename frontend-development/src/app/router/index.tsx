@@ -6,6 +6,8 @@ import { AppShellLayout } from '../layouts/app-shell-layout';
 import { CampaignsPage } from '../../features/campaigns/pages/campaigns-page';
 import { CampaignDetailPage } from '../../features/campaigns/pages/campaign-detail-page';
 import { FormBuilderPage } from '../../features/forms/pages/form-builder-page';
+import { FormPreviewPage } from '../../features/forms/pages/form-preview-page';
+import { PublicFormPage } from '../../features/forms/pages/public-form-page';
 import { BankDataPage } from '../../features/bank-data/pages/bank-data-page';
 import { LeadTrackerPage } from '../../features/lead-tracker/pages/lead-tracker-page';
 import { LeadWorkspacePage } from '../../features/lead-workspace/pages/lead-workspace-page';
@@ -44,6 +46,8 @@ export const AppRouter = () => {
     <Routes>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
+      <Route path="/forms/public/:linkCode" element={<PublicFormPage />} />
+
       <Route element={<GuestGuard />}>
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginPage />} />
@@ -64,8 +68,12 @@ export const AppRouter = () => {
           </Route>
 
           <Route element={<PermissionGuard permissions={[PERMISSIONS.FORM_VIEW, PERMISSIONS.FORM_MANAGE]} />}>
-            <Route path="/forms" element={<FormBuilderPage />} />
+            <Route path="/campaigns/:campaignId/forms/new" element={<FormBuilderPage />} />
+            <Route path="/campaigns/:campaignId/forms/:formId" element={<FormBuilderPage />} />
+            <Route path="/campaigns/:campaignId/forms/:formId/preview" element={<FormPreviewPage />} />
             <Route path="/forms/:formId" element={<FormBuilderPage />} />
+            <Route path="/forms/:formId/preview" element={<FormPreviewPage />} />
+            <Route path="/forms" element={<Navigate to="/campaigns" replace />} />
           </Route>
 
           <Route element={<PermissionGuard permissions={[PERMISSIONS.BANK_DATA_VIEW]} />}>

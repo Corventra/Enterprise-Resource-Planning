@@ -78,7 +78,10 @@ export type CampaignStatus = 'Draft' | 'Active' | 'Paused' | 'Completed';
 
 export type Channel = 'Email' | 'WhatsApp' | 'Instagram' | 'LinkedIn' | 'Website';
 
-export type FormStatus = 'Active' | 'Archived';
+export type FormStatus = 'Active' | 'Archived' | 'Draft' | 'Inactive';
+
+/** Status API form (untuk badge Dijeda, dll.) */
+export type CampaignFormBackendStatus = 'DRAFT' | 'PUBLISHED' | 'INACTIVE';
 
 export interface Form {
   id: string;
@@ -91,7 +94,13 @@ export interface Form {
   createdAt?: string;
   updatedAt?: string;
   createdBy?: string;
+  /** Kode form dari backend (frm-xxx) */
+  formCode?: string;
   shortLinks?: { label: string; url: string }[];
+  /** Mirror backend — untuk badge Dijeda vs Published */
+  backendFormStatus?: CampaignFormBackendStatus;
+  isAcceptingResponses?: boolean;
+  formCategory?: 'LEAD_CAPTURE' | 'GENERAL';
 }
 
 export type SubmissionStatus = 'New' | 'Qualified' | 'Rejected';
