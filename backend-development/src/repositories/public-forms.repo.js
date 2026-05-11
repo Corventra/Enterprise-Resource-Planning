@@ -151,9 +151,8 @@ const insertSubmissionAnswersAndOptionalLead = async ({
         `INSERT INTO leads (
           campaign_id, form_id, submission_id, distribution_link_id, source_type,
           company_name, company_address, pic_name, email, phone_number, desired_services,
-          bank_data_status, lead_status, current_stage, stage_progress, next_action, due_date,
-          processed_by, processed_at, archived_reason_code, archived_reason_note, archived_at
-        ) VALUES (?,?,?,?, 'FORM_LEAD_CAPTURE',?,?,?,?,?, NULL, 'NEW', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)`,
+          bank_data_status
+        ) VALUES (?,?,?,?, 'FORM_LEAD_CAPTURE',?,?,?,?,?, NULL, 'NEW')`,
         [
           campaignId,
           formId,

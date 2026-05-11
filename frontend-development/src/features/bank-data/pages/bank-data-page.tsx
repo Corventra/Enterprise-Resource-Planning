@@ -6,7 +6,9 @@ import { BankDataEmptyState } from '../components/list/bank-data-empty-state';
 import { BankDataFiltersSection } from '../components/list/bank-data-filters';
 import { BankDataSummaryCards } from '../components/list/bank-data-summary-cards';
 import { BankDataTable } from '../components/list/bank-data-table';
+import { BankDataArchiveConfirmDialog } from '../components/modals/bank-data-archive-confirm-dialog';
 import { BankDataEntryDetailModal } from '../components/modals/bank-data-entry-detail-modal';
+import { BankDataProcessConfirmDialog } from '../components/modals/bank-data-process-confirm-dialog';
 import { useBankDataFilters } from '../hooks/use-bank-data-filters';
 import { useBankDataList } from '../hooks/use-bank-data-list';
 import type { BankDataEntry } from '../types/bank-data.types';
@@ -14,8 +16,11 @@ import type { BankDataEntry } from '../types/bank-data.types';
 export const BankDataPage = () => {
   const { can } = useAuth();
   const allowBankDataMutations = can(PERMISSIONS.BANK_DATA_PROCESS);
-  const { entries, isLoading, summary, processEntry, archiveEntry } = useBankDataList();
+  const { entries, isLoading, loadError, summary, processEntry, archiveEntry } = useBankDataList();
   const [selectedEntry, setSelectedEntry] = useState<BankDataEntry | undefined>();
+  const [processTarget, setProcessTarget] = useState<BankDataEntry | undefined>();
+  const [archiveTarget, setArchiveTarget] = useState<BankDataEntry | undefined>();
+  const [mutationBusy, setMutationBusy] = useState(false);
   const {
     filters,
     filteredEntries,
@@ -34,6 +39,28 @@ export const BankDataPage = () => {
 
   const onViewEntry = (entry: BankDataEntry) => {
     setSelectedEntry(entry);
+  };
+
+  const runProcess = async (entry: BankDataEntry) => {
+    setMutationBusy(true);
+    try {
+      await processEntry(entry.id);
+      setProcessTarget(undefined);
+      setSelectedEntry(undefined);
+    } finally {
+      setMutationBusy(false);
+    }
+  };
+
+  const runArchive = async (entry: BankDataEntry) => {
+    setMutationBusy(true);
+    try {
+      await archiveEntry(entry.id);
+      setArchiveTarget(undefined);
+      setSelectedEntry(undefined);
+    } finally {
+      setMutationBusy(false);
+    }
   };
 
   const paginationFooter =
@@ -108,6 +135,8 @@ export const BankDataPage = () => {
         <div className="rounded-xl border border-[#eceef0] bg-white p-4 text-sm text-[#737784] shadow-sm">
           Loading bank data...
         </div>
+      ) : loadError ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 shadow-sm">{loadError}</div>
       ) : filteredEntries.length === 0 ? (
         <BankDataEmptyState onReset={resetFilters} />
       ) : (
@@ -115,12 +144,8 @@ export const BankDataPage = () => {
           entries={paginatedEntries}
           allowMutations={allowBankDataMutations}
           onView={onViewEntry}
-          onProcess={async (entry) => {
-            await processEntry(entry.id);
-          }}
-          onArchive={async (entry) => {
-            await archiveEntry(entry.id);
-          }}
+          onProcess={(entry) => setProcessTarget(entry)}
+          onArchive={(entry) => setArchiveTarget(entry)}
           footer={paginationFooter}
         />
       )}
@@ -130,14 +155,30 @@ export const BankDataPage = () => {
         entry={selectedEntry}
         allowMutations={allowBankDataMutations}
         onClose={() => setSelectedEntry(undefined)}
-        onProcess={async (entry) => {
-          await processEntry(entry.id);
-          setSelectedEntry((prev) => (prev ? { ...prev, status: 'Processed' } : prev));
+        onProcess={(entry) => {
+          setSelectedEntry(undefined);
+          setProcessTarget(entry);
         }}
-        onArchive={async (entry) => {
-          await archiveEntry(entry.id);
-          setSelectedEntry((prev) => (prev ? { ...prev, status: 'Archived' } : prev));
+        onArchive={(entry) => {
+          setSelectedEntry(undefined);
+          setArchiveTarget(entry);
         }}
+      />
+
+      <BankDataProcessConfirmDialog
+        open={Boolean(processTarget)}
+        entry={processTarget}
+        busy={mutationBusy}
+        onClose={() => !mutationBusy && setProcessTarget(undefined)}
+        onConfirm={runProcess}
+      />
+
+      <BankDataArchiveConfirmDialog
+        open={Boolean(archiveTarget)}
+        entry={archiveTarget}
+        busy={mutationBusy}
+        onClose={() => !mutationBusy && setArchiveTarget(undefined)}
+        onConfirm={runArchive}
       />
     </div>
   );

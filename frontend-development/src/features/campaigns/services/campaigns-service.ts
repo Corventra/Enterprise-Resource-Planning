@@ -1,6 +1,5 @@
 import { deleteDraftForm, getCampaignForms } from '../../forms/services/forms-api';
-import { bankDataEntriesMock, submissionsMock } from '../mocks/submissions.mock';
-import type { BankDataEntry, Campaign, Form, Submission } from '../types/campaign.types';
+import type { Campaign, Form } from '../types/campaign.types';
 import {
   archiveCampaignApi,
   createCampaignApi,
@@ -8,11 +7,6 @@ import {
   getCampaigns,
   updateCampaignApi
 } from './campaigns-api';
-
-const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
-
-let submissionsStore: Submission[] = clone(submissionsMock);
-const bankDataStore: BankDataEntry[] = clone(bankDataEntriesMock);
 
 export const campaignsService = {
   async getAll(): Promise<Campaign[]> {
@@ -86,17 +80,5 @@ export const campaignsService = {
 
   async deleteForm(formId: string): Promise<void> {
     await deleteDraftForm(formId);
-  },
-
-  async getBankDataEntries(campaignId: string): Promise<BankDataEntry[]> {
-    return clone(bankDataStore.filter((entry) => entry.campaignId === campaignId));
-  },
-
-  async getSubmissionsByCampaign(campaignId: string): Promise<Submission[]> {
-    return clone(submissionsStore.filter((submission) => submission.campaignId === campaignId));
-  },
-
-  async getSubmissionById(submissionId: string): Promise<Submission | undefined> {
-    return clone(submissionsStore.find((submission) => submission.id === submissionId));
   }
 };
