@@ -12,6 +12,7 @@ const {
   fieldOptionsRouter,
 } = require("./routes/forms.routes");
 const publicFormsRoutes = require("./routes/public-forms.routes");
+const bankDataRoutes = require("./routes/bank-data.routes");
 
 const app = express();
 
@@ -50,6 +51,7 @@ app.use("/api/campaigns", campaignsRoutes);
 app.use("/api/forms", formBuilderRouter);
 app.use("/api/fields", fieldOptionsRouter);
 app.use("/api/public/forms", publicFormsRoutes);
+app.use("/api/bank-data", bankDataRoutes);
 
 // Fallback 404 untuk path /api/* yang tidak match
 app.use("/api", (req, res) => {

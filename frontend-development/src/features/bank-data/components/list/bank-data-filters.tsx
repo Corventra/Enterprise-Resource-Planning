@@ -40,11 +40,11 @@ export const BankDataFiltersSection = ({
           aria-label="Filter by source"
         >
           <option value="All">All Sources</option>
-          <option value="Website">Website</option>
-          <option value="LinkedIn">LinkedIn</option>
+          <option value="Primary">Primary</option>
           <option value="Instagram">Instagram</option>
-          <option value="Email">Email</option>
-          <option value="WhatsApp">WhatsApp</option>
+          <option value="LinkedIn">LinkedIn</option>
+          <option value="TikTok">TikTok</option>
+          <option value="Website">Website</option>
         </select>
 
         <select
