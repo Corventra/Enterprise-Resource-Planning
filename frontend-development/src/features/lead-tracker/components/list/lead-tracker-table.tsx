@@ -11,7 +11,8 @@ import { LeadTrackerTableRowActions } from './lead-tracker-table-row-actions';
 
 interface LeadTrackerTableProps {
   items: LeadTrackerItem[];
-  allowMarkLost?: boolean;
+  allowLeadManage?: boolean;
+  currentUserId?: number | null;
   onView: (item: LeadTrackerItem) => void;
   onMarkLost: (item: LeadTrackerItem) => void;
   footer?: ReactNode;
@@ -56,7 +57,8 @@ const leadStatusClass = (status: LeadPipelineStatus) => {
 
 export const LeadTrackerTable = ({
   items,
-  allowMarkLost = false,
+  allowLeadManage = false,
+  currentUserId = null,
   onView,
   onMarkLost,
   footer
@@ -138,7 +140,13 @@ export const LeadTrackerTable = ({
                   </td>
                   <td className="py-3.5 pl-4 pr-5 align-middle">
                     <LeadTrackerTableRowActions
-                      allowMarkLost={allowMarkLost && item.leadStatus === 'ACTIVE'}
+                      allowMarkLost={
+                        allowLeadManage &&
+                        item.leadStatus === 'ACTIVE' &&
+                        item.processedByUserId != null &&
+                        currentUserId != null &&
+                        item.processedByUserId === currentUserId
+                      }
                       onView={() => onView(item)}
                       onMarkLost={() => onMarkLost(item)}
                     />

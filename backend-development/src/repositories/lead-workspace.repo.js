@@ -205,7 +205,32 @@ const updateWorkspaceDetails = async (leadId, payload, userId) => {
   }
 };
 
+const findLeadProcessedBy = async (leadId) => {
+  const normalizedLeadId = normalizeLeadId(leadId);
+  if (normalizedLeadId == null) {
+    return { ok: false, reason: 'INVALID_ID' };
+  }
+
+  const [rows] = await pool.execute(
+    `SELECT processed_by
+       FROM leads
+      WHERE lead_id = ?
+      LIMIT 1`,
+    [normalizedLeadId]
+  );
+
+  if (rows.length === 0) {
+    return { ok: false, reason: 'NOT_FOUND' };
+  }
+
+  return {
+    ok: true,
+    processedBy: rows[0].processed_by ?? null
+  };
+};
+
 module.exports = {
   findWorkspaceDetail,
+  findLeadProcessedBy,
   updateWorkspaceDetails
 };

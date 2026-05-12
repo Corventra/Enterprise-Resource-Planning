@@ -16,6 +16,7 @@ export const mapLeadTrackerListRow = (row: ApiLeadTrackerListRow): LeadTrackerIt
   currentStage: mapLeadStage(row.current_stage),
   stageProgress: mapStageProgress(row.stage_progress),
   processedBy: row.processed_by_name,
+  processedByUserId: row.processed_by,
   processedAt: row.processed_at,
   nextAction: row.next_action,
   dueDate: row.due_date,

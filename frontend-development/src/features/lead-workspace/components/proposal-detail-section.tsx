@@ -1,6 +1,7 @@
 import { BadgeCheck, Download, FileBadge2, FileText } from 'lucide-react';
+import { useOutletContext } from 'react-router';
 import { useLeadWorkspacePermissions } from '../hooks/use-lead-workspace-permissions';
-import type { LeadWorkspaceProposalItem } from '../types/lead-workspace.types';
+import type { LeadWorkspaceOutletContext, LeadWorkspaceProposalItem } from '../types/lead-workspace.types';
 
 interface ProposalDetailSectionProps {
   proposal?: LeadWorkspaceProposalItem;
@@ -33,7 +34,10 @@ const statusLabelMap = {
 } as const;
 
 export const ProposalDetailSection = ({ proposal }: ProposalDetailSectionProps) => {
-  const { canViewLeadWorkspace, canManageLeadWorkspace, canApproveProposal } = useLeadWorkspacePermissions();
+  const { processedByUserId } = useOutletContext<LeadWorkspaceOutletContext>();
+  const { canViewLeadWorkspace, canManageLeadWorkspace, canApproveProposal } = useLeadWorkspacePermissions({
+    processedByUserId
+  });
   return (
     <aside className="col-span-12 flex flex-col gap-4 lg:col-span-5">
       <div className="flex items-center justify-between">

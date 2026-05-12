@@ -23,6 +23,7 @@ export interface LeadTrackerItem {
   currentStage: LeadStage;
   stageProgress: StageProgress;
   processedBy: string | null;
+  processedByUserId: number | null;
   processedAt: string | null;
   nextAction: string | null;
   dueDate: string | null;

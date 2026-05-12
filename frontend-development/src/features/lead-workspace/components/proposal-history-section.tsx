@@ -1,6 +1,7 @@
 import { Plus } from 'lucide-react';
+import { useOutletContext } from 'react-router';
 import { useLeadWorkspacePermissions } from '../hooks/use-lead-workspace-permissions';
-import type { LeadWorkspaceProposalItem } from '../types/lead-workspace.types';
+import type { LeadWorkspaceOutletContext, LeadWorkspaceProposalItem } from '../types/lead-workspace.types';
 
 interface ProposalHistorySectionProps {
   proposals: LeadWorkspaceProposalItem[];
@@ -21,7 +22,8 @@ const formatDate = (iso: string) => {
 };
 
 export const ProposalHistorySection = ({ proposals, selectedProposalId, onSelectProposal }: ProposalHistorySectionProps) => {
-  const { canManageLeadWorkspace } = useLeadWorkspacePermissions();
+  const { processedByUserId } = useOutletContext<LeadWorkspaceOutletContext>();
+  const { canManageLeadWorkspace } = useLeadWorkspacePermissions({ processedByUserId });
   return (
     <div className="col-span-12 flex flex-col gap-4 lg:col-span-7">
       <div className="flex items-center justify-between">

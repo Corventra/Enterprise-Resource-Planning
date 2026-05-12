@@ -15,7 +15,7 @@ import type { CreateManualLeadPayload, LeadTrackerItem, MarkLeadLostPayload } fr
 
 export const LeadTrackerPage = () => {
   const navigate = useNavigate();
-  const { can } = useAuth();
+  const { can, user } = useAuth();
   const allowLeadManage = can(PERMISSIONS.LEAD_MANAGE);
   const { items, isLoading, loadError, summary, createManualLead, markLeadLost } = useLeadTrackerList();
   const [addManualOpen, setAddManualOpen] = useState(false);
@@ -146,7 +146,8 @@ export const LeadTrackerPage = () => {
       ) : (
         <LeadTrackerTable
           items={paginatedItems}
-          allowMarkLost={allowLeadManage}
+          allowLeadManage={allowLeadManage}
+          currentUserId={user?.id ?? null}
           onView={(item) => navigate(`/lead-workspace/${item.id}`)}
           onMarkLost={(item) => setLostTarget(item)}
           footer={paginationFooter}

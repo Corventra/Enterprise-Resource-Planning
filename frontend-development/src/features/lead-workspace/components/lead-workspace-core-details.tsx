@@ -26,7 +26,9 @@ const formatDate = (iso: string | null) => {
 };
 
 export const LeadWorkspaceCoreDetails = ({ workspace, onEdit }: LeadWorkspaceCoreDetailsProps) => {
-  const { canManageLeadWorkspace } = useLeadWorkspacePermissions();
+  const { canManageLeadWorkspace } = useLeadWorkspacePermissions({
+    processedByUserId: workspace.processedByUserId
+  });
 
   return (
     <section className="relative overflow-hidden rounded-xl bg-[linear-gradient(135deg,#001f5c_0%,#003c90_45%,#1e63d6_100%)] p-6 text-white shadow-sm lg:col-span-8">
