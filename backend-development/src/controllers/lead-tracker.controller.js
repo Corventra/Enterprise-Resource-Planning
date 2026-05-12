@@ -1,4 +1,5 @@
 const leadTrackerRepo = require('../repositories/lead-tracker.repo');
+const { ensureLeadWorkspaceOperator } = require('../utils/lead-workspace-operator');
 const { ValidationError, requireString, requireEmail } = require('../utils/validation');
 
 const sendError = (res, e) => {
@@ -90,6 +91,7 @@ const markLost = async (req, res) => {
     const userId = getUserIdFromRequest(req, res);
     if (userId == null) return undefined;
     const leadId = requirePositiveInt(req.params.leadId, 'Lead ID');
+    if (!(await ensureLeadWorkspaceOperator(leadId, userId, res))) return undefined;
     const payload = parseMarkLostPayload(req.body || {});
     const result = await leadTrackerRepo.markLeadLost(leadId, payload, userId);
     if (!result.ok) {

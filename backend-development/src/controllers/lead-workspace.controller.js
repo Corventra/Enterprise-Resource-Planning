@@ -1,4 +1,5 @@
 const leadWorkspaceRepo = require('../repositories/lead-workspace.repo');
+const { ensureLeadWorkspaceOperator } = require('../utils/lead-workspace-operator');
 const { ValidationError, requireString, requireEmail } = require('../utils/validation');
 
 const sendError = (res, e) => {
@@ -85,6 +86,7 @@ const updateDetails = async (req, res) => {
     if (userId == null) return undefined;
     const leadId = requireLeadIdParam(req, res);
     if (leadId == null) return undefined;
+    if (!(await ensureLeadWorkspaceOperator(leadId, userId, res))) return undefined;
     const payload = parseDetailsPayload(req.body || {});
     const result = await leadWorkspaceRepo.updateWorkspaceDetails(leadId, payload, userId);
     if (!result.ok) {

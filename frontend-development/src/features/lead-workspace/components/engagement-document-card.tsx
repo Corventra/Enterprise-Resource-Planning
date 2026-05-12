@@ -1,6 +1,7 @@
 import { FileText, Upload } from 'lucide-react';
+import { useOutletContext } from 'react-router';
 import { useLeadWorkspacePermissions } from '../hooks/use-lead-workspace-permissions';
-import type { LeadWorkspaceEngagementLetterItem } from '../types/lead-workspace.types';
+import type { LeadWorkspaceEngagementLetterItem, LeadWorkspaceOutletContext } from '../types/lead-workspace.types';
 
 interface EngagementDocumentCardProps {
   engagementLetter?: LeadWorkspaceEngagementLetterItem;
@@ -14,7 +15,8 @@ const formatDateTime = (iso?: string) => {
 };
 
 export const EngagementDocumentCard = ({ engagementLetter }: EngagementDocumentCardProps) => {
-  const { canManageLeadWorkspace } = useLeadWorkspacePermissions();
+  const { processedByUserId } = useOutletContext<LeadWorkspaceOutletContext>();
+  const { canManageLeadWorkspace } = useLeadWorkspacePermissions({ processedByUserId });
   if (!engagementLetter) return null;
 
   const hasUploadedDocument = Boolean(engagementLetter.document.uploadedFileName);

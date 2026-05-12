@@ -14,6 +14,7 @@ export const mapLeadWorkspaceDetailRow = (row: ApiLeadWorkspaceDetailRow): LeadW
   leadSource: row.lead_source_label,
   processedAt: row.processed_at,
   processedBy: row.processed_by_name,
+  processedByUserId: row.processed_by,
   updatedAt: row.updated_at,
   activityLogs: (row.activity_logs ?? []).map(mapLeadWorkspaceActivityLogRow)
 });

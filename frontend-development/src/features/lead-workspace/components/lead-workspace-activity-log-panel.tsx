@@ -13,6 +13,8 @@ interface LeadWorkspaceActivityLogPanelProps {
   loadError?: string | null;
 }
 
+const activityLogPanelBodyClassName = 'min-h-0 flex-1 overflow-y-auto pr-0.5';
+
 const formatDateTime = (iso: string) => {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '-';
@@ -88,80 +90,80 @@ const resolveTimelineStyle = (item: LeadWorkspaceActivityLogItem) => {
   };
 };
 
+const renderLoadingState = () => (
+  <div className="space-y-3">
+    {Array.from({ length: 4 }).map((_, index) => (
+      <div key={index} className="flex gap-2.5">
+        <div className="h-7 w-7 animate-pulse rounded-full bg-[#e6e8ea]" />
+        <div className="min-w-0 flex-1">
+          <div className="mb-1 h-3 w-2/3 animate-pulse rounded bg-[#d9dde2]" />
+          <div className="mb-1 h-2.5 w-1/2 animate-pulse rounded bg-[#e6e8ea]" />
+          <div className="h-2.5 w-full animate-pulse rounded bg-[#eef0f2]" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 export const LeadWorkspaceActivityLogPanel = ({
   items,
   isLoading = false,
   loadError = null,
 }: LeadWorkspaceActivityLogPanelProps) => {
   return (
-    <section className="rounded-xl bg-white p-5 shadow-sm ring-1 ring-[#eceef0] lg:col-span-4">
-      <div className="mb-4">
+    <section className="flex min-h-0 flex-col overflow-hidden rounded-xl bg-white p-5 shadow-sm ring-1 ring-[#eceef0] lg:col-span-4 lg:h-0 lg:min-h-full">
+      <div className="shrink-0 pb-3">
         <h3 className="text-base font-bold text-[#191c1e]">Activity Log</h3>
-        <p className="mt-1 text-[11px] text-[#737784]">Aktivitas terbaru lead</p>
+        <p className="mt-0.5 text-[11px] text-[#737784]">Aktivitas terbaru lead</p>
       </div>
 
-      {isLoading ? (
-        <div className="space-y-4">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="flex gap-3">
-              <div className="h-8 w-8 animate-pulse rounded-full bg-[#e6e8ea]" />
-              <div className="flex-1">
-                <div className="mb-1.5 h-3 w-2/3 animate-pulse rounded bg-[#d9dde2]" />
-                <div className="mb-1.5 h-2.5 w-1/2 animate-pulse rounded bg-[#e6e8ea]" />
-                <div className="h-2.5 w-full animate-pulse rounded bg-[#eef0f2]" />
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : loadError ? (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-          {loadError}
-        </p>
-      ) : items.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-[#d9dde2] px-4 py-5 text-center text-xs text-[#737784]">
-          Belum ada aktivitas
-        </p>
-      ) : (
-        <ul className="space-y-0">
-          {items.map((item, index) => {
-            const { icon: Icon, circleClass, lineClass } = resolveTimelineStyle(item);
+      <div className={activityLogPanelBodyClassName}>
+        {isLoading ? (
+          renderLoadingState()
+        ) : loadError ? (
+          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            {loadError}
+          </p>
+        ) : items.length === 0 ? (
+          <p className="rounded-lg border border-dashed border-[#d9dde2] px-4 py-5 text-center text-xs text-[#737784]">
+            Belum ada aktivitas
+          </p>
+        ) : (
+          <ul className="space-y-0">
+            {items.map((item, index) => {
+              const { icon: Icon, circleClass, lineClass } = resolveTimelineStyle(item);
 
-            return (
-              <li key={item.id} className="relative pl-12 pb-5 last:pb-0">
-                {index !== items.length - 1 ? (
-                  <span
-                    className={`absolute left-[15px] top-8 bottom-0 w-px ${lineClass}`}
-                    aria-hidden="true"
-                  />
-                ) : null}
-
-                <span
-                  className={`absolute left-0 top-0 inline-flex h-8 w-8 items-center justify-center rounded-full ${circleClass}`}
-                  aria-hidden="true"
-                >
-                  <Icon className="h-4 w-4" />
-                </span>
-
-                <div>
-                  <p className="text-[14px] font-bold leading-tight text-[#191c1e]">
-                    {item.title}
-                  </p>
-
-                  <p className="mt-0.5 text-[11px] text-[#6b7280]">
-                    {resolveMetaText(item)}
-                  </p>
-
-                  {item.description ? (
-                    <p className="mt-1.5 text-[12px] leading-relaxed text-[#434653]">
-                      {item.description}
-                    </p>
+              return (
+                <li key={item.id} className="relative pl-10 pb-3.5 last:pb-0">
+                  {index !== items.length - 1 ? (
+                    <span
+                      className={`absolute left-[13px] top-7 bottom-0 w-px ${lineClass}`}
+                      aria-hidden="true"
+                    />
                   ) : null}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+
+                  <span
+                    className={`absolute left-0 top-0 inline-flex h-7 w-7 items-center justify-center rounded-full ${circleClass}`}
+                    aria-hidden="true"
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                  </span>
+
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-bold leading-snug text-[#191c1e]">{item.title}</p>
+
+                    <p className="mt-0.5 text-[10px] text-[#6b7280]">{resolveMetaText(item)}</p>
+
+                    {item.description ? (
+                      <p className="mt-1 text-[11px] leading-snug text-[#434653]">{item.description}</p>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
     </section>
   );
 };

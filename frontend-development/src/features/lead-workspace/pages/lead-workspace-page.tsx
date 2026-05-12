@@ -8,6 +8,7 @@ import { LeadWorkspaceCoreDetails } from '../components/lead-workspace-core-deta
 import { LeadWorkspaceActivityLogPanel } from '../components/lead-workspace-activity-log-panel';
 import { LeadWorkspaceTabs } from '../components/lead-workspace-tabs';
 import { useLeadWorkspace } from '../hooks/use-lead-workspace';
+import { useLeadWorkspacePermissions } from '../hooks/use-lead-workspace-permissions';
 import type { LeadWorkspaceOutletContext, UpdateLeadWorkspaceDetailsPayload } from '../types/lead-workspace.types';
 import { buildLeadWorkspacePreview } from '../utils/lead-workspace-preview';
 import { formatLeadDisplayId } from '../utils/format-lead-display-id';
@@ -16,7 +17,7 @@ export const LeadWorkspacePage = () => {
   const navigate = useNavigate();
   const { leadId } = useParams();
   const { can } = useAuth();
-  const { workspace, isLoading, loadError, updateDetails } = useLeadWorkspace(leadId);
+  const { workspace, isLoading, loadError, updateDetails, refetch } = useLeadWorkspace(leadId);
   const [editOpen, setEditOpen] = useState(false);
   const [saveBusy, setSaveBusy] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -24,6 +25,9 @@ export const LeadWorkspacePage = () => {
     () => (workspace ? buildLeadWorkspacePreview(workspace) : undefined),
     [workspace]
   );
+  const { canViewLeadWorkspace, canManageLeadWorkspace } = useLeadWorkspacePermissions({
+    processedByUserId: workspace?.processedByUserId ?? null
+  });
 
   useEffect(() => {
     if (!successMessage) return;
@@ -115,14 +119,27 @@ export const LeadWorkspacePage = () => {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+      {canViewLeadWorkspace && !canManageLeadWorkspace ? (
+        <p className="text-xs text-[#737784]">Workspace ini dikelola oleh BD yang memproses lead.</p>
+      ) : null}
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-stretch">
         <LeadWorkspaceCoreDetails workspace={workspace} onEdit={() => setEditOpen(true)} />
         <LeadWorkspaceActivityLogPanel items={workspace.activityLogs} />
       </div>
 
       <LeadWorkspaceTabs leadId={leadId} />
 
-      <Outlet context={{ workspace: workspacePreview } satisfies LeadWorkspaceOutletContext} />
+      <Outlet
+        context={
+          {
+            workspace: workspacePreview,
+            leadId,
+            processedByUserId: workspace.processedByUserId,
+            refetchWorkspace: refetch
+          } satisfies LeadWorkspaceOutletContext
+        }
+      />
 
       <EditLeadWorkspaceCoreDetailsDialog
         open={editOpen}

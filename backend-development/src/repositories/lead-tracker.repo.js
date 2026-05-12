@@ -36,6 +36,7 @@ const LEAD_TRACKER_LIST_SELECT = `
       l.due_date,
       l.lead_status,
       l.processed_at,
+      l.processed_by,
       up.name AS processed_by_name
     FROM leads l
     LEFT JOIN users up ON up.id = l.processed_by
@@ -57,6 +58,7 @@ const mapListRow = (row) => ({
   next_action: row.next_action,
   due_date: row.due_date,
   lead_status: row.lead_status,
+  processed_by: row.processed_by ?? null,
   processed_by_name: row.processed_by_name ?? null,
   processed_at: row.processed_at ?? null
 });

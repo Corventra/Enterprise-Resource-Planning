@@ -11,6 +11,7 @@ export interface ApiLeadTrackerListRow {
   next_action: string | null;
   due_date: string | null;
   lead_status: 'ACTIVE' | 'WON' | 'LOST';
+  processed_by: number | null;
   processed_by_name: string | null;
   processed_at: string | null;
 }

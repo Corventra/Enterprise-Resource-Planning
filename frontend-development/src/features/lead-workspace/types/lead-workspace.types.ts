@@ -14,6 +14,7 @@ export interface LeadWorkspaceDetail {
   leadSource: string;
   processedAt: string | null;
   processedBy: string | null;
+  processedByUserId: number | null;
   updatedAt: string | null;
   activityLogs: LeadWorkspaceActivityLogItem[];
 }
@@ -29,6 +30,9 @@ export interface UpdateLeadWorkspaceDetailsPayload {
 
 export type LeadWorkspaceOutletContext = {
   workspace: LeadWorkspace;
+  leadId: string;
+  processedByUserId: number | null;
+  refetchWorkspace: () => Promise<void>;
 };
 
 export interface LeadWorkspaceMeetingItem {
