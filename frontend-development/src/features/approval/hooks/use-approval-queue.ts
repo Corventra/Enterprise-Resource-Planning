@@ -10,9 +10,14 @@ export const useApprovalQueue = () => {
 
   const fetchItems = useCallback(async () => {
     setIsLoading(true);
-    const data = await approvalService.getAll();
-    setItems(data);
-    setIsLoading(false);
+    try {
+      const data = await approvalService.getAll();
+      setItems(data);
+    } catch {
+      setItems([]);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   useEffect(() => {

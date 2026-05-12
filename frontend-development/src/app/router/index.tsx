@@ -21,6 +21,9 @@ import { InvoicesPage } from '../../features/invoices/pages/invoices-page';
 import { InvoiceDetailPage } from '../../features/invoices/pages/invoice-detail-page';
 import { DocumentCenterPage } from '../../features/document-center/pages/document-center-page';
 import { ApprovalCenterPage } from '../../features/approval/pages/approval-center-page';
+import { ApprovalEngagementLetterPage } from '../../features/approval/pages/approval-engagement-letter-page';
+import { ApprovalHandoverPage } from '../../features/approval/pages/approval-handover-page';
+import { ApprovalProposalPage } from '../../features/approval/pages/approval-proposal-page';
 import { ProjectsPage } from '../../features/projects/pages/projects-page';
 import { ProjectDetailPage } from '../../features/projects/pages/project-detail-page';
 import { ProjectOverviewPage } from '../../features/projects/pages/project-overview-page';
@@ -111,7 +114,12 @@ export const AppRouter = () => {
           </Route>
 
           <Route element={<PermissionGuard roles={[ROLES.CEO, ROLES.COO]} />}>
-            <Route path="/approval" element={<ApprovalCenterPage />} />
+            <Route path="/approval" element={<ApprovalCenterPage />}>
+              <Route index element={<Navigate to="proposal" replace />} />
+              <Route path="proposal" element={<ApprovalProposalPage />} />
+              <Route path="engagement-letter" element={<ApprovalEngagementLetterPage />} />
+              <Route path="handover" element={<ApprovalHandoverPage />} />
+            </Route>
           </Route>
 
           <Route element={<PermissionGuard permissions={[PERMISSIONS.PROJECT_VIEW]} />}>
