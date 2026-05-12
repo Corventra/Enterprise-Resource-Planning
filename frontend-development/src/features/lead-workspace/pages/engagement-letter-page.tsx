@@ -3,7 +3,7 @@ import { useOutletContext } from 'react-router';
 import { EngagementDocumentCard } from '../components/engagement-document-card';
 import { EngagementLetterHistorySection } from '../components/engagement-letter-history-section';
 import { EngagementLetterInfoCard } from '../components/engagement-letter-info-card';
-import type { LeadWorkspaceOutletContext } from './lead-workspace-page';
+import type { LeadWorkspaceOutletContext } from '../types/lead-workspace.types';
 
 export const EngagementLetterPage = () => {
   const { workspace } = useOutletContext<LeadWorkspaceOutletContext>();

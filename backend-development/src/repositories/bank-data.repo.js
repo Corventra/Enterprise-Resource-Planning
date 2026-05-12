@@ -1,6 +1,7 @@
 const { pool } = require('../config/db');
 const { formatLeadSourceLabel } = require('../utils/lead-source-label');
 const { formatAnswerDisplayValue } = require('../utils/submission-summary');
+const { LEAD_ACTIVITY_TYPES } = require('../constants/lead-activity-types');
 
 const BANK_DATA_LIST_SELECT = `
   SELECT
@@ -184,7 +185,7 @@ const processLead = async (leadId, userId) => {
     }
     await insertActivityLog(conn, {
       leadId,
-      activityType: 'BANK_DATA_PROCESSED',
+      activityType: LEAD_ACTIVITY_TYPES.BANK_DATA_PROCESSED,
       title: 'Lead diproses dari Bank Data',
       description: 'Lead dipindahkan ke Lead Tracker dan tahap awal diset ke Meeting.',
       createdBy: userId
@@ -226,7 +227,7 @@ const archiveLead = async (leadId, userId) => {
     }
     await insertActivityLog(conn, {
       leadId,
-      activityType: 'BANK_DATA_ARCHIVED',
+      activityType: LEAD_ACTIVITY_TYPES.BANK_DATA_ARCHIVED,
       title: 'Lead diarsipkan dari Bank Data',
       description: 'Lead tidak dilanjutkan ke Lead Tracker.',
       createdBy: userId

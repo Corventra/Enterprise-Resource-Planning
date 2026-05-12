@@ -13,6 +13,8 @@ const {
 } = require("./routes/forms.routes");
 const publicFormsRoutes = require("./routes/public-forms.routes");
 const bankDataRoutes = require("./routes/bank-data.routes");
+const leadTrackerRoutes = require("./routes/lead-tracker.routes");
+const leadWorkspaceRoutes = require("./routes/lead-workspace.routes");
 
 const app = express();
 
@@ -52,6 +54,8 @@ app.use("/api/forms", formBuilderRouter);
 app.use("/api/fields", fieldOptionsRouter);
 app.use("/api/public/forms", publicFormsRoutes);
 app.use("/api/bank-data", bankDataRoutes);
+app.use("/api/lead-tracker", leadTrackerRoutes);
+app.use("/api/lead-workspace", leadWorkspaceRoutes);
 
 // Fallback 404 untuk path /api/* yang tidak match
 app.use("/api", (req, res) => {

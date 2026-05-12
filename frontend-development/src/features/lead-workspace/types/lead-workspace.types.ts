@@ -1,4 +1,35 @@
+import type { LeadWorkspaceActivityLogItem } from './lead-activity.types';
+
 export type WorkspaceTab = 'meeting' | 'proposal' | 'engagement-letter';
+
+export interface LeadWorkspaceDetail {
+  id: string;
+  leadCode: string;
+  companyName: string;
+  address: string;
+  desiredServices: string | null;
+  companyPicName: string;
+  companyPicPhone: string;
+  companyPicEmail: string;
+  leadSource: string;
+  processedAt: string | null;
+  processedBy: string | null;
+  updatedAt: string | null;
+  activityLogs: LeadWorkspaceActivityLogItem[];
+}
+
+export interface UpdateLeadWorkspaceDetailsPayload {
+  companyName: string;
+  companyAddress: string;
+  picName: string;
+  email: string;
+  phoneNumber: string;
+  desiredServices?: string;
+}
+
+export type LeadWorkspaceOutletContext = {
+  workspace: LeadWorkspace;
+};
 
 export interface LeadWorkspaceMeetingItem {
   id: string;

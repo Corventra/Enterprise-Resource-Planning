@@ -4,7 +4,7 @@ import type { LeadTrackerFilters, LeadTrackerItem } from '../types/lead-tracker.
 const defaultFilters: LeadTrackerFilters = {
   search: '',
   stage: 'All',
-  status: 'All'
+  status: 'ACTIVE'
 };
 
 export const useLeadTrackerFilters = (items: LeadTrackerItem[], pageSize = 6) => {
@@ -16,11 +16,11 @@ export const useLeadTrackerFilters = (items: LeadTrackerItem[], pageSize = 6) =>
       const q = filters.search.toLowerCase().trim();
       const matchSearch =
         q === '' ||
-        item.company.toLowerCase().includes(q) ||
-        item.processedBy.toLowerCase().includes(q) ||
-        item.nextAction.toLowerCase().includes(q);
+        item.companyName.toLowerCase().includes(q) ||
+        item.picName.toLowerCase().includes(q) ||
+        item.email.toLowerCase().includes(q);
       const matchStage = filters.stage === 'All' || item.currentStage === filters.stage;
-      const matchStatus = filters.status === 'All' || item.status === filters.status;
+      const matchStatus = filters.status === 'All' || item.leadStatus === filters.status;
       return matchSearch && matchStage && matchStatus;
     });
   }, [items, filters]);
