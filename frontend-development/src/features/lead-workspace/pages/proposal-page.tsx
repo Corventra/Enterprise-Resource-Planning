@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router';
 import { ProposalDetailSection } from '../components/proposal-detail-section';
 import { ProposalHistorySection } from '../components/proposal-history-section';
-import type { LeadWorkspaceOutletContext } from './lead-workspace-page';
+import type { LeadWorkspaceOutletContext } from '../types/lead-workspace.types';
 
 export const ProposalPage = () => {
   const { workspace } = useOutletContext<LeadWorkspaceOutletContext>();

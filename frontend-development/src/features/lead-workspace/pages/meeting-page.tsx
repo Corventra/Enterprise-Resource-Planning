@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router';
 import { MeetingHistorySection } from '../components/meeting-history-section';
 import { MeetingMinutesSection } from '../components/meeting-minutes-section';
-import type { LeadWorkspaceOutletContext } from './lead-workspace-page';
+import type { LeadWorkspaceOutletContext } from '../types/lead-workspace.types';
 
 export const MeetingPage = () => {
   const { workspace } = useOutletContext<LeadWorkspaceOutletContext>();

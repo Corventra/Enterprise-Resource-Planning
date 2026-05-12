@@ -1,11 +1,11 @@
-import { Bell, Edit3, ListChecks, Send } from 'lucide-react';
+import { CheckCircle2, ListChecks, Trophy, XCircle } from 'lucide-react';
 
 interface LeadTrackerSummaryCardsProps {
   summary: {
     totalLeads: number;
-    needFollowUp: number;
-    needRevision: number;
-    readyForHandover: number;
+    activeLeads: number;
+    wonLeads: number;
+    lostLeads: number;
   };
 }
 
@@ -19,28 +19,28 @@ const cards = [
     iconClass: 'text-[#003c90] bg-[#003c90]/10'
   },
   {
-    label: 'Need Follow Up',
-    valueKey: 'needFollowUp' as const,
-    hint: 'Attention',
-    hintClass: 'text-[#b91c1c]',
-    icon: Bell,
-    iconClass: 'text-[#b91c1c] bg-red-100'
+    label: 'Active',
+    valueKey: 'activeLeads' as const,
+    hint: 'In progress',
+    hintClass: 'text-[#00419c]',
+    icon: CheckCircle2,
+    iconClass: 'text-[#00419c] bg-[#d9e2ff]'
   },
   {
-    label: 'Need Revision',
-    valueKey: 'needRevision' as const,
-    hint: 'Update',
-    hintClass: 'text-[#a16207]',
-    icon: Edit3,
-    iconClass: 'text-[#a16207] bg-amber-100'
-  },
-  {
-    label: 'Ready for Handover',
-    valueKey: 'readyForHandover' as const,
-    hint: 'Hand-off',
+    label: 'Won',
+    valueKey: 'wonLeads' as const,
+    hint: 'Closed won',
     hintClass: 'text-[#006544]',
-    icon: Send,
+    icon: Trophy,
     iconClass: 'text-[#004b31] bg-[#4edea3]/20'
+  },
+  {
+    label: 'Lost',
+    valueKey: 'lostLeads' as const,
+    hint: 'Closed lost',
+    hintClass: 'text-[#737784]',
+    icon: XCircle,
+    iconClass: 'text-[#737784] bg-[#e0e3e5]'
   }
 ];
 
