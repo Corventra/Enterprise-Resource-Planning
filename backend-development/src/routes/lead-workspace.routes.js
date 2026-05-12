@@ -11,11 +11,32 @@ const {
   createMinutes,
   updateMinutes
 } = require('../controllers/lead-workspace-meetings.controller');
+const {
+  getProposal,
+  createProposal,
+  updateProposal,
+  deleteProposal,
+  submitProposal,
+  markProposalSent,
+  markProposalResponded
+} = require('../controllers/lead-workspace-proposals.controller');
+const {
+  uploadProposalDocument,
+  uploadOptionalProposalDocument
+} = require('../middleware/upload-proposal-document');
 
 const viewStack = [authenticate, requirePermission('LEAD_VIEW')];
 const manageStack = [authenticate, requirePermission('LEAD_MANAGE')];
 
 const router = express.Router();
+
+router.get('/:leadId/proposal', ...viewStack, getProposal);
+router.post('/:leadId/proposal', ...manageStack, uploadProposalDocument, createProposal);
+router.patch('/:leadId/proposal/:proposalId', ...manageStack, uploadOptionalProposalDocument, updateProposal);
+router.delete('/:leadId/proposal/:proposalId', ...manageStack, deleteProposal);
+router.post('/:leadId/proposal/:proposalId/submit', ...manageStack, submitProposal);
+router.post('/:leadId/proposal/:proposalId/sent', ...manageStack, markProposalSent);
+router.post('/:leadId/proposal/:proposalId/responded', ...manageStack, markProposalResponded);
 
 router.get('/:leadId/meetings', ...viewStack, listMeetings);
 router.post('/:leadId/meetings', ...manageStack, createMeeting);
