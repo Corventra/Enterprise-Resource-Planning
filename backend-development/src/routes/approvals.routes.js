@@ -7,10 +7,22 @@ const {
   approve,
   reject
 } = require('../controllers/proposal-approvals.controller');
+const {
+  listPending: listPendingEngagementLetters,
+  getDetail: getEngagementLetterApprovalDetail,
+  approve: approveEngagementLetter,
+  reject: rejectEngagementLetter
+} = require('../controllers/engagement-letter-approvals.controller');
 
 const approvalStack = [authenticate, requirePermission('PROPOSAL_APPROVE')];
+const engagementLetterApprovalStack = [authenticate, requirePermission('ENGAGEMENT_LETTER_APPROVE')];
 
 const router = express.Router();
+
+router.get('/engagement-letters/pending', ...engagementLetterApprovalStack, listPendingEngagementLetters);
+router.post('/engagement-letters/:engagementId/approve', ...engagementLetterApprovalStack, approveEngagementLetter);
+router.post('/engagement-letters/:engagementId/reject', ...engagementLetterApprovalStack, rejectEngagementLetter);
+router.get('/engagement-letters/:engagementId', ...engagementLetterApprovalStack, getEngagementLetterApprovalDetail);
 
 router.get('/proposals/pending', ...approvalStack, listPending);
 router.get('/proposals/:proposalId', ...approvalStack, getDetail);

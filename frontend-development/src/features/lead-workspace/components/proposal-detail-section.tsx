@@ -1,4 +1,4 @@
-import { Download, FileText, MessageSquareText } from 'lucide-react';
+import { Download, FileStack, FileText, Info } from 'lucide-react';
 import { useOutletContext } from 'react-router';
 import { getApiOrigin } from '../../../services/api-client';
 import { useLeadWorkspacePermissions } from '../hooks/use-lead-workspace-permissions';
@@ -8,6 +8,8 @@ import type { LeadWorkspaceProposalView } from '../types/lead-proposals.types';
 interface ProposalDetailSectionProps {
   proposal: LeadWorkspaceProposalView | null;
   onEditProposal: () => void;
+  /** Dipakai saat belum ada proposal (empty state selaras Engagement Letter). */
+  onCreateProposal?: () => void;
   onDeleteDraft: () => void;
   deleteBusy?: boolean;
   processedByUserId?: number | null;
@@ -20,7 +22,7 @@ interface ProposalDetailSectionProps {
 const formatDateTime = (iso: string | null) => {
   if (!iso) return '-';
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
+  if (Number.isNaN(d.getTime())) return '-';
   return d.toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
 
@@ -48,6 +50,7 @@ const statusClassMap = {
 export const ProposalDetailSection = ({
   proposal,
   onEditProposal,
+  onCreateProposal,
   onDeleteDraft,
   deleteBusy = false,
   processedByUserId: processedByUserIdProp,
@@ -75,133 +78,147 @@ export const ProposalDetailSection = ({
   return (
     <aside className={`flex flex-col gap-4 ${withGridColumn ? 'col-span-12 lg:col-span-5' : ''}`}>
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-xl font-bold tracking-tight text-[#191c1e]">Proposal Detail</h2>
+        <h2 className="text-xl font-bold tracking-tight text-[#191c1e]">Proposal detail</h2>
       </div>
 
-      <div className="flex flex-1 flex-col overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-[#eceef0]">
+      <div className="flex max-h-[min(70vh,720px)] flex-1 flex-col overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-[#eceef0]">
         {proposal ? (
-          <div className="flex flex-1 flex-col">
-            <div className="bg-gradient-to-r from-[#f2f4f6] to-[#f2f4f6]/40 p-5">
-              <div className="mb-3 flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="text-lg font-bold leading-tight text-[#191c1e]">{proposal.serviceName}</h3>
-                  <p className="mt-1 text-xs text-[#434653]">Proposal ID: #{proposal.id}</p>
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <div className="flex-1 space-y-0 overflow-y-auto">
+              <section className="border-b border-[#eceef0] p-5">
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <h3 className="flex items-center gap-2 text-base font-bold text-[#191c1e]">
+                    <Info className="h-5 w-5 shrink-0 text-[#003c90]" />
+                    Ringkasan proposal
+                  </h3>
+                  <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold ${statusClassMap[proposal.status]}`}>
+                    {statusLabelMap[proposal.status]}
+                  </span>
                 </div>
-                <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${statusClassMap[proposal.status]}`}>
-                  {statusLabelMap[proposal.status]}
-                </span>
-              </div>
-              <p className="text-xs text-[#515f74]">
-                {proposal.serviceClassName} - {proposal.issuerCompany}
-              </p>
-            </div>
-
-            <div className="flex-1 space-y-5 overflow-y-auto px-6 py-6">
-              {isNeedRevision ? (
-                <section className="rounded-xl border border-orange-200 bg-orange-50 p-4">
-                  <div className="flex gap-3">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white ring-1 ring-orange-200">
-                      <MessageSquareText className="h-4 w-4 text-[#c2410c]" strokeWidth={2} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h4 className="mb-2 text-xs font-black uppercase text-[#7c2d12]">
-                        Catatan Revisi dari CEO
-                      </h4>
-                      <p className="whitespace-pre-wrap font-semibold text-sm leading-relaxed text-[#7c2d12]">
-                        {revisionNote || '-'}
-                      </p>
-                    </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#737784]">Service</p>
+                    <p className="mt-1 text-sm font-semibold text-[#191c1e]">{proposal.serviceName}</p>
                   </div>
-                </section>
-              ) : null}
-
-              <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <p className="text-[10px] font-bold uppercase text-[#737784]">Service Class</p>
-                  <p className="text-sm font-semibold text-[#191c1e]">{proposal.serviceClassName}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold uppercase text-[#737784]">Service</p>
-                  <p className="text-sm font-semibold text-[#191c1e]">{proposal.serviceName}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold uppercase text-[#737784]">Issuer Company</p>
-                  <p className="text-sm font-semibold text-[#191c1e]">{proposal.issuerCompany}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold uppercase text-[#737784]">Proposal Fee</p>
-                  <p className="text-sm font-semibold text-[#191c1e]">{formatCurrency(proposal.proposalFee)}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold uppercase text-[#737784]">Discount</p>
-                  <p className="text-sm font-semibold text-[#ba1a1a]">{formatCurrency(proposal.discountAmount)}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold uppercase text-[#737784]">Net Fee</p>
-                  <p className="text-sm font-semibold text-[#004b31]">
-                    {formatCurrency(proposal.proposalFee - proposal.discountAmount)}
-                  </p>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#737784]">Proposal ID</p>
+                    <p className="mt-1 text-sm font-semibold text-[#191c1e]">#{proposal.id}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#737784]">Service class</p>
+                    <p className="mt-1 text-sm font-semibold text-[#191c1e]">{proposal.serviceClassName}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#737784]">Issuer company</p>
+                    <p className="mt-1 text-sm font-semibold text-[#191c1e]">{proposal.issuerCompany}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#737784]">Proposal fee</p>
+                    <p className="mt-1 text-sm font-semibold text-[#191c1e]">{formatCurrency(proposal.proposalFee)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#737784]">Discount</p>
+                    <p className="mt-1 text-sm font-semibold text-[#ba1a1a]">{formatCurrency(proposal.discountAmount)}</p>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#737784]">Net fee</p>
+                    <p className="mt-1 text-sm font-bold text-[#004b31]">
+                      {formatCurrency(proposal.proposalFee - proposal.discountAmount)}
+                    </p>
+                  </div>
                 </div>
               </section>
 
-              <section className="rounded-xl border border-[#c3c6d5]/30 p-4">
-                <h4 className="mb-3 text-xs font-black uppercase tracking-widest text-[#434653]">Sub Contract</h4>
+              <section className="border-b border-[#eceef0] p-5">
+                <div className="mb-3 flex items-center gap-2">
+                  <FileStack className="h-4 w-4 text-[#003c90]" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-[#191c1e]">Sub contract</h4>
+                </div>
                 {proposal.isSubContract ? (
-                  <div className="space-y-2 text-sm text-[#434653]">
-                    <p>
-                      <span className="font-semibold text-[#191c1e]">Partner:</span> {proposal.partnerName || '-'}
-                    </p>
-                    <p>
-                      <span className="font-semibold text-[#191c1e]">Payer Party:</span>{' '}
-                      {proposal.payerParty === 'PARTNER' ? 'Partner' : proposal.payerParty === 'CLIENT' ? 'Client' : '-'}
-                    </p>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-[#737784]">Partner</p>
+                      <p className="mt-0.5 text-sm font-semibold text-[#191c1e]">{proposal.partnerName || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-[#737784]">Payer party</p>
+                      <p className="mt-0.5 text-sm font-semibold text-[#191c1e]">
+                        {proposal.payerParty === 'PARTNER' ? 'Partner' : proposal.payerParty === 'CLIENT' ? 'Client' : '-'}
+                      </p>
+                    </div>
                   </div>
                 ) : (
                   <p className="text-sm text-[#737784]">Tidak menggunakan sub contract.</p>
                 )}
               </section>
 
-              <section>
-                <h4 className="mb-3 text-xs font-black uppercase tracking-widest text-[#434653]">Document</h4>
+              <section className="border-b border-[#eceef0] p-5">
+                <h3 className="mb-3 flex items-center gap-2 text-base font-bold text-[#191c1e]">
+                  <FileText className="h-5 w-5 shrink-0 text-[#003c90]" />
+                  Latest proposal document
+                </h3>
                 {proposal.document ? (
                   canViewLeadWorkspace && documentUrl ? (
-                    <a
-                      href={documentUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="group flex items-center gap-3 rounded-lg bg-[#eceef0] p-3 transition-colors hover:bg-[#e0e3e5]"
-                    >
-                      <FileText className="h-4 w-4 text-[#515f74]" />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs font-bold text-[#191c1e]">{proposal.document.documentName}</p>
-                        <p className="text-[10px] text-[#737784]">Version {proposal.document.versionNo}</p>
+                    <div className="rounded-xl border border-[#c3c6d5]/50 p-4">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-[#c3c6d5]/70 bg-[#d5e3fc]/20">
+                          <FileText className="h-8 w-8 text-[#003c90]" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-bold text-[#191c1e]">{proposal.document.documentName}</p>
+                          <p className="mt-1 text-[11px] text-[#737784]">
+                            Version <span className="font-semibold">{proposal.document.versionNo}</span>
+                            <span className="mx-1.5 text-[#c3c6d5]">·</span>
+                            Uploaded at {formatDateTime(proposal.document.createdAt)}
+                          </p>
+                        </div>
+                        <a
+                          href={documentUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[#c3c6d5] bg-white px-3 py-2 text-xs font-bold text-[#003c90] hover:bg-[#f2f4f6]"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          Buka / unduh
+                        </a>
                       </div>
-                      <Download className="h-4 w-4 text-[#737784] group-hover:text-[#003c90]" />
-                    </a>
+                    </div>
                   ) : (
-                    <p className="text-sm text-[#737784]">{proposal.document.documentName}</p>
+                    <p className="text-sm font-semibold text-[#191c1e]">{proposal.document.documentName}</p>
                   )
                 ) : (
                   <p className="text-sm text-[#737784]">-</p>
                 )}
               </section>
 
-              <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <p className="text-[10px] font-bold uppercase text-[#737784]">Created By</p>
-                  <p className="text-sm font-semibold text-[#191c1e]">{proposal.createdByName || '-'}</p>
-                  <p className="text-xs text-[#737784]">{formatDateTime(proposal.createdAt)}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold uppercase text-[#737784]">Submitted</p>
-                  <p className="text-sm font-semibold text-[#191c1e]">{proposal.submittedByName || '-'}</p>
-                  <p className="text-xs text-[#737784]">{formatDateTime(proposal.submittedAt)}</p>
+              <section className="border-b border-[#eceef0] p-5">
+                <h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-[#191c1e]">Alur pengajuan</h4>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-[#737784]">Created by</p>
+                    <p className="mt-0.5 text-sm font-semibold text-[#191c1e]">{proposal.createdByName || '-'}</p>
+                    <p className="mt-0.5 text-xs text-[#737784]">{formatDateTime(proposal.createdAt)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase text-[#737784]">Submitted by</p>
+                    <p className="mt-0.5 text-sm font-semibold text-[#191c1e]">{proposal.submittedByName || '-'}</p>
+                    <p className="mt-0.5 text-xs text-[#737784]">{formatDateTime(proposal.submittedAt)}</p>
+                  </div>
                 </div>
               </section>
+
+              {isNeedRevision ? (
+                <section className="p-5">
+                  <h4 className="mb-2 text-xs font-black uppercase tracking-wider text-orange-900">Catatan revisi CEO</h4>
+                  <p className="whitespace-pre-wrap rounded-lg border border-orange-200 bg-orange-50/80 p-3 text-sm font-medium text-[#7c2d12]">
+                    {revisionNote || '-'}
+                  </p>
+                </section>
+              ) : null}
             </div>
 
             {showManageActions ? (
-              <div className="border-t border-[#c3c6d5]/30 px-6 py-4">
+              <div className="border-t border-[#eceef0] px-5 py-4">
                 <div className="flex flex-wrap justify-end gap-2">
                   {isDraft ? (
                     <button
@@ -225,7 +242,7 @@ export const ProposalDetailSection = ({
             ) : null}
 
             {showSendToClientAction || showMarkRespondedAction ? (
-              <div className="border-t border-[#c3c6d5]/30 px-6 py-4">
+              <div className="border-t border-[#eceef0] px-5 py-4">
                 <div className="flex flex-wrap justify-end gap-2">
                   {showSendToClientAction ? (
                     <button
@@ -252,7 +269,20 @@ export const ProposalDetailSection = ({
             ) : null}
           </div>
         ) : (
-          <div className="p-6 text-sm text-[#737784]">Belum ada proposal untuk ditampilkan.</div>
+          <div className="flex flex-1 flex-col items-center justify-center px-6 py-14 text-center">
+            <p className="max-w-sm text-sm text-[#515f74]">
+              Belum ada proposal untuk lead ini. Buat proposal setelah meeting dan notulensi tersedia sesuai alur tim.
+            </p>
+            {canManageLeadWorkspace ? (
+              <button
+                type="button"
+                onClick={onCreateProposal ?? onEditProposal}
+                className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-4 py-2.5 text-xs font-bold text-white shadow-sm shadow-[#003c90]/20 transition-opacity hover:opacity-90 sm:text-sm"
+              >
+                Create Proposal
+              </button>
+            ) : null}
+          </div>
         )}
       </div>
     </aside>

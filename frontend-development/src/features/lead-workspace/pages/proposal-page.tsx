@@ -133,21 +133,37 @@ export const ProposalPage = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="rounded-xl border border-[#eceef0] bg-white p-6 text-sm text-[#737784] shadow-sm">
+        Memuat proposal…
+      </div>
+    );
+  }
+
   return (
     <section className="grid grid-cols-12 gap-6">
+      {loadError ? (
+        <div className="col-span-12 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {loadError}
+          <button
+            type="button"
+            onClick={() => void refetch()}
+            className="ml-3 font-bold text-[#003c90] underline"
+          >
+            Coba lagi
+          </button>
+        </div>
+      ) : null}
       {actionError ? (
         <div className="col-span-12 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{actionError}</div>
       ) : null}
 
-      <ProposalHistorySection
-        proposal={proposal}
-        isLoading={isLoading}
-        loadError={loadError}
-        onCreateProposal={openCreateDialog}
-      />
+      <ProposalHistorySection proposal={proposal} isLoading={false} onCreateProposal={openCreateDialog} />
       <ProposalDetailSection
         proposal={proposal}
         onEditProposal={openEditDialog}
+        onCreateProposal={openCreateDialog}
         onDeleteDraft={() => void handleDeleteDraft()}
         deleteBusy={deleteBusy}
         onSendToClient={() => setSentDialogOpen(true)}

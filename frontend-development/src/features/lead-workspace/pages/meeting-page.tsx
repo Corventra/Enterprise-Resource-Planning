@@ -123,14 +123,46 @@ export const MeetingPage = () => {
 
   const minutesInitialDetail = detail?.minutesDetail ? buildMinutesPayloadFromDetail(detail.minutesDetail) : null;
 
+  if (isLoading) {
+    return (
+      <div className="rounded-xl border border-[#eceef0] bg-white p-6 text-sm text-[#737784] shadow-sm">
+        Memuat meeting & notulensi…
+      </div>
+    );
+  }
+
   return (
     <>
       <section className="grid grid-cols-12 gap-6">
+        {loadError ? (
+          <div className="col-span-12 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            {loadError}
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              className="ml-3 font-bold text-[#003c90] underline"
+            >
+              Coba lagi
+            </button>
+          </div>
+        ) : null}
+        {minutesLoadError && selectedMeetingId ? (
+          <div className="col-span-12 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            {minutesLoadError}
+            <button
+              type="button"
+              onClick={() => void refetchMinutes()}
+              className="ml-3 font-bold text-[#003c90] underline"
+            >
+              Coba lagi
+            </button>
+          </div>
+        ) : null}
         <MeetingHistorySection
           meetings={meetings}
           selectedMeetingId={selectedMeetingId ?? undefined}
-          isLoading={isLoading}
-          loadError={loadError}
+          isLoading={false}
+          loadError={null}
           onSelectMeeting={setSelectedMeetingId}
           onScheduleMeeting={openCreateMeeting}
           onEditMeeting={openEditMeeting}
@@ -140,8 +172,10 @@ export const MeetingPage = () => {
         <MeetingMinutesSection
           detail={detail}
           isLoading={minutesLoading}
-          loadError={minutesLoadError}
+          loadError={null}
           onEditMinutes={() => setMinutesOpen(true)}
+          meetingsEmpty={meetings.length === 0}
+          onScheduleMeeting={openCreateMeeting}
         />
       </section>
 

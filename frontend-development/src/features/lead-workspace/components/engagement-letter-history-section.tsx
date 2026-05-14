@@ -1,9 +1,20 @@
-import type { LeadWorkspaceEngagementLetterItem } from '../types/lead-workspace.types';
+import { useOutletContext } from 'react-router';
+import { useLeadWorkspacePermissions } from '../hooks/use-lead-workspace-permissions';
+import type { LeadWorkspaceEngagementLetterItem } from '../types/lead-engagement-letters.types';
+import type { LeadWorkspaceOutletContext } from '../types/lead-workspace.types';
+import {
+  engagementStatusClassMap,
+  engagementStatusLabelMap,
+  paymentMethodLabelMap
+} from '../utils/engagement-letter-labels';
 
 interface EngagementLetterHistorySectionProps {
   engagementLetters: LeadWorkspaceEngagementLetterItem[];
   selectedEngagementLetterId?: string;
   onSelectEngagementLetter: (engagementLetterId: string) => void;
+  onCreateEngagementLetter?: () => void;
+  /** Proposal siap EL (mis. status Responded) — dari bundle API */
+  canCreateEngagementLetter?: boolean;
 }
 
 const formatDateTime = (iso: string) => {
@@ -12,42 +23,52 @@ const formatDateTime = (iso: string) => {
   return d.toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
 
-const statusLabelMap = {
-  DRAFT: 'Draft',
-  PENDING: 'Pending',
-  SENT: 'Sent',
-  AWAITING_SIGNATURE: 'Awaiting Signature',
-  SIGNED: 'Signed',
-  REPLACED: 'Replaced'
-} as const;
-
 export const EngagementLetterHistorySection = ({
   engagementLetters,
   selectedEngagementLetterId,
-  onSelectEngagementLetter
+  onSelectEngagementLetter,
+  onCreateEngagementLetter,
+  canCreateEngagementLetter = false
 }: EngagementLetterHistorySectionProps) => {
+  const { processedByUserId } = useOutletContext<LeadWorkspaceOutletContext>();
+  const { canManageLeadWorkspace } = useLeadWorkspacePermissions({ processedByUserId });
+  const showCreate =
+    canManageLeadWorkspace &&
+    canCreateEngagementLetter &&
+    engagementLetters.length === 0 &&
+    Boolean(onCreateEngagementLetter);
+
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold tracking-tight text-[#191c1e]">Engagement Letter</h2>
+    <div className="col-span-12 flex flex-col gap-4 lg:col-span-7">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-xl font-bold tracking-tight text-[#191c1e]">Engagement letter</h2>
+        {showCreate ? (
+          <button
+            type="button"
+            onClick={onCreateEngagementLetter}
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-3 py-2 text-xs font-bold text-white shadow-sm shadow-[#003c90]/20 transition-opacity hover:opacity-90 sm:px-4 sm:text-sm"
+          >
+            Create Engagement Letter
+          </button>
+        ) : null}
       </div>
 
       <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-[#eceef0]">
         <table className="w-full border-collapse text-left">
           <thead>
             <tr className="bg-[#f2f4f6]/70 text-[11px] font-bold uppercase tracking-wider text-[#737784]">
-              <th className="px-5 py-3">Title</th>
-              <th className="px-4 py-3">Service Name</th>
-              <th className="px-4 py-3">Created At</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-5 py-3 text-right">Agree Fee</th>
+              <th className="px-4 py-3">Issuer</th>
+              <th className="px-3 py-3">Payment</th>
+              <th className="px-3 py-3">Status</th>
+              <th className="px-3 py-3">Created at</th>
+              <th className="px-4 py-3 text-right">Agreed fee</th>
             </tr>
           </thead>
           <tbody className="text-sm">
             {engagementLetters.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-5 py-8 text-center text-sm text-[#737784]">
-                  No engagement letter data available.
+                  Belum ada engagement letter untuk lead ini.
                 </td>
               </tr>
             ) : (
@@ -61,11 +82,19 @@ export const EngagementLetterHistorySection = ({
                       : 'cursor-pointer border-b border-[#eceef0] transition-colors hover:bg-[#f2f4f6]'
                   }
                 >
-                  <td className="px-4 py-5 font-semibold text-[#191c1e]">{engagementLetter.title}</td>
-                  <td className="px-3 py-5 text-xs text-[#434653]">{engagementLetter.serviceName}</td>
-                  <td className="px-3 py-5 text-xs text-[#434653]">{formatDateTime(engagementLetter.createdAt)}</td>
-                  <td className="px-3 py-5 text-xs font-semibold text-[#434653]">{statusLabelMap[engagementLetter.status]}</td>
-                  <td className="px-6 py-5 text-right text-xs font-semibold text-[#191c1e]">{engagementLetter.agreeFee}</td>
+                  <td className="px-4 py-4 text-xs font-semibold text-[#191c1e]">{engagementLetter.issuerCompany}</td>
+                  <td className="px-3 py-4 text-xs text-[#434653]">
+                    {paymentMethodLabelMap[engagementLetter.paymentMethod]}
+                  </td>
+                  <td className="px-3 py-4">
+                    <span
+                      className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-bold ${engagementStatusClassMap[engagementLetter.engagementStatus]}`}
+                    >
+                      {engagementStatusLabelMap[engagementLetter.engagementStatus]}
+                    </span>
+                  </td>
+                  <td className="px-3 py-4 text-xs text-[#434653]">{formatDateTime(engagementLetter.createdAt)}</td>
+                  <td className="px-4 py-4 text-right text-xs font-semibold text-[#191c1e]">{engagementLetter.agreedFee}</td>
                 </tr>
               ))
             )}

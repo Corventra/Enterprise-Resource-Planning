@@ -1,4 +1,7 @@
 import type { LeadWorkspaceActivityLogItem } from './lead-activity.types';
+import type { LeadWorkspaceEngagementLetterItem } from './lead-engagement-letters.types';
+
+export type { LeadWorkspaceEngagementLetterItem } from './lead-engagement-letters.types';
 
 export type WorkspaceTab = 'meeting' | 'proposal' | 'engagement-letter';
 
@@ -135,24 +138,6 @@ export interface LeadWorkspaceEngagementLetter {
   lastUpdatedAt: string;
   owner: string;
   notes: string;
-}
-
-export interface LeadWorkspaceEngagementLetterItem {
-  id: string;
-  title: string;
-  serviceName: string;
-  createdAt: string;
-  agreeFee: string;
-  paymentTypeFinal: string;
-  hasSubcon: boolean;
-  signedAt?: string;
-  status: 'DRAFT' | 'PENDING' | 'SENT' | 'AWAITING_SIGNATURE' | 'SIGNED' | 'REPLACED';
-  document: {
-    uploadedFileName?: string;
-    uploadedAt?: string;
-    uploadedSize?: string;
-    thumbnailUrl?: string;
-  };
 }
 
 export interface LeadWorkspaceNextStep {

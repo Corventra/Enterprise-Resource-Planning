@@ -22,6 +22,8 @@ export interface ApprovalItem {
   submittedAt: string;
   summary?: string;
   detailRoute: string;
+  /** Diisi dari API pending EL; antrean bisa fallback ke map legacy bila tidak ada. */
+  engagementQueueMeta?: ApprovalEngagementLetterQueueMeta;
 }
 
 export interface ApprovalFilters {
@@ -45,6 +47,22 @@ export interface ApprovalProposalLeadSummary {
   processedByName: string | null;
   processedAt: string | null;
   desiredServices: string | null;
+}
+
+/** Meta baris antrean approval EL (satu baris = satu item approval). */
+export interface ApprovalEngagementLetterQueueMeta {
+  issuerCompany: string;
+  paymentMethod: 'TERMIN' | 'RETAINER';
+  /** Status EL yang sedang diajukan untuk approval CEO. */
+  engagementStatus:
+    | 'DRAFT'
+    | 'WAITING_CEO_APPROVAL'
+    | 'NEED_REVISION'
+    | 'APPROVED'
+    | 'SENT'
+    | 'SIGNED'
+    | 'REPLACED';
+  agreedFeeDisplay: string;
 }
 
 export interface ApprovalOutletContext extends LeadWorkspaceOutletContext {

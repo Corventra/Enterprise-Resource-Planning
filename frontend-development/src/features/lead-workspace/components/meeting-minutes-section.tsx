@@ -10,6 +10,9 @@ interface MeetingMinutesSectionProps {
   isLoading?: boolean;
   loadError?: string | null;
   onEditMinutes?: () => void;
+  /** True jika daftar meeting kosong — tampilan empty selaras tab Engagement Letter. */
+  meetingsEmpty?: boolean;
+  onScheduleMeeting?: () => void;
 }
 
 const formatMeetingDate = (iso: string) => {
@@ -46,7 +49,9 @@ export const MeetingMinutesSection = ({
   detail,
   isLoading = false,
   loadError = null,
-  onEditMinutes
+  onEditMinutes,
+  meetingsEmpty = false,
+  onScheduleMeeting
 }: MeetingMinutesSectionProps) => {
   const { processedByUserId } = useOutletContext<LeadWorkspaceOutletContext>();
   const { canManageLeadWorkspace } = useLeadWorkspacePermissions({ processedByUserId });
@@ -75,7 +80,7 @@ export const MeetingMinutesSection = ({
 
       <div className="flex flex-1 flex-col overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-[#eceef0]">
         {isLoading ? (
-          <div className="p-6 text-sm text-[#737784]">Loading minutes...</div>
+          <div className="p-6 text-sm text-[#737784]">Memuat notulensi…</div>
         ) : loadError ? (
           <div className="p-6 text-sm text-red-700">{loadError}</div>
         ) : selectedMeeting ? (
@@ -265,8 +270,26 @@ export const MeetingMinutesSection = ({
               ) : null}
             </div>
           </>
+        ) : meetingsEmpty ? (
+          <div className="flex flex-1 flex-col items-center justify-center px-6 py-14 text-center">
+            <p className="max-w-sm text-sm text-[#515f74]">
+              Belum ada meeting untuk lead ini. Jadwalkan meeting terlebih dahulu; setelah meeting selesai Anda dapat
+              mencatat notulensi di sini.
+            </p>
+            {canManageLeadWorkspace && onScheduleMeeting ? (
+              <button
+                type="button"
+                onClick={onScheduleMeeting}
+                className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-4 py-2.5 text-xs font-bold text-white shadow-sm shadow-[#003c90]/20 transition-opacity hover:opacity-90 sm:text-sm"
+              >
+                Schedule Meeting
+              </button>
+            ) : null}
+          </div>
         ) : (
-          <div className="p-6 text-sm text-[#737784]">Select a meeting to see minutes summary.</div>
+          <div className="flex flex-1 flex-col items-center justify-center px-6 py-14 text-center">
+            <p className="max-w-sm text-sm text-[#515f74]">Pilih meeting di daftar kiri untuk melihat ringkasan notulensi.</p>
+          </div>
         )}
       </div>
     </aside>

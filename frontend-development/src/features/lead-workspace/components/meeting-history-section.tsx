@@ -16,6 +16,7 @@ interface MeetingHistorySectionProps {
   meetings: LeadWorkspaceMeetingListItem[];
   selectedMeetingId?: string;
   isLoading?: boolean;
+  /** Jika error sudah ditampilkan di level halaman, biarkan null. */
   loadError?: string | null;
   onSelectMeeting: (meetingId: string) => void;
   onScheduleMeeting?: () => void;
@@ -67,9 +68,7 @@ export const MeetingHistorySection = ({
       </div>
 
       <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-[#eceef0]">
-        {loadError ? (
-          <p className="px-5 py-4 text-sm text-red-700">{loadError}</p>
-        ) : null}
+        {loadError ? <p className="px-5 py-4 text-sm text-red-700">{loadError}</p> : null}
         <div className="overflow-x-auto">
           <table className="w-full table-fixed border-collapse text-left">
             <colgroup>
@@ -92,13 +91,13 @@ export const MeetingHistorySection = ({
               {isLoading ? (
                 <tr>
                   <td colSpan={5} className="px-5 py-8 text-center text-sm text-[#737784]">
-                    Loading meetings...
+                    Memuat meeting…
                   </td>
                 </tr>
               ) : meetings.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-5 py-8 text-center text-sm text-[#737784]">
-                    No meetings found.
+                    Belum ada meeting untuk lead ini.
                   </td>
                 </tr>
               ) : (

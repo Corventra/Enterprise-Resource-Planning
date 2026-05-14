@@ -6,7 +6,6 @@ import type { LeadWorkspaceProposalView } from '../types/lead-proposals.types';
 interface ProposalHistorySectionProps {
   proposal: LeadWorkspaceProposalView | null;
   isLoading: boolean;
-  loadError: string | null;
   onCreateProposal: () => void;
 }
 
@@ -28,12 +27,20 @@ const statusLabelMap = {
   RESPONDED: 'Responded'
 } as const;
 
-export const ProposalHistorySection = ({
-  proposal,
-  isLoading,
-  loadError,
-  onCreateProposal
-}: ProposalHistorySectionProps) => {
+const tableHead = (
+  <thead>
+    <tr className="bg-[#f2f4f6]/70 text-[11px] font-bold uppercase tracking-wider text-[#737784]">
+      <th className="px-5 py-3">Service</th>
+      <th className="px-4 py-3">Issuer</th>
+      <th className="px-4 py-3">Status</th>
+      <th className="px-4 py-3">Created At</th>
+      <th className="px-4 py-3 text-right">Discount</th>
+      <th className="px-5 py-3 text-right">Proposal Fee</th>
+    </tr>
+  </thead>
+);
+
+export const ProposalHistorySection = ({ proposal, isLoading, onCreateProposal }: ProposalHistorySectionProps) => {
   const { processedByUserId } = useOutletContext<LeadWorkspaceOutletContext>();
   const { canManageLeadWorkspace } = useLeadWorkspacePermissions({ processedByUserId });
 
@@ -53,27 +60,22 @@ export const ProposalHistorySection = ({
       </div>
 
       <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-[#eceef0]">
-        {isLoading ? (
-          <div className="px-5 py-8 text-center text-sm text-[#737784]">Memuat proposal...</div>
-        ) : loadError ? (
-          <div className="px-5 py-8 text-center text-sm text-red-700">{loadError}</div>
-        ) : !proposal ? (
-          <div className="px-5 py-8 text-center text-sm text-[#737784]">
-            Belum ada proposal untuk lead ini.
-          </div>
-        ) : (
-          <table className="w-full border-collapse text-left">
-            <thead>
-              <tr className="bg-[#f2f4f6]/70 text-[11px] font-bold uppercase tracking-wider text-[#737784]">
-                <th className="px-5 py-3">Service</th>
-                <th className="px-4 py-3">Issuer</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Created At</th>
-                <th className="px-4 py-3 text-right">Discount</th>
-                <th className="px-5 py-3 text-right">Proposal Fee</th>
+        <table className="w-full border-collapse text-left">
+          {tableHead}
+          <tbody className="text-sm">
+            {isLoading ? (
+              <tr>
+                <td colSpan={6} className="px-5 py-8 text-center text-sm text-[#737784]">
+                  Memuat proposal…
+                </td>
               </tr>
-            </thead>
-            <tbody className="text-sm">
+            ) : !proposal ? (
+              <tr>
+                <td colSpan={6} className="px-5 py-8 text-center text-sm text-[#737784]">
+                  Belum ada proposal untuk lead ini.
+                </td>
+              </tr>
+            ) : (
               <tr className="border-l-4 border-[#003c90] bg-[#003c90]/5">
                 <td className="px-4 py-5 font-semibold text-[#191c1e]">{proposal.serviceName}</td>
                 <td className="px-3 py-5 text-xs text-[#434653]">{proposal.issuerCompany}</td>
@@ -86,9 +88,9 @@ export const ProposalHistorySection = ({
                   {formatCurrency(proposal.proposalFee)}
                 </td>
               </tr>
-            </tbody>
-          </table>
-        )}
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
