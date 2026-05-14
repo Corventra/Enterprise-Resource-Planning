@@ -1,10 +1,15 @@
-import { FileText, Upload } from 'lucide-react';
+import { Download, FileText, Upload } from 'lucide-react';
 import { useOutletContext } from 'react-router';
 import { useLeadWorkspacePermissions } from '../hooks/use-lead-workspace-permissions';
-import type { LeadWorkspaceEngagementLetterItem, LeadWorkspaceOutletContext } from '../types/lead-workspace.types';
+import type { LeadWorkspaceEngagementLetterItem } from '../types/lead-engagement-letters.types';
+import type { LeadWorkspaceOutletContext } from '../types/lead-workspace.types';
 
 interface EngagementDocumentCardProps {
   engagementLetter?: LeadWorkspaceEngagementLetterItem;
+  sectionTitle?: string;
+  /** URL lengkap untuk buka/unduh dokumen EL (mis. origin + filePath). */
+  documentActionsUrl?: string | null;
+  embedded?: boolean;
 }
 
 const formatDateTime = (iso?: string) => {
@@ -14,7 +19,12 @@ const formatDateTime = (iso?: string) => {
   return d.toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
 
-export const EngagementDocumentCard = ({ engagementLetter }: EngagementDocumentCardProps) => {
+export const EngagementDocumentCard = ({
+  engagementLetter,
+  sectionTitle = 'Engagement document',
+  documentActionsUrl = null,
+  embedded = false
+}: EngagementDocumentCardProps) => {
   const { processedByUserId } = useOutletContext<LeadWorkspaceOutletContext>();
   const { canManageLeadWorkspace } = useLeadWorkspacePermissions({ processedByUserId });
   if (!engagementLetter) return null;
@@ -22,13 +32,17 @@ export const EngagementDocumentCard = ({ engagementLetter }: EngagementDocumentC
   const hasUploadedDocument = Boolean(engagementLetter.document.uploadedFileName);
   const fileName = engagementLetter.document.uploadedFileName ?? '-';
   const fileSize = engagementLetter.document.uploadedSize ?? '-';
+  const versionNo = engagementLetter.document.versionNo;
+  const shellClass = embedded
+    ? 'rounded-lg bg-transparent p-0 ring-0'
+    : 'rounded-xl bg-white p-6 shadow-sm ring-1 ring-[#eceef0]';
 
   return (
-    <section className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-[#eceef0]">
-      <div className="mb-6 flex items-center justify-between">
-        <h3 className="flex items-center gap-2 text-lg font-bold text-[#191c1e]">
-          <FileText className="h-5 w-5 text-[#003c90]" />
-          Engagement Document
+    <section className={shellClass}>
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <h3 className="flex items-center gap-2 text-base font-bold text-[#191c1e]">
+          <FileText className="h-5 w-5 shrink-0 text-[#003c90]" />
+          {sectionTitle}
         </h3>
       </div>
 
@@ -50,8 +64,8 @@ export const EngagementDocumentCard = ({ engagementLetter }: EngagementDocumentC
       )}
 
       {hasUploadedDocument ? (
-        <div className="mt-5 rounded-xl border border-[#c3c6d5]/50 p-4">
-          <div className="flex items-center gap-3">
+        <div className={`rounded-xl border border-[#c3c6d5]/50 p-4 ${embedded ? '' : 'mt-5'}`}>
+          <div className="flex flex-wrap items-center gap-3">
             <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg border border-[#c3c6d5]/70 bg-[#d5e3fc]/20">
               <FileText className="h-10 w-10 text-[#003c90]" />
             </div>
@@ -59,8 +73,27 @@ export const EngagementDocumentCard = ({ engagementLetter }: EngagementDocumentC
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-bold text-[#191c1e]">{fileName}</p>
               <p className="mt-1 text-xs text-[#434653]">{fileSize}</p>
-              <p className="mt-1 text-[11px] text-[#737784]">Uploaded at {formatDateTime(engagementLetter.document.uploadedAt)}</p>
+              <p className="mt-1 text-[11px] text-[#737784]">
+                {versionNo != null ? (
+                  <>
+                    Version <span className="font-semibold">{versionNo}</span>
+                    <span className="mx-1.5 text-[#c3c6d5]">·</span>
+                  </>
+                ) : null}
+                Uploaded at {formatDateTime(engagementLetter.document.uploadedAt)}
+              </p>
             </div>
+            {documentActionsUrl ? (
+              <a
+                href={documentActionsUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[#c3c6d5] bg-white px-3 py-2 text-xs font-bold text-[#003c90] hover:bg-[#f2f4f6]"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Buka / unduh
+              </a>
+            ) : null}
           </div>
         </div>
       ) : null}

@@ -1,15 +1,11 @@
 import type { Role } from '../../../app/permissions';
-import {
-  approvalEngagementLetterDetailsMock,
-  engagementLetterApprovalsMock,
-  handoverApprovalsMock
-} from '../mocks/approval.mock';
+import { handoverApprovalsMock } from '../mocks/approval.mock';
+import { approvalEngagementsService } from './approval-engagements-service';
 import { approvalProposalsService } from './approval-proposals-service';
 import type { ApprovalItem } from '../types/approval.types';
 
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
-const engagementLettersStore: ApprovalItem[] = clone(engagementLetterApprovalsMock);
 const handoverStore: ApprovalItem[] = clone(handoverApprovalsMock);
 
 export const approvalService = {
@@ -20,11 +16,14 @@ export const approvalService = {
       companyNamesById: {}
     }));
 
-    return [...clone(handoverStore), ...proposalResult.items, ...clone(engagementLettersStore)];
-  },
+    let engagementLetterItems: ApprovalItem[] = [];
+    try {
+      engagementLetterItems = await approvalEngagementsService.listPendingApprovals();
+    } catch {
+      engagementLetterItems = [];
+    }
 
-  getEngagementLetters(approvalId: string) {
-    return approvalEngagementLetterDetailsMock[approvalId] ?? [];
+    return [...clone(handoverStore), ...proposalResult.items, ...engagementLetterItems];
   },
 
   async approve(item: ApprovalItem, actor: { name: string; role: Role }, note?: string): Promise<void> {
@@ -34,9 +33,12 @@ export const approvalService = {
       await approvalProposalsService.approve(item.id);
       return;
     }
-    const store = item.kind === 'EngagementLetter' ? engagementLettersStore : handoverStore;
-    const idx = store.findIndex((entry) => entry.id === item.id);
-    if (idx >= 0) store.splice(idx, 1);
+    if (item.kind === 'EngagementLetter') {
+      await approvalEngagementsService.approveEngagement(item.id);
+      return;
+    }
+    const idx = handoverStore.findIndex((entry) => entry.id === item.id);
+    if (idx >= 0) handoverStore.splice(idx, 1);
   },
 
   async requestRevision(item: ApprovalItem, actor: { name: string; role: Role }, note?: string): Promise<void> {
@@ -48,8 +50,14 @@ export const approvalService = {
       await approvalProposalsService.reject(item.id, note.trim());
       return;
     }
-    const store = item.kind === 'EngagementLetter' ? engagementLettersStore : handoverStore;
-    const idx = store.findIndex((entry) => entry.id === item.id);
-    if (idx >= 0) store.splice(idx, 1);
+    if (item.kind === 'EngagementLetter') {
+      if (!note?.trim()) {
+        throw new Error('Revision note wajib diisi.');
+      }
+      await approvalEngagementsService.rejectEngagement(item.id, note.trim());
+      return;
+    }
+    const idx = handoverStore.findIndex((entry) => entry.id === item.id);
+    if (idx >= 0) handoverStore.splice(idx, 1);
   }
 };

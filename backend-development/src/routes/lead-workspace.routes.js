@@ -21,6 +21,18 @@ const {
   markProposalResponded
 } = require('../controllers/lead-workspace-proposals.controller');
 const {
+  getEngagementLetterBundle,
+  createDraftEngagementLetter,
+  updateDraftEngagementLetter,
+  deleteDraftEngagementLetter,
+  submitEngagementLetter,
+  markEngagementLetterSentToClient
+} = require('../controllers/lead-workspace-engagements.controller');
+const {
+  uploadEngagementLetterDocument,
+  uploadOptionalEngagementLetterDocument
+} = require('../middleware/upload-engagement-letter-document');
+const {
   uploadProposalDocument,
   uploadOptionalProposalDocument
 } = require('../middleware/upload-proposal-document');
@@ -45,6 +57,18 @@ router.patch('/:leadId/meetings/:meetingId', ...manageStack, updateMeeting);
 router.get('/:leadId/meetings/:meetingId/minutes', ...viewStack, getMinutes);
 router.post('/:leadId/meetings/:meetingId/minutes', ...manageStack, createMinutes);
 router.patch('/:leadId/meetings/:meetingId/minutes', ...manageStack, updateMinutes);
+
+router.get('/:leadId/engagement-letter', ...viewStack, getEngagementLetterBundle);
+router.post('/:leadId/engagement-letter', ...manageStack, uploadEngagementLetterDocument, createDraftEngagementLetter);
+router.patch(
+  '/:leadId/engagement-letter/:engagementId',
+  ...manageStack,
+  uploadOptionalEngagementLetterDocument,
+  updateDraftEngagementLetter
+);
+router.delete('/:leadId/engagement-letter/:engagementId', ...manageStack, deleteDraftEngagementLetter);
+router.post('/:leadId/engagement-letter/:engagementId/submit', ...manageStack, submitEngagementLetter);
+router.post('/:leadId/engagement-letter/:engagementId/sent', ...manageStack, markEngagementLetterSentToClient);
 
 router.get('/:leadId', ...viewStack, getDetail);
 router.patch('/:leadId/details', ...manageStack, updateDetails);

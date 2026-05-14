@@ -221,40 +221,151 @@ export const leadWorkspaceMock: LeadWorkspace[] = [
     engagementLetters: [
       {
         id: 'el-001',
-        title: 'Master Service Agreement',
-        serviceName: 'Enterprise Architecture Advisory',
+        engagementId: '501',
+        issuerCompany: 'DSK',
+        paymentMethod: 'TERMIN',
+        engagementStatus: 'SIGNED',
         createdAt: '2026-04-21T15:10:00.000Z',
-        agreeFee: 'IDR 1.250.000.000',
-        paymentTypeFinal: 'Milestone Based (30-40-30)',
-        hasSubcon: false,
-        status: 'SIGNED',
+        agreedFee: 'Rp 1.250.000.000',
+        revisionNote: null,
+        createdByName: 'Laras Wijaya',
+        submittedByName: 'Laras Wijaya',
+        submittedAt: '2026-04-21T15:12:00.000Z',
+        approvedByName: 'CEO Demo',
+        approvedAt: '2026-04-21T16:00:00.000Z',
+        sentToClientAt: '2026-04-21T17:00:00.000Z',
+        signedAt: '2026-04-22T09:00:00.000Z',
+        proposalSummary: {
+          proposalId: 'prop-001',
+          serviceClassName: 'Tax & Advisory',
+          serviceName: 'Strategic Tax Advisory',
+          proposalFee: 'Rp 1.300.000.000',
+          discountAmount: 'Rp 50.000.000',
+          finalProposalValue: 'Rp 1.250.000.000',
+          proposalStatus: 'RESPONDED',
+          proposalIssuerCompany: 'DSK',
+          latestProposalDocumentName: 'proposal-strategic-tax-advisory.pdf',
+          latestProposalDocumentPath: '/uploads/proposals/proposal-strategic-tax-advisory.pdf'
+        },
+        termins: [
+          {
+            termName: 'Down payment',
+            termType: 'DOWN_PAYMENT',
+            percentageDisplay: '30%',
+            billingScheduleDate: '2026-05-01',
+            description: 'Setelah penandatanganan EL'
+          },
+          {
+            termName: 'Termin 1',
+            termType: 'INSTALLMENT',
+            percentageDisplay: '40%',
+            billingScheduleDate: '2026-07-15',
+            description: 'Setelah deliverable fase 1'
+          },
+          {
+            termName: 'Final',
+            termType: 'FINAL',
+            percentageDisplay: '30%',
+            billingScheduleDate: '2026-10-01',
+            description: 'Setelah penyelesaian engagement'
+          }
+        ],
+        retainer: null,
         document: {
           uploadedFileName: 'EL_Advisory_Final_v2.pdf',
           uploadedAt: '2026-04-21T15:30:00.000Z',
           uploadedSize: '2.4 MB',
+          versionNo: 2,
+          filePath: '/uploads/engagements/el-advisory-final-v2.pdf',
           thumbnailUrl: 'https://images.unsplash.com/photo-1576872381149-7847515ce5d8?auto=format&fit=crop&w=120&q=80'
         }
       },
       {
         id: 'el-002',
-        title: 'Amendment A - Scope Extension',
-        serviceName: 'Legal Consultancy',
+        engagementId: '502',
+        issuerCompany: 'DTAX',
+        paymentMethod: 'RETAINER',
+        engagementStatus: 'NEED_REVISION',
         createdAt: '2026-04-20T10:45:00.000Z',
-        agreeFee: 'IDR 450.000.000',
-        paymentTypeFinal: 'Two Terms',
-        hasSubcon: true,
-        status: 'PENDING',
-        document: {}
+        agreedFee: 'Rp 450.000.000',
+        revisionNote: 'Mohon selaraskan pasal pembayaran dengan termin di proposal terbaru dan cantumkan PIC penagihan klien.',
+        createdByName: 'Andi Setiawan',
+        submittedByName: 'Andi Setiawan',
+        submittedAt: '2026-04-20T11:00:00.000Z',
+        approvedByName: null,
+        approvedAt: null,
+        sentToClientAt: null,
+        signedAt: null,
+        proposalSummary: {
+          proposalId: 'prop-001',
+          serviceClassName: 'Tax & Advisory',
+          serviceName: 'Strategic Tax Advisory',
+          proposalFee: 'Rp 500.000.000',
+          discountAmount: 'Rp 50.000.000',
+          finalProposalValue: 'Rp 450.000.000',
+          proposalStatus: 'RESPONDED',
+          proposalIssuerCompany: 'DTAX',
+          latestProposalDocumentName: 'financial-model.xlsx',
+          latestProposalDocumentPath: null
+        },
+        termins: [],
+        retainer: {
+          contractStartDate: '2026-05-01',
+          contractEndDate: '2027-04-30',
+          billingTiming: 'BEGINNING_OF_MONTH'
+        },
+        document: {
+          uploadedFileName: 'EL_Retainer_Draft_v1.pdf',
+          uploadedAt: '2026-04-20T10:50:00.000Z',
+          uploadedSize: '1.1 MB',
+          versionNo: 1
+        }
       },
       {
         id: 'el-003',
-        title: 'Initial Engagement Draft',
-        serviceName: 'Drafting Service',
+        engagementId: '503',
+        issuerCompany: 'DSK',
+        paymentMethod: 'TERMIN',
+        engagementStatus: 'REPLACED',
         createdAt: '2026-04-18T13:20:00.000Z',
-        agreeFee: 'IDR 1.300.000.000',
-        paymentTypeFinal: 'Milestone Based',
-        hasSubcon: false,
-        status: 'REPLACED',
+        agreedFee: 'Rp 1.300.000.000',
+        revisionNote: null,
+        createdByName: 'Andi Setiawan',
+        submittedByName: null,
+        submittedAt: null,
+        approvedByName: null,
+        approvedAt: null,
+        sentToClientAt: null,
+        signedAt: null,
+        proposalSummary: {
+          proposalId: 'prop-001',
+          serviceClassName: 'Tax & Advisory',
+          serviceName: 'Strategic Tax Advisory',
+          proposalFee: 'Rp 1.350.000.000',
+          discountAmount: 'Rp 50.000.000',
+          finalProposalValue: 'Rp 1.300.000.000',
+          proposalStatus: 'RESPONDED',
+          proposalIssuerCompany: 'DSK',
+          latestProposalDocumentName: 'proposal-strategic-tax-advisory.pdf',
+          latestProposalDocumentPath: '/uploads/proposals/proposal-strategic-tax-advisory.pdf'
+        },
+        termins: [
+          {
+            termName: 'Down payment',
+            termType: 'DOWN_PAYMENT',
+            percentageDisplay: '50%',
+            billingScheduleDate: null,
+            description: null
+          },
+          {
+            termName: 'Final',
+            termType: 'FINAL',
+            percentageDisplay: '50%',
+            billingScheduleDate: null,
+            description: null
+          }
+        ],
+        retainer: null,
         document: {}
       }
     ],

@@ -5,9 +5,18 @@ interface RejectProposalDialogProps {
   busy?: boolean;
   onClose: () => void;
   onConfirm: (note: string) => Promise<void> | void;
+  title?: string;
+  description?: string;
 }
 
-export const RejectProposalDialog = ({ open, busy = false, onClose, onConfirm }: RejectProposalDialogProps) => {
+export const RejectProposalDialog = ({
+  open,
+  busy = false,
+  onClose,
+  onConfirm,
+  title = 'Tolak proposal ini?',
+  description = 'Proposal akan dikembalikan ke BD untuk direvisi.'
+}: RejectProposalDialogProps) => {
   const [note, setNote] = useState('');
 
   useEffect(() => {
@@ -28,8 +37,8 @@ export const RejectProposalDialog = ({ open, busy = false, onClose, onConfirm }:
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4">
       <div className="w-full max-w-md rounded-xl border border-[#eceef0] bg-white p-5 shadow-lg">
-        <h2 className="text-base font-semibold text-[#191c1e]">Tolak proposal ini?</h2>
-        <p className="mt-2 text-sm text-[#737784]">Proposal akan dikembalikan ke BD untuk direvisi.</p>
+        <h2 className="text-base font-semibold text-[#191c1e]">{title}</h2>
+        <p className="mt-2 text-sm text-[#737784]">{description}</p>
         <label className="mt-4 block text-sm font-medium text-[#191c1e]">
           Revision Note
           <textarea

@@ -3,9 +3,18 @@ interface ApproveProposalDialogProps {
   busy?: boolean;
   onClose: () => void;
   onConfirm: () => Promise<void> | void;
+  title?: string;
+  description?: string;
 }
 
-export const ApproveProposalDialog = ({ open, busy = false, onClose, onConfirm }: ApproveProposalDialogProps) => {
+export const ApproveProposalDialog = ({
+  open,
+  busy = false,
+  onClose,
+  onConfirm,
+  title = 'Approve proposal ini?',
+  description = 'Proposal yang disetujui akan dilanjutkan ke tahap pengiriman ke client.'
+}: ApproveProposalDialogProps) => {
   if (!open) {
     return null;
   }
@@ -13,10 +22,8 @@ export const ApproveProposalDialog = ({ open, busy = false, onClose, onConfirm }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4">
       <div className="w-full max-w-md rounded-xl border border-[#eceef0] bg-white p-5 shadow-lg">
-        <h2 className="text-base font-semibold text-[#191c1e]">Approve proposal ini?</h2>
-        <p className="mt-2 text-sm text-[#737784]">
-          Proposal yang disetujui akan dilanjutkan ke tahap pengiriman ke client.
-        </p>
+        <h2 className="text-base font-semibold text-[#191c1e]">{title}</h2>
+        <p className="mt-2 text-sm text-[#737784]">{description}</p>
         <div className="mt-5 flex justify-end gap-2">
           <button
             type="button"
