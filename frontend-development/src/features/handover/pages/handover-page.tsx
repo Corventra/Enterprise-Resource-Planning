@@ -20,7 +20,8 @@ export const HandoverPage = () => {
     pageSize,
     setCurrentPage,
     updateFilter,
-    resetFilters
+    resetFilters,
+    serviceLineOptions
   } = useHandoverFilters(items);
 
   const pageNumbers = useMemo(() => Array.from({ length: totalPages }, (_, index) => index + 1), [totalPages]);
@@ -87,6 +88,7 @@ export const HandoverPage = () => {
 
       <HandoverFiltersSection
         filters={filters}
+        serviceLineOptions={serviceLineOptions}
         onSearchChange={(value) => updateFilter('search', value)}
         onServiceLineChange={(value) => updateFilter('serviceLine', value)}
         onEngagementStatusChange={(value) => updateFilter('engagementStatus', value)}

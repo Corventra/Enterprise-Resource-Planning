@@ -4,8 +4,10 @@ export const handoverDetailMock: HandoverDetail = {
   id: 'ho-001',
   docCode: 'BD-HO-PT-MSM-2025-003',
   confidentiality: 'Strictly Confidential',
-  status: 'Waiting CEO Approval',
-  projectStatus: 'Awaiting CEO Approval',
+  status: 'Revision Needed',
+  dbStatus: 'NEED_REVISION',
+  ceoRevisionNote: 'Mohon lengkapi milestone Q1 dan lampirkan dokumen pendukung transfer pricing.',
+  projectStatus: 'Revision Needed',
   approvalTrail: [
     {
       action: 'submitted',
@@ -26,7 +28,8 @@ export const handoverDetailMock: HandoverDetail = {
     { label: 'PIC Client', value: 'Bapak Andi Prasetyo - Finance Director' },
     { label: 'Client Contact', value: 'andi.prasetyo@msm.co.id', accent: 'primary' },
     { label: 'Engagement Letter Status', value: 'Signed - 26 Januari 2025', accent: 'success' },
-    { label: 'Proposal Reference', value: 'BD-PRO-2025-021' }
+    { label: 'Proposal Reference', value: 'BD-PRO-2025-021' },
+    { label: 'Created By', value: 'Andi Setiawan' }
   ],
   backgroundSummary:
     'PT MSM merupakan perusahaan manufaktur komponen otomotif dengan transaksi afiliasi yang signifikan, melibatkan entitas di Singapura (pembelian bahan baku) dan Thailand (jasa manajemen). Pada meeting tanggal 24 Januari 2025, klien menyampaikan kebutuhan untuk menyusun Master File dan Local File Tahun Pajak 2024 dengan kualitas yang lebih komprehensif dibandingkan tahun sebelumnya. Klien mengalami review KPP pada tahun sebelumnya sehingga menginginkan dokumentasi yang lebih kuat, lengkap, dan sesuai praktik internasional.',
@@ -52,10 +55,11 @@ export const handoverDetailMock: HandoverDetail = {
   paymentTerms:
     '30% downpayment upon signing, 40% upon draft submission, 30% upon final report delivery. Payments due within 14 days of invoice date.',
   clientDocuments: [
-    'Group Organization Chart',
-    'Audited Financial Statements (ID entity)',
-    'Intercompany Agreements (Master Agreements)'
+    { id: '1', name: 'Group Organization Chart', filePath: '', downloadUrl: null, uploadedAt: '-' },
+    { id: '2', name: 'Audited Financial Statements (ID entity)', filePath: '', downloadUrl: null, uploadedAt: '-' },
+    { id: '3', name: 'Intercompany Agreements (Master Agreements)', filePath: '', downloadUrl: null, uploadedAt: '-' }
   ],
+  activityLogs: [],
   storageLocation: '/sharepoint/projects/2025/MSM/HO',
   outstandingData: [
     'Detailed Inventory of Cross-Border Transactions',

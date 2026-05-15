@@ -5,6 +5,7 @@ import { EngagementLetterDetailSection } from '../components/engagement-letter-d
 import { EngagementLetterHistorySection } from '../components/engagement-letter-history-section';
 import { EngagementLetterFormDialog } from '../components/modals/engagement-letter-form-dialog';
 import { EngagementLetterSentToClientDialog } from '../components/modals/engagement-letter-sent-to-client-dialog';
+import { EngagementLetterSignedDialog } from '../components/modals/engagement-letter-signed-dialog';
 import { useLeadWorkspaceEngagements } from '../hooks/use-lead-workspace-engagements';
 import type { LeadWorkspaceOutletContext } from '../types/lead-workspace.types';
 
@@ -19,7 +20,8 @@ export const EngagementLetterPage = () => {
     createDraftEngagementLetter,
     updateDraftEngagementLetter,
     deleteDraftEngagementLetter,
-    markEngagementLetterSentToClient
+    markEngagementLetterSentToClient,
+    markEngagementLetterSigned
   } = useLeadWorkspaceEngagements(leadId);
 
   const [selectedEngagementLetterId, setSelectedEngagementLetterId] = useState<string | null>(null);
@@ -29,6 +31,8 @@ export const EngagementLetterPage = () => {
   const [busyAction, setBusyAction] = useState<'draft' | 'submit' | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [sentDialogOpen, setSentDialogOpen] = useState(false);
+  const [signedDialogOpen, setSignedDialogOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const canCreateEngagementLetter = proposalWithoutEngagement?.proposal_status === 'RESPONDED';
 
@@ -126,6 +130,26 @@ export const EngagementLetterPage = () => {
     }
   }, [selectedEngagementLetter, markEngagementLetterSentToClient, refetchWorkspace, refetch]);
 
+  const handleMarkSigned = useCallback(async () => {
+    if (!selectedEngagementLetter) return;
+    setMutationBusy(true);
+    setActionError(null);
+    setSuccessMessage(null);
+    try {
+      await markEngagementLetterSigned(selectedEngagementLetter.id);
+      await refetchWorkspace();
+      await refetch();
+      setSignedDialogOpen(false);
+      setSuccessMessage('Engagement letter ditandai signed. Draft handover dan akun invoice telah dibuat.');
+    } catch (e) {
+      const msg =
+        e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Gagal menandai engagement letter signed.';
+      setActionError(msg);
+    } finally {
+      setMutationBusy(false);
+    }
+  }, [selectedEngagementLetter, markEngagementLetterSigned, refetchWorkspace, refetch]);
+
   if (loading) {
     return (
       <div className="rounded-xl border border-[#eceef0] bg-white p-6 text-sm text-[#737784] shadow-sm">
@@ -136,6 +160,18 @@ export const EngagementLetterPage = () => {
 
   return (
     <section className="grid grid-cols-12 gap-6">
+      {successMessage ? (
+        <div className="col-span-12 rounded-lg border border-[#006544]/30 bg-[#006544]/5 px-4 py-3 text-sm text-[#004b31]">
+          {successMessage}
+          <button
+            type="button"
+            onClick={() => setSuccessMessage(null)}
+            className="ml-3 font-bold text-[#003c90] underline"
+          >
+            Tutup
+          </button>
+        </div>
+      ) : null}
       {actionError ? (
         <div className="col-span-12 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {actionError}
@@ -179,6 +215,11 @@ export const EngagementLetterPage = () => {
           setActionError(null);
           setSentDialogOpen(true);
         }}
+        onOpenMarkSigned={() => {
+          setActionError(null);
+          setSuccessMessage(null);
+          setSignedDialogOpen(true);
+        }}
       />
 
       <EngagementLetterFormDialog
@@ -200,6 +241,15 @@ export const EngagementLetterPage = () => {
           if (!mutationBusy) setSentDialogOpen(false);
         }}
         onConfirm={handleMarkSentToClient}
+      />
+
+      <EngagementLetterSignedDialog
+        open={signedDialogOpen}
+        busy={mutationBusy}
+        onClose={() => {
+          if (!mutationBusy) setSignedDialogOpen(false);
+        }}
+        onConfirm={handleMarkSigned}
       />
     </section>
   );

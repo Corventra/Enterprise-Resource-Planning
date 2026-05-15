@@ -60,8 +60,8 @@ export const LeadTrackerFiltersSection = ({
         >
           <option value="All">All Statuses</option>
           <option value="ACTIVE">{leadStatusLabelMap.ACTIVE}</option>
-          <option value="WON">{leadStatusLabelMap.WON}</option>
           <option value="LOST">{leadStatusLabelMap.LOST}</option>
+          <option value="WON">{leadStatusLabelMap.WON}</option>
         </select>
       </div>
 

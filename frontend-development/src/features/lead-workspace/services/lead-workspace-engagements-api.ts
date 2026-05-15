@@ -152,3 +152,26 @@ export const postLeadWorkspaceEngagementLetterSent = async (
   );
   return res.data.item;
 };
+
+interface ApiEngagementLetterSignedResponse {
+  success: boolean;
+  data: {
+    item: ApiEngagementWorkspaceItem;
+    provisioning?: {
+      handover_id: number;
+      handover_code: string;
+      account_id: number;
+      invoice_term_count: number;
+    } | null;
+  };
+}
+
+export const postLeadWorkspaceEngagementLetterSigned = async (
+  leadId: string,
+  engagementId: string
+): Promise<ApiEngagementLetterSignedResponse['data']> => {
+  const res = await apiPost<ApiEngagementLetterSignedResponse>(
+    `/lead-workspace/${leadId}/engagement-letter/${engagementId}/signed`
+  );
+  return res.data;
+};

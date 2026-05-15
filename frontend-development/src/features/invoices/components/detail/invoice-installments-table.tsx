@@ -1,19 +1,34 @@
-import type { InvoiceInstallment } from '../../types/invoice.types';
+import { useState } from 'react';
+import { Download } from 'lucide-react';
+import type { InvoiceDetail, InvoiceInstallment } from '../../types/invoice.types';
+import { downloadInvoiceTermPdf } from '../../pdf/invoice-pdf-service';
 import { formatCurrency, formatDate } from './invoice-detail-formatters';
 
 interface InvoiceInstallmentsTableProps {
+  invoiceDetail: InvoiceDetail;
   installments: InvoiceInstallment[];
 }
 
-export const InvoiceInstallmentsTable = ({ installments }: InvoiceInstallmentsTableProps) => {
+export const InvoiceInstallmentsTable = ({ invoiceDetail, installments }: InvoiceInstallmentsTableProps) => {
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const handleDownload = async (id: string) => {
+    try {
+      setBusyId(id);
+      await downloadInvoiceTermPdf(invoiceDetail, id);
+    } catch (e) {
+      console.error(e);
+      window.alert('Gagal mengunduh PDF invoice. Silakan coba lagi.');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   return (
     <section className="overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-[#eceef0]">
       <div className="border-b border-[#eceef0] px-6 py-4">
         <div className="flex items-center justify-between">
           <h3 className="font-bold text-[#191c1e]">Daftar Termin Pembayaran</h3>
-          <button type="button" className="text-sm font-semibold text-[#003c90] hover:underline">
-            Kelola Termin
-          </button>
         </div>
       </div>
       <div className="overflow-x-auto">
@@ -53,8 +68,14 @@ export const InvoiceInstallmentsTable = ({ installments }: InvoiceInstallmentsTa
                   </span>
                 </td>
                 <td className="px-6 py-4 text-right">
-                  <button type="button" className="font-semibold text-[#003c90] hover:underline">
-                    Detail
+                  <button
+                    type="button"
+                    disabled={busyId === item.id}
+                    onClick={() => handleDownload(item.id)}
+                    className="inline-flex items-center gap-1.5 font-semibold text-[#003c90] hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Download className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    {busyId === item.id ? 'Memuat…' : 'Download Invoice'}
                   </button>
                 </td>
               </tr>

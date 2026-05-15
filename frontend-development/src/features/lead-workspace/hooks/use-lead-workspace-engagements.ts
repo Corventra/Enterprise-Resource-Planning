@@ -5,6 +5,7 @@ import {
   patchLeadWorkspaceEngagementLetter,
   postLeadWorkspaceEngagementLetter,
   postLeadWorkspaceEngagementLetterSent,
+  postLeadWorkspaceEngagementLetterSigned,
   submitLeadWorkspaceEngagementLetter,
   type ApiEngagementLetterWorkspaceProposalSummary
 } from '../services/lead-workspace-engagements-api';
@@ -108,6 +109,15 @@ export const useLeadWorkspaceEngagements = (leadId: string | undefined) => {
     [leadId, refreshBundleSilent]
   );
 
+  const markEngagementLetterSigned = useCallback(
+    async (engagementId: string) => {
+      if (!leadId) throw new Error('Lead ID tidak valid.');
+      await postLeadWorkspaceEngagementLetterSigned(leadId, engagementId);
+      await refreshBundleSilent();
+    },
+    [leadId, refreshBundleSilent]
+  );
+
   return {
     engagementLetters: sortedItems,
     proposalWithoutEngagement,
@@ -118,6 +128,7 @@ export const useLeadWorkspaceEngagements = (leadId: string | undefined) => {
     updateDraftEngagementLetter,
     deleteDraftEngagementLetter,
     submitEngagementLetter,
-    markEngagementLetterSentToClient
+    markEngagementLetterSentToClient,
+    markEngagementLetterSigned
   };
 };

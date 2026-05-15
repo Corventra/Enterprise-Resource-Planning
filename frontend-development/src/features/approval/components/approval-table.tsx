@@ -1,5 +1,6 @@
 import { Check, Eye, RotateCcw } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { handoverStatusStyleMap, mapHandoverDbStatusToLabel } from '../../handover/types/handover.types';
 import { APPROVAL_KIND_LABELS, type ApprovalItem } from '../types/approval.types';
 
 interface ApprovalTableProps {
@@ -8,6 +9,8 @@ interface ApprovalTableProps {
   onApprove: (item: ApprovalItem) => void;
   onRequestRevision: (item: ApprovalItem) => void;
   isReadOnly?: boolean;
+  /** Handover tab: show workflow status instead of approval kind (Type). */
+  handoverStatusColumn?: boolean;
   footer?: ReactNode;
 }
 
@@ -30,12 +33,25 @@ const kindBadgeClass: Record<ApprovalItem['kind'], string> = {
   HandoverMemo: 'bg-[#4edea3]/25 text-[#004b31]'
 };
 
+const renderHandoverStatusCell = (item: ApprovalItem) => {
+  const dbStatus = item.handoverQueueMeta?.handoverStatus ?? 'WAITING_CEO_APPROVAL';
+  const statusLabel = mapHandoverDbStatusToLabel(dbStatus);
+  const statusClass = handoverStatusStyleMap[statusLabel] ?? 'bg-slate-100 text-slate-700';
+
+  return (
+    <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${statusClass}`}>
+      {statusLabel}
+    </span>
+  );
+};
+
 export const ApprovalTable = ({
   items,
   onView,
   onApprove,
   onRequestRevision,
   isReadOnly = false,
+  handoverStatusColumn = false,
   footer
 }: ApprovalTableProps) => {
   return (
@@ -46,7 +62,7 @@ export const ApprovalTable = ({
             <tr className="border-none bg-[#eceef0]">
               <th className={`${thBase} text-left`}>Doc Code</th>
               <th className={`${thBase} text-left`}>Client &amp; Title</th>
-              <th className={`${thBase} text-left`}>Type</th>
+              <th className={`${thBase} text-left`}>{handoverStatusColumn ? 'Status' : 'Type'}</th>
               <th className={`${thBase} text-left`}>Submitted By</th>
               <th className={`${thBase} text-left`}>Submitted At</th>
               <th className={`${thBase} text-center`}>Action</th>
@@ -70,11 +86,15 @@ export const ApprovalTable = ({
                   )}
                 </td>
                 <td className="px-4 py-3.5">
-                  <span
-                    className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${kindBadgeClass[item.kind]}`}
-                  >
-                    {APPROVAL_KIND_LABELS[item.kind]}
-                  </span>
+                  {handoverStatusColumn ? (
+                    renderHandoverStatusCell(item)
+                  ) : (
+                    <span
+                      className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${kindBadgeClass[item.kind]}`}
+                    >
+                      {APPROVAL_KIND_LABELS[item.kind]}
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3.5 text-xs font-medium text-[#434653]">{item.submittedBy}</td>
                 <td className="px-4 py-3.5 text-xs font-medium text-[#434653]">{formatDate(item.submittedAt)}</td>

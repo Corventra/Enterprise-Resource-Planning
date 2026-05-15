@@ -26,7 +26,8 @@ const {
   updateDraftEngagementLetter,
   deleteDraftEngagementLetter,
   submitEngagementLetter,
-  markEngagementLetterSentToClient
+  markEngagementLetterSentToClient,
+  markEngagementLetterSigned
 } = require('../controllers/lead-workspace-engagements.controller');
 const {
   uploadEngagementLetterDocument,
@@ -69,6 +70,7 @@ router.patch(
 router.delete('/:leadId/engagement-letter/:engagementId', ...manageStack, deleteDraftEngagementLetter);
 router.post('/:leadId/engagement-letter/:engagementId/submit', ...manageStack, submitEngagementLetter);
 router.post('/:leadId/engagement-letter/:engagementId/sent', ...manageStack, markEngagementLetterSentToClient);
+router.post('/:leadId/engagement-letter/:engagementId/signed', ...manageStack, markEngagementLetterSigned);
 
 router.get('/:leadId', ...viewStack, getDetail);
 router.patch('/:leadId/details', ...manageStack, updateDetails);
