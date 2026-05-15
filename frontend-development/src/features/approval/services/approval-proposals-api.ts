@@ -4,6 +4,7 @@ import type { ApiLeadWorkspaceProposalRow } from '../../lead-workspace/services/
 export interface ApiPendingProposalListRow {
   approval_id: number;
   proposal_id: number;
+  proposal_code: string | null;
   lead_id: number;
   company_name: string;
   service_class_name: string;

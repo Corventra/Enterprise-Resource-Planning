@@ -1,6 +1,7 @@
 const { pool } = require('../config/db');
 const { LEAD_ACTIVITY_TYPES } = require('../constants/lead-activity-types');
 const { safeUnlinkOldUploadFile } = require('../utils/file');
+const { generateNextProposalCode } = require('../utils/entity-display-code');
 
 const ELIGIBLE_LEAD_WHERE = `
   lead_status IN ('ACTIVE', 'WON', 'LOST')
@@ -118,6 +119,7 @@ const mapDocumentRow = (row) => ({
 
 const mapProposalRow = (row, document) => ({
   proposal_id: row.proposal_id,
+  proposal_code: row.proposal_code ?? null,
   lead_id: row.lead_id,
   service_id: row.service_id,
   service_name: row.service_name,
@@ -192,6 +194,7 @@ const fetchProposalDetail = async (conn, leadId, proposalId) => {
   const [rows] = await conn.execute(
     `SELECT
         p.proposal_id,
+        p.proposal_code,
         p.lead_id,
         p.service_id,
         s.name AS service_name,
@@ -396,8 +399,14 @@ const createDraftProposal = async (leadId, payload, fileMeta, userId, { submit =
       return { ok: false, reason: 'SERVICE_INACTIVE' };
     }
 
-    const [insertResult] = await conn.execute(
-      `INSERT INTO proposals (
+    const [insertResult] = await (async () => {
+      let lastErr;
+      for (let attempt = 0; attempt < 15; attempt++) {
+        const proposalCode = await generateNextProposalCode(conn);
+        try {
+          const [r] = await conn.execute(
+            `INSERT INTO proposals (
+          proposal_code,
           lead_id,
           service_id,
           issuer_company,
@@ -408,19 +417,31 @@ const createDraftProposal = async (leadId, payload, fileMeta, userId, { submit =
           discount_amount,
           proposal_status,
           created_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'DRAFT', ?)`,
-      [
-        normalizedLeadId,
-        payload.service_id,
-        payload.issuer_company,
-        payload.is_sub_contract ? 1 : 0,
-        payload.partner_name,
-        payload.payer_party,
-        payload.proposal_fee,
-        payload.discount_amount,
-        userId
-      ]
-    );
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'DRAFT', ?)`,
+            [
+              proposalCode,
+              normalizedLeadId,
+              payload.service_id,
+              payload.issuer_company,
+              payload.is_sub_contract ? 1 : 0,
+              payload.partner_name,
+              payload.payer_party,
+              payload.proposal_fee,
+              payload.discount_amount,
+              userId
+            ]
+          );
+          return [r];
+        } catch (e) {
+          lastErr = e;
+          if (e.code === 'ER_DUP_ENTRY') {
+            continue;
+          }
+          throw e;
+        }
+      }
+      throw lastErr ?? new Error('Gagal menetapkan proposal_code');
+    })();
 
     const proposalId = insertResult.insertId;
     await insertProposalDocument(conn, {

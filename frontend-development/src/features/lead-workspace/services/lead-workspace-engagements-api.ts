@@ -14,6 +14,7 @@ export interface ApiLeadWorkspaceEngagementLeadSummary {
 
 export interface ApiEngagementLetterWorkspaceEngagement {
   engagement_id: number;
+  engagement_code: string | null;
   lead_id: number;
   proposal_id: number;
   issuer_company: 'DSK' | 'DTAX';
@@ -37,6 +38,7 @@ export interface ApiEngagementLetterWorkspaceEngagement {
 
 export interface ApiEngagementLetterWorkspaceProposalSummary {
   proposal_id: number;
+  proposal_code: string | null;
   service_class_name: string | null;
   service_name: string | null;
   proposal_fee: number;

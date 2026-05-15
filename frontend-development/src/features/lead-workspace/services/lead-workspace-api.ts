@@ -13,6 +13,7 @@ export interface ApiLeadWorkspaceActivityLogRow {
 
 export interface ApiLeadWorkspaceDetailRow {
   lead_id: number;
+  lead_code: string | null;
   company_name: string;
   company_address: string;
   pic_name: string;

@@ -1,5 +1,6 @@
 const { pool } = require('../config/db');
 const { LEAD_ACTIVITY_TYPES } = require('../constants/lead-activity-types');
+const { generateNextLeadCode } = require('../utils/entity-display-code');
 
 const LOST_REASON_CODES = [
   'NO_RESPONSE',
@@ -26,6 +27,7 @@ const LOST_REASON_LABELS = {
 const LEAD_TRACKER_LIST_SELECT = `
   SELECT
       l.lead_id,
+      l.lead_code,
       l.company_name,
       l.pic_name,
       l.email,
@@ -49,6 +51,7 @@ const LEAD_TRACKER_LIST_SELECT = `
 
 const mapListRow = (row) => ({
   lead_id: row.lead_id,
+  lead_code: row.lead_code ?? null,
   company_name: row.company_name,
   pic_name: row.pic_name,
   email: row.email,
@@ -94,8 +97,14 @@ const createManualLead = async (payload, userId) => {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
-    const [result] = await conn.execute(
-      `INSERT INTO leads (
+    let leadId;
+    let insertErr;
+    for (let attempt = 0; attempt < 15; attempt++) {
+      const leadCode = await generateNextLeadCode(conn);
+      try {
+        const [result] = await conn.execute(
+          `INSERT INTO leads (
+          lead_code,
           source_type,
           company_name,
           company_address,
@@ -112,6 +121,7 @@ const createManualLead = async (payload, userId) => {
           processed_by,
           processed_at
         ) VALUES (
+          ?,
           'MANUAL',
           ?, ?, ?, ?, ?, ?,
           NULL,
@@ -123,17 +133,31 @@ const createManualLead = async (payload, userId) => {
           ?,
           NOW()
         )`,
-      [
-        payload.company_name,
-        payload.company_address,
-        payload.pic_name,
-        payload.email,
-        payload.phone_number,
-        payload.desired_services,
-        userId
-      ]
-    );
-    const leadId = result.insertId;
+          [
+            leadCode,
+            payload.company_name,
+            payload.company_address,
+            payload.pic_name,
+            payload.email,
+            payload.phone_number,
+            payload.desired_services,
+            userId
+          ]
+        );
+        leadId = result.insertId;
+        insertErr = undefined;
+        break;
+      } catch (e) {
+        insertErr = e;
+        if (e.code === 'ER_DUP_ENTRY') {
+          continue;
+        }
+        throw e;
+      }
+    }
+    if (insertErr && leadId == null) {
+      throw insertErr;
+    }
     await insertActivityLog(conn, {
       leadId,
       activityType: LEAD_ACTIVITY_TYPES.LEAD_CREATED_MANUAL,

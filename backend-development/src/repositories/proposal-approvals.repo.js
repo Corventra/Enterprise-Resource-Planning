@@ -59,6 +59,7 @@ const mapLeadSummaryRow = (row) => ({
 
 const mapProposalRow = (row, document) => ({
   proposal_id: row.proposal_id,
+  proposal_code: row.proposal_code ?? null,
   lead_id: row.lead_id,
   company_name: row.company_name,
   service_id: row.service_id,
@@ -91,6 +92,7 @@ const mapProposalRow = (row, document) => ({
 const mapPendingListRow = (row) => ({
   approval_id: row.approval_id,
   proposal_id: row.proposal_id,
+  proposal_code: row.proposal_code ?? null,
   lead_id: row.lead_id,
   company_name: row.company_name,
   service_class_name: row.service_class_name,
@@ -108,6 +110,7 @@ const mapPendingListRow = (row) => ({
 const proposalSelectSql = `
   SELECT
       p.proposal_id,
+      p.proposal_code,
       p.lead_id,
       l.company_name,
       l.pic_name,
@@ -227,6 +230,7 @@ const listPendingProposals = async () => {
       `SELECT
           a.approval_id,
           p.proposal_id,
+          p.proposal_code,
           p.lead_id,
           l.company_name,
           sc.name AS service_class_name,

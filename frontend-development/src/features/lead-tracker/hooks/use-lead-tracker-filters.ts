@@ -23,6 +23,7 @@ export const useLeadTrackerFilters = (items: LeadTrackerItem[], pageSize = 6) =>
       const q = filters.search.toLowerCase().trim();
       const matchSearch =
         q === '' ||
+        item.leadCode.toLowerCase().includes(q) ||
         item.companyName.toLowerCase().includes(q) ||
         item.picName.toLowerCase().includes(q) ||
         item.email.toLowerCase().includes(q);

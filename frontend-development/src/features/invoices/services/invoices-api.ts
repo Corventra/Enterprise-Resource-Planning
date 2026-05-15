@@ -79,6 +79,7 @@ export interface ApiInvoiceDetailPayload {
   core_detail: {
     account_id: number;
     lead_id: number;
+    lead_code: string | null;
     company_name: string | null;
     company_address: string | null;
     pic_name: string | null;

@@ -1,4 +1,5 @@
 import { getApiOrigin } from '../../../services/api-client';
+import { formatLeadDisplayId } from '../../lead-workspace/utils/format-lead-display-id';
 import type {
   ApiInvoiceDetailPayload,
   ApiInvoiceListRow,
@@ -164,6 +165,8 @@ export const mapApiInvoiceListRowToItem = (row: ApiInvoiceListRow): InvoiceItem 
 export const mapApiInvoiceDetailToDetail = (payload: ApiInvoiceDetailPayload): InvoiceDetail => {
   const { core_detail: core, summary } = payload;
   const issuerTaxProfile = core.issuer_company === 'DTAX' ? 'DTAX' : 'DSK';
+  const leadCode =
+    core.lead_code && String(core.lead_code).trim() !== '' ? String(core.lead_code).trim() : formatLeadDisplayId(core.lead_id);
 
   const relatedDocuments = [
     mapRelatedDocument(payload.related_documents.latest_proposal_document, 'Proposal'),
@@ -173,6 +176,7 @@ export const mapApiInvoiceDetailToDetail = (payload: ApiInvoiceDetailPayload): I
   return {
     accountId: String(core.account_id),
     leadId: String(core.lead_id),
+    leadCode,
     issuerCompany: core.issuer_company,
     issuerTaxProfile,
     subcontract: null,

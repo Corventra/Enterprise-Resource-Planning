@@ -11,7 +11,6 @@ import { useLeadWorkspace } from '../hooks/use-lead-workspace';
 import { useLeadWorkspacePermissions } from '../hooks/use-lead-workspace-permissions';
 import type { LeadWorkspaceOutletContext, UpdateLeadWorkspaceDetailsPayload } from '../types/lead-workspace.types';
 import { buildLeadWorkspacePreview } from '../utils/lead-workspace-preview';
-import { formatLeadDisplayId } from '../utils/format-lead-display-id';
 
 export const LeadWorkspacePage = () => {
   const navigate = useNavigate();
@@ -113,7 +112,7 @@ export const LeadWorkspacePage = () => {
             Back to Lead Tracker
           </button>
           <div className="mt-2 mb-2 inline-flex rounded-full bg-[#d5e3fc] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#57657a] sm:text-[11px]">
-            {formatLeadDisplayId(workspace.id)}
+            {workspace.leadCode}
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-[#191c1e] sm:text-3xl">{workspace.companyName}</h1>
         </div>

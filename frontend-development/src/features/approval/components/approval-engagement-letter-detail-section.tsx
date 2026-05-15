@@ -195,8 +195,12 @@ export const ApprovalEngagementLetterDetailSection = ({
               </div>
               {engagementLetter.engagementId ? (
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#737784]">Engagement ID</p>
-                  <p className="mt-1 text-sm font-semibold text-[#191c1e]">#{engagementLetter.engagementId}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#737784]">Engagement code</p>
+                  <p className="mt-1 font-mono text-sm font-semibold text-[#191c1e]">
+                    {engagementLetter.engagementCode?.trim()
+                      ? engagementLetter.engagementCode
+                      : `— (legacy #${engagementLetter.engagementId})`}
+                  </p>
                 </div>
               ) : null}
             </div>
@@ -208,6 +212,10 @@ export const ApprovalEngagementLetterDetailSection = ({
               <h4 className="text-xs font-bold uppercase tracking-wider text-[#191c1e]">Proposal terkait</h4>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <p className="text-[10px] font-bold uppercase text-[#737784]">Proposal code</p>
+                <p className="mt-0.5 font-mono text-sm font-semibold text-[#191c1e]">{dash(ps.proposalCode)}</p>
+              </div>
               <div>
                 <p className="text-[10px] font-bold uppercase text-[#737784]">Service class</p>
                 <p className="mt-0.5 text-sm font-semibold text-[#191c1e]">{dash(ps.serviceClassName)}</p>

@@ -2,6 +2,7 @@ import { apiGet, apiPost } from '../../../services/api-client';
 
 export interface ApiLeadTrackerListRow {
   lead_id: number;
+  lead_code: string | null;
   company_name: string;
   pic_name: string;
   email: string;

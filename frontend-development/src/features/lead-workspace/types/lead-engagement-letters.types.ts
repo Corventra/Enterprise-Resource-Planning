@@ -52,6 +52,8 @@ export type LeadWorkspaceEngagementLinkedProposalStatus =
 
 export interface LeadWorkspaceEngagementLetterProposalSummary {
   proposalId: string | null;
+  /** Kode BD-PRO-xxx; opsional pada mock / data lama. */
+  proposalCode?: string | null;
   serviceClassName: string | null;
   serviceName: string | null;
   proposalFee: string | null;
@@ -75,6 +77,8 @@ export interface LeadWorkspaceEngagementLetterDocument {
 
 export interface LeadWorkspaceEngagementLetterItem {
   id: string;
+  /** Kode referensi BD-EL-xxx dari API. */
+  engagementCode?: string;
   /** ID numerik dari API (opsional sampai integrasi penuh). */
   engagementId?: string;
   /** Nilai numerik agreed_fee untuk form (dari API). */

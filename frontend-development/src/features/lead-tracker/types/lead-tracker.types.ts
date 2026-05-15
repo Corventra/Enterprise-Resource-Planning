@@ -16,6 +16,7 @@ export type StageProgress =
 
 export interface LeadTrackerItem {
   id: string;
+  leadCode: string;
   companyName: string;
   picName: string;
   email: string;

@@ -38,6 +38,7 @@ export interface LeadWorkspaceProposalDocument {
 
 export interface LeadWorkspaceProposalView {
   id: string;
+  proposalCode: string;
   leadId: string;
   serviceId: string;
   serviceName: string;

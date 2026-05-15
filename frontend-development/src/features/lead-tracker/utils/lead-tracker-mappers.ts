@@ -1,6 +1,8 @@
 import type { ApiLeadTrackerListRow } from '../services/lead-tracker-api';
 import type { LeadPipelineStatus, LeadStage, LeadTrackerItem, StageProgress } from '../types/lead-tracker.types';
 
+import { formatLeadDisplayId } from '../../lead-workspace/utils/format-lead-display-id';
+
 const mapLeadStage = (stage: ApiLeadTrackerListRow['current_stage']): LeadStage => stage;
 
 const mapLeadStatus = (status: ApiLeadTrackerListRow['lead_status']): LeadPipelineStatus => status;
@@ -9,6 +11,7 @@ const mapStageProgress = (progress: string): StageProgress => progress as StageP
 
 export const mapLeadTrackerListRow = (row: ApiLeadTrackerListRow): LeadTrackerItem => ({
   id: String(row.lead_id),
+  leadCode: row.lead_code?.trim() ? row.lead_code.trim() : formatLeadDisplayId(row.lead_id),
   companyName: row.company_name,
   picName: row.pic_name,
   email: row.email,

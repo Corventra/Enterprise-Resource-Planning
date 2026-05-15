@@ -24,7 +24,7 @@ export const InvoiceDetailHeader = ({ detail, onBack }: InvoiceDetailHeaderProps
         </span>
       </div>
       <p className="text-sm font-medium text-[#737784]">
-        Lead #{detail.leadId} · {detail.invoice.serviceName}
+        {detail.leadCode} · {detail.invoice.serviceName}
       </p>
       <p className="text-xs text-[#737784]">
         Next action: <span className="font-semibold text-[#191c1e]">{detail.nextAction}</span>

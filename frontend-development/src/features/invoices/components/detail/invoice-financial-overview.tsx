@@ -31,8 +31,8 @@ export const InvoiceFinancialOverview = ({ detail }: InvoiceFinancialOverviewPro
             <p className="mt-0.5 text-[11px] leading-snug text-white/70">{displayValue(detail.clientInfo.address)}</p>
           </div>
           <div>
-            <p className="mb-0.5 text-[9px] font-bold uppercase tracking-widest text-white/60">Lead ID</p>
-            <p className="text-sm font-semibold leading-snug">{displayValue(detail.leadId)}</p>
+            <p className="mb-0.5 text-[9px] font-bold uppercase tracking-widest text-white/60">Lead code</p>
+            <p className="text-sm font-semibold leading-snug">{displayValue(detail.leadCode)}</p>
           </div>
           <div>
             <p className="mb-0.5 text-[9px] font-bold uppercase tracking-widest text-white/60">Company PIC</p>

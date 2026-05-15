@@ -20,6 +20,7 @@ export interface ApiLeadWorkspaceProposalDocumentRow {
 
 export interface ApiLeadWorkspaceProposalRow {
   proposal_id: number;
+  proposal_code: string | null;
   lead_id: number;
   service_id: number;
   service_name: string;

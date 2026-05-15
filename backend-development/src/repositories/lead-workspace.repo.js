@@ -16,6 +16,7 @@ const normalizeLeadId = (leadId) => {
 const LEAD_WORKSPACE_DETAIL_SELECT = `
   SELECT
       l.lead_id,
+      l.lead_code,
       l.company_name,
       l.company_address,
       l.pic_name,
@@ -64,6 +65,7 @@ const resolveLeadSourceLabel = (row) => {
 
 const mapDetailRow = (row) => ({
   lead_id: row.lead_id,
+  lead_code: row.lead_code ?? null,
   company_name: row.company_name,
   company_address: row.company_address,
   pic_name: row.pic_name,

@@ -69,6 +69,7 @@ export const LeadTrackerTable = ({
         <table className="w-full border-collapse text-left">
           <thead>
             <tr className="border-none bg-[#eceef0]">
+              <th className={`${thBase} text-left`}>Code</th>
               <th className={`${thBase} text-left`}>Company</th>
               <th className={`${thBase} text-left`}>Current Stage</th>
               <th className={`${thBase} text-left`}>Stage Progress</th>
@@ -90,11 +91,14 @@ export const LeadTrackerTable = ({
 
               return (
                 <tr key={item.id} className="group transition-colors hover:bg-[#eceef0]/30">
-                  <td className="py-3.5 pl-5 pr-4">
-                    <p className="text-sm font-bold text-[#191c1e] transition-colors group-hover:text-[#003c90]">
-                      {item.companyName}
-                    </p>
-                  </td>
+                <td className="py-3.5 pl-5 pr-4">
+                  <p className="font-mono text-xs font-bold text-[#003c90]">{item.leadCode}</p>
+                </td>
+                <td className="py-3.5 pr-4">
+                  <p className="text-sm font-bold text-[#191c1e] transition-colors group-hover:text-[#003c90]">
+                    {item.companyName}
+                  </p>
+                </td>
                   <td className="px-4 py-3.5 align-middle">
                     <span className="inline-flex rounded-full bg-[#d9e2ff] px-3 py-1 text-[11px] font-bold text-[#00419c]">
                       {leadStageLabelMap[item.currentStage]}

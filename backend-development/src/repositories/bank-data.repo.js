@@ -3,6 +3,16 @@ const { formatLeadSourceLabel } = require('../utils/lead-source-label');
 const { formatAnswerDisplayValue } = require('../utils/submission-summary');
 const { LEAD_ACTIVITY_TYPES } = require('../constants/lead-activity-types');
 
+/** Konversi DATETIME/Date MySQL ke ISO string untuk JSON (hindari serialize tidak konsisten). */
+const formatHandledInstant = (v) => {
+  if (v == null) return null;
+  const d = v instanceof Date ? v : new Date(v);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString();
+};
+
+const normalizeBankDataStatus = (raw) => String(raw ?? '').trim().toUpperCase();
+
 const BANK_DATA_LIST_SELECT = `
   SELECT
       l.lead_id,
@@ -12,7 +22,9 @@ const BANK_DATA_LIST_SELECT = `
       l.email,
       l.phone_number,
       l.bank_data_status,
+      l.processed_by,
       l.processed_at,
+      l.bank_data_archived_by,
       l.bank_data_archived_at,
       c.name AS campaign_name,
       f.title AS form_title,
@@ -33,19 +45,24 @@ const BANK_DATA_LIST_SELECT = `
 `;
 
 const mapHandledFields = (row) => {
-  if (row.bank_data_status === 'PROCESSED') {
+  const status = normalizeBankDataStatus(row.bank_data_status);
+  if (status === 'PROCESSED') {
+    const uid = row.processed_by != null ? Number(row.processed_by) : null;
     return {
+      handled_by_user_id: uid != null && Number.isInteger(uid) && uid > 0 ? uid : null,
       handled_by_name: row.processed_by_name ?? null,
-      handled_at: row.processed_at ?? null
+      handled_at: formatHandledInstant(row.processed_at)
     };
   }
-  if (row.bank_data_status === 'ARCHIVED') {
+  if (status === 'ARCHIVED') {
+    const uid = row.bank_data_archived_by != null ? Number(row.bank_data_archived_by) : null;
     return {
+      handled_by_user_id: uid != null && Number.isInteger(uid) && uid > 0 ? uid : null,
       handled_by_name: row.bank_data_archived_by_name ?? null,
-      handled_at: row.bank_data_archived_at ?? null
+      handled_at: formatHandledInstant(row.bank_data_archived_at)
     };
   }
-  return { handled_by_name: null, handled_at: null };
+  return { handled_by_user_id: null, handled_by_name: null, handled_at: null };
 };
 
 const mapListRow = (row) => {
@@ -61,6 +78,7 @@ const mapListRow = (row) => {
     campaign_name: row.campaign_name ?? null,
     form_title: row.form_title ?? null,
     bank_data_status: row.bank_data_status,
+    handled_by_user_id: handled.handled_by_user_id,
     handled_by_name: handled.handled_by_name,
     handled_at: handled.handled_at
   };

@@ -1,10 +1,11 @@
 import type { ApiLeadWorkspaceDetailRow } from '../services/lead-workspace-api';
 import type { LeadWorkspaceDetail } from '../types/lead-workspace.types';
 import { mapLeadWorkspaceActivityLogRow } from './lead-workspace-activity-mappers';
+import { formatLeadDisplayId } from './format-lead-display-id';
 
 export const mapLeadWorkspaceDetailRow = (row: ApiLeadWorkspaceDetailRow): LeadWorkspaceDetail => ({
   id: String(row.lead_id),
-  leadCode: String(row.lead_id),
+  leadCode: row.lead_code?.trim() ? row.lead_code.trim() : formatLeadDisplayId(row.lead_id),
   companyName: row.company_name,
   address: row.company_address,
   desiredServices: row.desired_services,

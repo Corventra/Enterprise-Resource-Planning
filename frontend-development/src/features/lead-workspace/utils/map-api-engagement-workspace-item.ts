@@ -65,6 +65,7 @@ const parseIssuer = (raw: string | null | undefined): EngagementIssuerCompany | 
 
 const mapProposalSummary = (ps: ApiEngagementWorkspaceItem['proposal_summary']): LeadWorkspaceEngagementLetterProposalSummary => ({
   proposalId: String(ps.proposal_id),
+  proposalCode: ps.proposal_code?.trim() ? ps.proposal_code.trim() : null,
   serviceClassName: ps.service_class_name,
   serviceName: ps.service_name,
   proposalFee: formatIdr(ps.proposal_fee),
@@ -96,6 +97,7 @@ export const mapApiEngagementWorkspaceItemToLeadItem = (item: ApiEngagementWorks
   return {
     id: String(e.engagement_id),
     engagementId: String(e.engagement_id),
+    engagementCode: e.engagement_code?.trim() ? e.engagement_code.trim() : undefined,
     agreedFeeAmount: e.agreed_fee != null ? Number(e.agreed_fee) : undefined,
     elTerminsDraft:
       paymentMethod === 'TERMIN'

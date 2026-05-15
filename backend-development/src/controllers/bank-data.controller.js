@@ -19,7 +19,8 @@ const requirePositiveInt = (value, fieldName) => {
 };
 
 const getUserIdFromRequest = (req, res) => {
-  const id = Number(req.user?.sub);
+  const raw = req.user?.sub ?? req.user?.id ?? req.user?.userId;
+  const id = Number(raw);
   if (!Number.isInteger(id) || id <= 0) {
     res.status(401).json({ success: false, message: 'Token tidak berisi user ID yang valid.' });
     return null;

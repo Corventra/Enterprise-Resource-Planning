@@ -23,6 +23,7 @@ const mapLeadSummaryRow = (row: ApiApprovalProposalLeadSummaryRow): ApprovalProp
 
 const mapPendingProposalRow = (row: ApiPendingProposalListRow): LeadWorkspaceProposalView => ({
   id: String(row.proposal_id),
+  proposalCode: row.proposal_code?.trim() ? row.proposal_code.trim() : '',
   leadId: String(row.lead_id),
   serviceId: '',
   serviceName: row.service_name,
@@ -63,6 +64,7 @@ const mapPendingProposalToApprovalItem = (row: ApiPendingProposalListRow): Appro
   id: String(row.proposal_id),
   kind: 'Proposal',
   sourceId: String(row.lead_id),
+  docCode: row.proposal_code?.trim() || undefined,
   client: row.company_name,
   title: row.service_name,
   serviceLine: row.service_name,
