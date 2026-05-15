@@ -57,6 +57,7 @@ export const EngagementLetterHistorySection = ({
         <table className="w-full border-collapse text-left">
           <thead>
             <tr className="bg-[#f2f4f6]/70 text-[11px] font-bold uppercase tracking-wider text-[#737784]">
+              <th className="px-3 py-3">Code</th>
               <th className="px-4 py-3">Issuer</th>
               <th className="px-3 py-3">Payment</th>
               <th className="px-3 py-3">Status</th>
@@ -67,7 +68,7 @@ export const EngagementLetterHistorySection = ({
           <tbody className="text-sm">
             {engagementLetters.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-5 py-8 text-center text-sm text-[#737784]">
+                <td colSpan={6} className="px-5 py-8 text-center text-sm text-[#737784]">
                   Belum ada engagement letter untuk lead ini.
                 </td>
               </tr>
@@ -82,6 +83,9 @@ export const EngagementLetterHistorySection = ({
                       : 'cursor-pointer border-b border-[#eceef0] transition-colors hover:bg-[#f2f4f6]'
                   }
                 >
+                  <td className="px-3 py-4 font-mono text-xs font-bold text-[#003c90]">
+                    {engagementLetter.engagementCode?.trim() ? engagementLetter.engagementCode : '—'}
+                  </td>
                   <td className="px-4 py-4 text-xs font-semibold text-[#191c1e]">{engagementLetter.issuerCompany}</td>
                   <td className="px-3 py-4 text-xs text-[#434653]">
                     {paymentMethodLabelMap[engagementLetter.paymentMethod]}

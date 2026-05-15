@@ -11,6 +11,7 @@ export interface ApiBankDataListRow {
   campaign_name: string | null;
   form_title: string | null;
   bank_data_status: 'NEW' | 'PROCESSED' | 'ARCHIVED';
+  handled_by_user_id: number | null;
   handled_by_name: string | null;
   handled_at: string | null;
 }

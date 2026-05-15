@@ -1,6 +1,7 @@
 const { pool } = require('../config/db');
 const { LEAD_ACTIVITY_TYPES } = require('../constants/lead-activity-types');
 const { safeUnlinkOldUploadFile } = require('../utils/file');
+const { generateNextEngagementCode } = require('../utils/entity-display-code');
 const {
   buildEngagementWorkspaceItem,
   engagementBaseSelect,
@@ -455,8 +456,14 @@ const createDraftEngagementLetter = async (leadIdRaw, body, fileMeta, userId) =>
       };
     }
 
-    const [insertEl] = await conn.execute(
-      `INSERT INTO engagement_letters (
+    const [insertEl] = await (async () => {
+      let lastErr;
+      for (let attempt = 0; attempt < 15; attempt++) {
+        const engagementCode = await generateNextEngagementCode(conn);
+        try {
+          const [r] = await conn.execute(
+            `INSERT INTO engagement_letters (
+          engagement_code,
           lead_id,
           proposal_id,
           issuer_company,
@@ -465,9 +472,20 @@ const createDraftEngagementLetter = async (leadIdRaw, body, fileMeta, userId) =>
           engagement_status,
           revision_note,
           created_by
-        ) VALUES (?, ?, ?, ?, ?, 'DRAFT', NULL, ?)`,
-      [leadId, proposal.proposal_id, payload.issuer_company, payload.agreed_fee, payload.payment_method, userId]
-    );
+        ) VALUES (?, ?, ?, ?, ?, ?, 'DRAFT', NULL, ?)`,
+            [engagementCode, leadId, proposal.proposal_id, payload.issuer_company, payload.agreed_fee, payload.payment_method, userId]
+          );
+          return [r];
+        } catch (e) {
+          lastErr = e;
+          if (e.code === 'ER_DUP_ENTRY') {
+            continue;
+          }
+          throw e;
+        }
+      }
+      throw lastErr ?? new Error('Gagal menetapkan engagement_code');
+    })();
     const engagementId = insertEl.insertId;
 
     if (payload.payment_method === 'TERMIN') {

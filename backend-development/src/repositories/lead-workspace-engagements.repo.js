@@ -167,6 +167,7 @@ const fetchRetainer = async (conn, engagementId) => {
 const engagementBaseSelect = `
   SELECT
       e.engagement_id,
+      e.engagement_code,
       e.lead_id,
       e.proposal_id,
       e.issuer_company,
@@ -208,6 +209,7 @@ const buildProposalSummaryPayload = async (conn, baseRow) => {
 
   return {
     proposal_id: baseRow.proposal_id,
+    proposal_code: baseRow.proposal_code ?? null,
     service_class_name: baseRow.service_class_name ?? null,
     service_name: baseRow.service_name ?? null,
     proposal_fee: proposalFee,
@@ -226,6 +228,7 @@ const fetchLatestProposalRowForLead = async (conn, leadId) => {
   const [rows] = await conn.execute(
     `SELECT
         p.proposal_id,
+        p.proposal_code,
         p.proposal_fee,
         p.discount_amount,
         p.proposal_status,
@@ -255,6 +258,7 @@ const buildEngagementWorkspaceItem = async (conn, baseRow) => {
   return {
     engagement: {
       engagement_id: engagementId,
+      engagement_code: baseRow.engagement_code ?? null,
       lead_id: baseRow.lead_id,
       proposal_id: baseRow.proposal_id,
       issuer_company: baseRow.issuer_company,

@@ -63,8 +63,10 @@ export const ApprovalProposalDetailSection = ({
                     <p className="mt-1 text-sm font-semibold text-[#191c1e]">{proposal.serviceName}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#737784]">Proposal ID</p>
-                    <p className="mt-1 text-sm font-semibold text-[#191c1e]">#{proposal.id}</p>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#737784]">Proposal code</p>
+                    <p className="mt-1 font-mono text-sm font-semibold text-[#191c1e]">
+                      {proposal.proposalCode?.trim() ? proposal.proposalCode : `— (legacy #${proposal.id})`}
+                    </p>
                   </div>
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-wider text-[#737784]">Service class</p>

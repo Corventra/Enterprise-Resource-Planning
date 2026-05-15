@@ -320,8 +320,10 @@ const findInvoiceAccountCore = async (accountId) => {
         l.pic_name,
         l.phone_number AS pic_phone,
         l.email AS pic_email,
+        l.lead_code,
         s.name AS service_name,
-        e.signed_at AS engagement_signed_at
+        e.signed_at AS engagement_signed_at,
+        e.engagement_code
       FROM invoice_accounts ia
       INNER JOIN leads l ON l.lead_id = ia.lead_id
       INNER JOIN services s ON s.service_id = ia.service_id
@@ -355,9 +357,17 @@ const findInvoiceAccountDetail = async (accountIdRaw) => {
 
   const next_action = buildInvoiceNextAction(terms);
 
+  const engagementRef =
+    core.engagement_code && String(core.engagement_code).trim() !== ''
+      ? String(core.engagement_code).trim()
+      : core.engagement_id != null
+        ? `EL #${core.engagement_id}`
+        : null;
+
   const core_detail = {
     account_id: core.account_id,
     lead_id: core.lead_id,
+    lead_code: core.lead_code ?? null,
     company_name: core.company_name ?? null,
     company_address: core.company_address ?? null,
     pic_name: core.pic_name ?? null,
@@ -365,7 +375,7 @@ const findInvoiceAccountDetail = async (accountIdRaw) => {
     pic_email: core.pic_email ?? null,
     contract_value_dpp: toNumber(core.contract_value_dpp),
     payment_method: core.payment_method,
-    engagement_reference: core.engagement_id != null ? `EL #${core.engagement_id}` : null,
+    engagement_reference: engagementRef,
     engagement_signed_at: formatDateTimeIso(core.engagement_signed_at),
     service_name: core.service_name ?? null,
     issuer_company: core.issuer_company

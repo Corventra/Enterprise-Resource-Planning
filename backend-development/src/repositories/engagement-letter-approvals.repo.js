@@ -36,6 +36,7 @@ const listPendingEngagementLetters = async () => {
       `SELECT
           a.approval_id,
           e.engagement_id,
+          e.engagement_code,
           e.lead_id,
           l.company_name,
           e.issuer_company,
@@ -61,6 +62,7 @@ const listPendingEngagementLetters = async () => {
     const items = rows.map((r) => ({
       approval_id: r.approval_id,
       engagement_id: r.engagement_id,
+      engagement_code: r.engagement_code ?? null,
       lead_id: r.lead_id,
       company_name: r.company_name ?? null,
       issuer_company: r.issuer_company,

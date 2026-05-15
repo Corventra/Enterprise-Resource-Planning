@@ -118,12 +118,15 @@ const findHandoverCore = async (conn, handoverId) => {
         e.signed_at AS engagement_signed_at,
         e.agreed_fee,
         e.payment_method,
-        e.issuer_company
+        e.issuer_company,
+        e.engagement_code,
+        p.proposal_code
       FROM handovers h
       INNER JOIN leads l ON l.lead_id = h.lead_id
       INNER JOIN services s ON s.service_id = h.service_id
       INNER JOIN users uc ON uc.id = h.created_by
       INNER JOIN engagement_letters e ON e.engagement_id = h.engagement_id
+      INNER JOIN proposals p ON p.proposal_id = h.proposal_id
      WHERE h.handover_id = ?
      LIMIT 1`,
     [handoverId]
@@ -445,8 +448,18 @@ const buildHandoverDetailPayload = async (handoverId) => {
       client_contact: clientContact,
       engagement_status: core.engagement_status ?? null,
       engagement_signed_at: formatDateTimeIso(core.engagement_signed_at),
-      proposal_reference: core.proposal_id != null ? `Proposal #${core.proposal_id}` : null,
-      engagement_reference: core.engagement_id != null ? `EL #${core.engagement_id}` : null,
+      proposal_reference:
+        core.proposal_code && String(core.proposal_code).trim() !== ''
+          ? String(core.proposal_code).trim()
+          : core.proposal_id != null
+            ? `Proposal #${core.proposal_id}`
+            : null,
+      engagement_reference:
+        core.engagement_code && String(core.engagement_code).trim() !== ''
+          ? String(core.engagement_code).trim()
+          : core.engagement_id != null
+            ? `EL #${core.engagement_id}`
+            : null,
       created_by_name: core.created_by_name ?? null
     },
     background_summary: core.background_summary ?? null,

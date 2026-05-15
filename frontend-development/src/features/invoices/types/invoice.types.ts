@@ -151,6 +151,8 @@ export interface InvoiceSubcontractInfo {
 export interface InvoiceDetail {
   accountId: string;
   leadId: string;
+  /** Kode referensi LD-xxx; fallback ke numerik di mapper jika null. */
+  leadCode: string;
   issuerCompany: string;
   issuerTaxProfile: 'DSK' | 'DTAX';
   nextAction: string;

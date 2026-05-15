@@ -24,6 +24,7 @@ const mapProposalDocument = (row: NonNullable<ApiLeadWorkspaceProposalRow['docum
 
 export const mapLeadWorkspaceProposalRow = (row: ApiLeadWorkspaceProposalRow): LeadWorkspaceProposalView => ({
   id: String(row.proposal_id),
+  proposalCode: row.proposal_code?.trim() ? row.proposal_code.trim() : '',
   leadId: String(row.lead_id),
   serviceId: String(row.service_id),
   serviceName: row.service_name,

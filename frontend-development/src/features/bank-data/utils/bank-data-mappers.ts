@@ -45,7 +45,9 @@ export const mapBankDataListRow = (row: ApiBankDataListRow): BankDataEntry => ({
   campaignName: row.campaign_name ?? '—',
   formName: row.form_title ?? '—',
   status: mapStatus(row.bank_data_status),
-  handledBy: row.handled_by_name,
+  handledBy:
+    row.handled_by_name?.trim() ||
+    (row.handled_by_user_id != null && row.handled_by_user_id > 0 ? `User #${row.handled_by_user_id}` : null),
   handledAt: row.handled_at
 });
 

@@ -30,6 +30,7 @@ const statusLabelMap = {
 const tableHead = (
   <thead>
     <tr className="bg-[#f2f4f6]/70 text-[11px] font-bold uppercase tracking-wider text-[#737784]">
+      <th className="px-4 py-3">Code</th>
       <th className="px-5 py-3">Service</th>
       <th className="px-4 py-3">Issuer</th>
       <th className="px-4 py-3">Status</th>
@@ -65,18 +66,19 @@ export const ProposalHistorySection = ({ proposal, isLoading, onCreateProposal }
           <tbody className="text-sm">
             {isLoading ? (
               <tr>
-                <td colSpan={6} className="px-5 py-8 text-center text-sm text-[#737784]">
+                <td colSpan={7} className="px-5 py-8 text-center text-sm text-[#737784]">
                   Memuat proposal…
                 </td>
               </tr>
             ) : !proposal ? (
               <tr>
-                <td colSpan={6} className="px-5 py-8 text-center text-sm text-[#737784]">
+                <td colSpan={7} className="px-5 py-8 text-center text-sm text-[#737784]">
                   Belum ada proposal untuk lead ini.
                 </td>
               </tr>
             ) : (
               <tr className="border-l-4 border-[#003c90] bg-[#003c90]/5">
+                <td className="px-4 py-5 font-mono text-xs font-bold text-[#003c90]">{proposal.proposalCode || '—'}</td>
                 <td className="px-4 py-5 font-semibold text-[#191c1e]">{proposal.serviceName}</td>
                 <td className="px-3 py-5 text-xs text-[#434653]">{proposal.issuerCompany}</td>
                 <td className="px-3 py-5 text-xs font-semibold text-[#434653]">{statusLabelMap[proposal.status]}</td>

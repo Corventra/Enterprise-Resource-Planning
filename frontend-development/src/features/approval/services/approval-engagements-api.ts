@@ -7,6 +7,7 @@ import type {
 export interface ApiPendingEngagementLetterRow {
   approval_id: number;
   engagement_id: number;
+  engagement_code: string | null;
   lead_id: number;
   company_name: string | null;
   issuer_company: 'DSK' | 'DTAX';

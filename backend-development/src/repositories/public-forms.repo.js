@@ -1,4 +1,5 @@
 const { pool } = require('../config/db');
+const { generateNextLeadCode } = require('../utils/entity-display-code');
 
 const mapFormPublicRow = (row) => ({
   form_id: row.form_id,
@@ -147,24 +148,44 @@ const insertSubmissionAnswersAndOptionalLead = async ({
       );
     }
     if (leadPayload && formCategory === 'LEAD_CAPTURE') {
-      await conn.execute(
-        `INSERT INTO leads (
+      let inserted = false;
+      let lastErr;
+      for (let attempt = 0; attempt < 15; attempt++) {
+        const leadCode = await generateNextLeadCode(conn);
+        try {
+          await conn.execute(
+            `INSERT INTO leads (
+          lead_code,
           campaign_id, form_id, submission_id, distribution_link_id, source_type,
           company_name, company_address, pic_name, email, phone_number, desired_services,
           bank_data_status
-        ) VALUES (?,?,?,?, 'FORM_LEAD_CAPTURE',?,?,?,?,?, NULL, 'NEW')`,
-        [
-          campaignId,
-          formId,
-          submissionId,
-          distributionLinkId,
-          leadPayload.company_name,
-          leadPayload.company_address,
-          leadPayload.pic_name,
-          leadPayload.email,
-          leadPayload.phone_number
-        ]
-      );
+        ) VALUES (?,?,?,?,?, 'FORM_LEAD_CAPTURE',?,?,?,?,?, NULL, 'NEW')`,
+            [
+              leadCode,
+              campaignId,
+              formId,
+              submissionId,
+              distributionLinkId,
+              leadPayload.company_name,
+              leadPayload.company_address,
+              leadPayload.pic_name,
+              leadPayload.email,
+              leadPayload.phone_number
+            ]
+          );
+          inserted = true;
+          break;
+        } catch (e) {
+          lastErr = e;
+          if (e.code === 'ER_DUP_ENTRY') {
+            continue;
+          }
+          throw e;
+        }
+      }
+      if (!inserted) {
+        throw lastErr ?? new Error('Gagal menetapkan lead_code');
+      }
     }
     await conn.commit();
     return submissionId;
