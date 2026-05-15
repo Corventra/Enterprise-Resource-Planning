@@ -1,4 +1,5 @@
 const { pool } = require('../config/db');
+const { formatSqlDate } = require('../utils/sql-date');
 
 const mapTypeRow = (row) => ({
   campaign_type_id: row.campaign_type_id,
@@ -17,8 +18,8 @@ const mapCampaignRow = (row) => ({
   campaign_code: row.campaign_code,
   name: row.name,
   status: row.status,
-  start_date: row.start_date,
-  end_date: row.end_date,
+  start_date: formatSqlDate(row.start_date),
+  end_date: formatSqlDate(row.end_date),
   notes: row.notes,
   image_path: row.image_path,
   created_at: row.created_at,

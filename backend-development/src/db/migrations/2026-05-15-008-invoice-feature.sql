@@ -219,3 +219,37 @@ CREATE TABLE invoice_payments (
   INDEX idx_invoice_payments_verified_by (verified_by),
   INDEX idx_invoice_payments_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE invoice_activity_logs (
+  invoice_activity_id BIGINT PRIMARY KEY AUTO_INCREMENT,
+
+  account_id BIGINT NOT NULL,
+  invoice_id BIGINT NULL,
+
+  activity_type VARCHAR(100) NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT NULL,
+
+  created_by INT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT fk_invoice_activity_logs_account
+    FOREIGN KEY (account_id) REFERENCES invoice_accounts(account_id)
+    ON UPDATE CASCADE
+    ON DELETE CASCADE,
+
+  CONSTRAINT fk_invoice_activity_logs_invoice
+    FOREIGN KEY (invoice_id) REFERENCES invoice_terms(invoice_id)
+    ON UPDATE CASCADE
+    ON DELETE SET NULL,
+
+  CONSTRAINT fk_invoice_activity_logs_created_by
+    FOREIGN KEY (created_by) REFERENCES users(id)
+    ON UPDATE CASCADE
+    ON DELETE SET NULL,
+
+  INDEX idx_invoice_activity_logs_account_id (account_id),
+  INDEX idx_invoice_activity_logs_invoice_id (invoice_id),
+  INDEX idx_invoice_activity_logs_activity_type (activity_type),
+  INDEX idx_invoice_activity_logs_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

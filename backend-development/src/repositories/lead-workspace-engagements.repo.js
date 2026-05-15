@@ -1,5 +1,6 @@
 const { pool } = require('../config/db');
 const { formatLeadSourceLabel } = require('../utils/lead-source-label');
+const { formatSqlDate } = require('../utils/sql-date');
 const leadWorkspaceRepo = require('./lead-workspace.repo');
 
 const normalizeLeadId = (leadId) => {
@@ -12,16 +13,6 @@ const normalizeEngagementId = (engagementId) => {
   const n = Number(engagementId);
   if (!Number.isSafeInteger(n) || n <= 0) return null;
   return n;
-};
-
-/** DATE / DATETIME → `YYYY-MM-DD` aman untuk JSON (hindari shift timezone berlebihan). */
-const formatSqlDate = (v) => {
-  if (v == null) return null;
-  if (v instanceof Date && !Number.isNaN(v.getTime())) {
-    return v.toISOString().slice(0, 10);
-  }
-  const s = String(v);
-  return s.length >= 10 ? s.slice(0, 10) : s;
 };
 
 const mapLeadSummaryRow = (row) => ({

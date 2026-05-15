@@ -5,52 +5,80 @@ import { createRoot } from 'react-dom/client';
 import type { InvoiceDetail } from '../types/invoice.types';
 import { buildInvoicePdfViewModel } from './invoice-pdf-build-payload';
 import { InvoicePdfDocument } from './invoice-pdf-document';
+import type { InvoicePdfViewModel } from './invoice-pdf-types';
 
 const HTML_CANVAS_SCALE = 2;
+const PDF_ROOT_SELECTOR = '[data-invoice-pdf-root]';
+const DEFAULT_MOUNT_TIMEOUT_MS = 12_000;
 
 function sanitizeFilename(s: string) {
   return s.replace(/[/\\?%*:|"<>]/g, '-').replace(/\s+/g, '_');
 }
 
-/** Convert canvas pixels (from html2canvas) to mm at 96dpi, undoing capture scale. */
 function canvasPxToMm(px: number) {
   return (px / HTML_CANVAS_SCALE) * (25.4 / 96);
 }
 
-export async function downloadInvoiceTermPdf(detail: InvoiceDetail, installmentId: string): Promise<void> {
-  const term = detail.installments.find((i) => i.id === installmentId);
-  if (!term) throw new Error('Invoice term not found');
+/** Poll until PDF root exists inside container (React commit + paint). */
+export async function waitForPdfRoot(
+  container: HTMLElement,
+  timeoutMs = DEFAULT_MOUNT_TIMEOUT_MS
+): Promise<HTMLElement> {
+  const deadline = Date.now() + timeoutMs;
 
-  const model = buildInvoicePdfViewModel(detail, term);
+  return new Promise((resolve, reject) => {
+    const tick = () => {
+      const el = container.querySelector(PDF_ROOT_SELECTOR);
+      if (el instanceof HTMLElement) {
+        resolve(el);
+        return;
+      }
+      if (Date.now() >= deadline) {
+        reject(new Error('PDF root not mounted'));
+        return;
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+}
 
-  const host = document.createElement('div');
-  host.style.position = 'fixed';
-  host.style.left = '-12000px';
-  host.style.top = '0';
-  host.style.zIndex = '-1';
-  document.body.appendChild(host);
+async function waitForImages(el: HTMLElement): Promise<void> {
+  const imgs = Array.from(el.querySelectorAll('img'));
+  await Promise.all(
+    imgs.map(
+      (img) =>
+        new Promise<void>((resolve) => {
+          if (img.complete) {
+            resolve();
+            return;
+          }
+          const done = () => resolve();
+          img.addEventListener('load', done, { once: true });
+          img.addEventListener('error', done, { once: true });
+        })
+    )
+  );
+}
 
-  const root = createRoot(host);
-  root.render(createElement(InvoicePdfDocument, { data: model }));
-
+async function waitForLayoutPaint(): Promise<void> {
   await new Promise<void>((resolve) => {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => resolve());
     });
   });
+}
 
-  const el = host.querySelector('[data-invoice-pdf-root]');
-  if (!el || !(el instanceof HTMLElement)) {
-    root.unmount();
-    document.body.removeChild(host);
-    throw new Error('PDF root not mounted');
-  }
+/** Capture mounted PDF root and save file (caller must ensure root is mounted). */
+export async function captureAndDownloadPdf(el: HTMLElement, model: InvoicePdfViewModel): Promise<void> {
+  await waitForLayoutPaint();
+  await waitForImages(el);
 
   const canvas = await html2canvas(el, {
     scale: HTML_CANVAS_SCALE,
     useCORS: true,
     backgroundColor: '#ffffff',
-    logging: false,
+    logging: false
   });
 
   const imgData = canvas.toDataURL('image/png', 1.0);
@@ -73,7 +101,34 @@ export async function downloadInvoiceTermPdf(detail: InvoiceDetail, installmentI
 
   const name = sanitizeFilename(`Invoice-${model.invoiceNumber}`);
   pdf.save(`${name}.pdf`);
+}
 
-  root.unmount();
-  document.body.removeChild(host);
+export function buildInvoicePdfModel(detail: InvoiceDetail, installmentId: string): InvoicePdfViewModel {
+  const term = detail.installments.find((i) => i.id === installmentId);
+  if (!term) throw new Error('Invoice term not found');
+  return buildInvoicePdfViewModel(detail, term);
+}
+
+/** Manual download: mount off-screen tree, wait for root, capture, cleanup. */
+export async function downloadInvoiceTermPdf(detail: InvoiceDetail, installmentId: string): Promise<void> {
+  const model = buildInvoicePdfModel(detail, installmentId);
+
+  const host = document.createElement('div');
+  host.style.position = 'fixed';
+  host.style.left = '-12000px';
+  host.style.top = '0';
+  host.style.zIndex = '-1';
+  host.style.pointerEvents = 'none';
+  document.body.appendChild(host);
+
+  const root = createRoot(host);
+
+  try {
+    root.render(createElement(InvoicePdfDocument, { data: model }));
+    const el = await waitForPdfRoot(host);
+    await captureAndDownloadPdf(el, model);
+  } finally {
+    root.unmount();
+    document.body.removeChild(host);
+  }
 }

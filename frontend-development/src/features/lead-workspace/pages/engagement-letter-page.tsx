@@ -1,9 +1,10 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router';
 import { ApiError } from '../../../services/api-client';
 import { EngagementLetterDetailSection } from '../components/engagement-letter-detail-section';
 import { EngagementLetterHistorySection } from '../components/engagement-letter-history-section';
 import { EngagementLetterFormDialog } from '../components/modals/engagement-letter-form-dialog';
+import { EngagementLetterSubmitConfirmDialog } from '../components/modals/engagement-letter-submit-confirm-dialog';
 import { EngagementLetterSentToClientDialog } from '../components/modals/engagement-letter-sent-to-client-dialog';
 import { EngagementLetterSignedDialog } from '../components/modals/engagement-letter-signed-dialog';
 import { useLeadWorkspaceEngagements } from '../hooks/use-lead-workspace-engagements';
@@ -30,9 +31,11 @@ export const EngagementLetterPage = () => {
   const [mutationBusy, setMutationBusy] = useState(false);
   const [busyAction, setBusyAction] = useState<'draft' | 'submit' | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
   const [sentDialogOpen, setSentDialogOpen] = useState(false);
   const [signedDialogOpen, setSignedDialogOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const pendingSubmitFdRef = useRef<FormData | null>(null);
 
   const canCreateEngagementLetter = proposalWithoutEngagement?.proposal_status === 'RESPONDED';
 
@@ -232,6 +235,34 @@ export const EngagementLetterPage = () => {
           if (!mutationBusy) setFormOpen(false);
         }}
         onSubmit={handleFormSubmit}
+        onRequestSubmitConfirm={(fd) => {
+          pendingSubmitFdRef.current = fd;
+          setFormOpen(false);
+          setSubmitConfirmOpen(true);
+        }}
+      />
+
+      <EngagementLetterSubmitConfirmDialog
+        open={submitConfirmOpen}
+        busy={mutationBusy && busyAction === 'submit'}
+        onClose={() => {
+          if (!mutationBusy) {
+            setSubmitConfirmOpen(false);
+            pendingSubmitFdRef.current = null;
+          }
+        }}
+        onConfirm={async () => {
+          const fd = pendingSubmitFdRef.current;
+          if (!fd) return;
+          try {
+            await handleFormSubmit(fd, 'submit');
+          } catch {
+            /* error banner on page */
+          } finally {
+            setSubmitConfirmOpen(false);
+            pendingSubmitFdRef.current = null;
+          }
+        }}
       />
 
       <EngagementLetterSentToClientDialog

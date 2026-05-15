@@ -102,6 +102,13 @@ const validateTermins = (termins) => {
     if (name.length === 0 || name.length > 150) {
       return { ok: false, message: 'Term name wajib diisi (maks. 150 karakter).' };
     }
+    const schedule = t.billing_schedule_date && String(t.billing_schedule_date).trim();
+    if (!schedule || schedule.length < 10) {
+      return {
+        ok: false,
+        message: 'Setiap termin wajib memiliki billing schedule date (Down Payment, Installment, dan Final).'
+      };
+    }
   }
   return { ok: true, termins };
 };

@@ -5,6 +5,7 @@ import { EngagementDocumentCard } from './engagement-document-card';
 import { useLeadWorkspacePermissions } from '../hooks/use-lead-workspace-permissions';
 import type { LeadWorkspaceEngagementLetterItem } from '../types/lead-engagement-letters.types';
 import type { LeadWorkspaceOutletContext } from '../types/lead-workspace.types';
+import { formatDateOnlyId } from '../../../utils/format-date-only';
 import {
   engagementStatusClassMap,
   engagementStatusLabelMap,
@@ -36,23 +37,13 @@ const formatDateTime = (iso?: string | null) => {
   return d.toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
 
-const formatDateOnly = (iso?: string | null) => {
-  if (!iso) return '-';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '-';
-  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-};
-
 const dash = (v?: string | null) => {
   if (v === undefined || v === null) return '-';
   const t = String(v).trim();
   return t === '' ? '-' : t;
 };
 
-const formatBillingDateCell = (v: string | null) => {
-  if (!v) return '-';
-  return formatDateOnly(v);
-};
+const formatBillingDateCell = (v: string | null) => formatDateOnlyId(v);
 
 export const EngagementLetterDetailSection = ({
   engagementLetter,
@@ -326,13 +317,13 @@ export const EngagementLetterDetailSection = ({
                   <div>
                     <p className="text-[10px] font-bold uppercase text-[#737784]">Contract start</p>
                     <p className="mt-0.5 text-sm font-semibold text-[#191c1e]">
-                      {formatDateOnly(engagementLetter.retainer.contractStartDate)}
+                      {formatDateOnlyId(engagementLetter.retainer.contractStartDate)}
                     </p>
                   </div>
                   <div>
                     <p className="text-[10px] font-bold uppercase text-[#737784]">Contract end</p>
                     <p className="mt-0.5 text-sm font-semibold text-[#191c1e]">
-                      {formatDateOnly(engagementLetter.retainer.contractEndDate)}
+                      {formatDateOnlyId(engagementLetter.retainer.contractEndDate)}
                     </p>
                   </div>
                   <div>
