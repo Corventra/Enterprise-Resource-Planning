@@ -38,6 +38,8 @@ export interface InvoiceInstallment {
   id: string;
   number: number;
   invoiceNumber: string;
+  /** When set, PDF uses this exact invoice # (API). Else built from term + dates. */
+  canonicalInvoiceNumber?: string;
   termName: string;
   percentage: number;
   taxScheme: string;
@@ -48,6 +50,8 @@ export interface InvoiceInstallment {
   issuedDate: string;
   dueDate: string;
   status: 'Paid' | 'Pending' | 'Overdue';
+  /** Single line for PDF DESCRIPTION column (e.g. billing scope sentence). */
+  pdfLineDescription?: string;
 }
 
 export interface InvoicePaymentHistoryItem {
@@ -88,6 +92,7 @@ export interface InvoiceClientInfo {
 export interface InvoiceContractSummary {
   contractValue: number;
   installmentScheme: string;
+  paymentMethod: string;
   engagementLetterReference: string;
   engagementLetterDate: string;
 }
@@ -100,7 +105,18 @@ export interface InvoiceFinancialSummary {
   paymentProgress: number;
 }
 
+export interface InvoiceSubcontractInfo {
+  partnerName: string;
+  payerParty: string;
+}
+
 export interface InvoiceDetail {
+  leadId: string;
+  /** Legal / display issuer name (UI). */
+  issuerCompany: string;
+  /** Tax: DSK = no PPN + PPh23 2%; DTAX = PPN 11% + PPh23 2%. PDF letterhead always DSK branding. */
+  issuerTaxProfile: 'DSK' | 'DTAX';
+  subcontract: InvoiceSubcontractInfo | null;
   invoice: InvoiceItem;
   contractSummary: InvoiceContractSummary;
   financialSummary: InvoiceFinancialSummary;

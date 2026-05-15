@@ -4,7 +4,14 @@ import type { LeadTrackerFilters, LeadTrackerItem } from '../types/lead-tracker.
 const defaultFilters: LeadTrackerFilters = {
   search: '',
   stage: 'All',
-  status: 'ACTIVE'
+  status: 'All'
+};
+
+/** WON leads always appear last; other rows keep API order among themselves. */
+const compareLeadTrackerRows = (a: LeadTrackerItem, b: LeadTrackerItem) => {
+  if (a.leadStatus === 'WON' && b.leadStatus !== 'WON') return 1;
+  if (b.leadStatus === 'WON' && a.leadStatus !== 'WON') return -1;
+  return 0;
 };
 
 export const useLeadTrackerFilters = (items: LeadTrackerItem[], pageSize = 6) => {
@@ -12,7 +19,7 @@ export const useLeadTrackerFilters = (items: LeadTrackerItem[], pageSize = 6) =>
   const [currentPage, setCurrentPage] = useState(1);
 
   const filteredItems = useMemo(() => {
-    return items.filter((item) => {
+    const filtered = items.filter((item) => {
       const q = filters.search.toLowerCase().trim();
       const matchSearch =
         q === '' ||
@@ -23,6 +30,7 @@ export const useLeadTrackerFilters = (items: LeadTrackerItem[], pageSize = 6) =>
       const matchStatus = filters.status === 'All' || item.leadStatus === filters.status;
       return matchSearch && matchStage && matchStatus;
     });
+    return [...filtered].sort(compareLeadTrackerRows);
   }, [items, filters]);
 
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));

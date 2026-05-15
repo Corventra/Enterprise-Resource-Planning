@@ -25,6 +25,8 @@ interface EngagementLetterDetailSectionProps {
   onDeleteDraft?: () => void | Promise<void>;
   /** Operator lead + APPROVED: buka modal tandai terkirim */
   onOpenSentToClient?: () => void;
+  /** Operator lead + SENT: buka modal tandai signed */
+  onOpenMarkSigned?: () => void;
 }
 
 const formatDateTime = (iso?: string | null) => {
@@ -60,7 +62,8 @@ export const EngagementLetterDetailSection = ({
   mutationBusy = false,
   onEditDraft,
   onDeleteDraft,
-  onOpenSentToClient
+  onOpenSentToClient,
+  onOpenMarkSigned
 }: EngagementLetterDetailSectionProps) => {
   const outlet = useOutletContext<LeadWorkspaceOutletContext | undefined>();
   const processedByUserId = processedByUserIdProp ?? outlet?.processedByUserId ?? null;
@@ -378,6 +381,21 @@ export const EngagementLetterDetailSection = ({
                 className="rounded-lg bg-[#003c90] px-4 py-2 text-xs font-bold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50 sm:text-sm"
               >
                 Sent to Client
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        {engagementLetter.engagementStatus === 'SENT' && canManageLeadWorkspace && onOpenMarkSigned ? (
+          <div className="border-t border-[#eceef0] bg-[#fafbfc] px-4 py-3">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <button
+                type="button"
+                disabled={mutationBusy}
+                onClick={onOpenMarkSigned}
+                className="rounded-lg bg-[#006544] px-4 py-2 text-xs font-bold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50 sm:text-sm"
+              >
+                Mark as Signed
               </button>
             </div>
           </div>

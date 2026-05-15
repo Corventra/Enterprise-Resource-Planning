@@ -9,6 +9,15 @@ const defaultFilters: HandoverFilters = {
 };
 
 export const useHandoverFilters = (items: HandoverItem[], pageSize = 6) => {
+  const serviceLineOptions = useMemo(() => {
+    const names = new Set<string>();
+    for (const item of items) {
+      if (item.serviceLine && item.serviceLine !== '-') {
+        names.add(item.serviceLine);
+      }
+    }
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
+  }, [items]);
   const [filters, setFilters] = useState<HandoverFilters>(defaultFilters);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -54,6 +63,7 @@ export const useHandoverFilters = (items: HandoverItem[], pageSize = 6) => {
     currentPage: normalizedPage,
     totalPages,
     pageSize,
+    serviceLineOptions,
     setCurrentPage,
     updateFilter,
     resetFilters

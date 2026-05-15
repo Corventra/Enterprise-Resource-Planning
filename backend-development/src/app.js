@@ -17,6 +17,7 @@ const leadTrackerRoutes = require("./routes/lead-tracker.routes");
 const leadWorkspaceRoutes = require("./routes/lead-workspace.routes");
 const proposalMastersRoutes = require("./routes/proposal-masters.routes");
 const approvalsRoutes = require("./routes/approvals.routes");
+const handoverRoutes = require("./routes/handover.routes");
 
 const app = express();
 
@@ -60,6 +61,7 @@ app.use("/api/lead-tracker", leadTrackerRoutes);
 app.use("/api/lead-workspace", leadWorkspaceRoutes);
 app.use("/api/proposal-masters", proposalMastersRoutes);
 app.use("/api/approvals", approvalsRoutes);
+app.use("/api/handovers", handoverRoutes);
 
 // Fallback 404 untuk path /api/* yang tidak match
 app.use("/api", (req, res) => {

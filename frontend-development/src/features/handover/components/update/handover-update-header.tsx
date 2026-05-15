@@ -1,10 +1,20 @@
 interface HandoverUpdateHeaderProps {
   onBack: () => void;
+  onSaveDraft: () => void;
+  onSubmit: () => void;
+  busy?: boolean;
+  canSubmit?: boolean;
 }
 
-export const HandoverUpdateHeader = ({ onBack }: HandoverUpdateHeaderProps) => {
+export const HandoverUpdateHeader = ({
+  onBack,
+  onSaveDraft,
+  onSubmit,
+  busy = false,
+  canSubmit = true
+}: HandoverUpdateHeaderProps) => {
   const actionClass =
-    'inline-flex items-center gap-2 rounded-lg bg-[#f2f4f6] px-4 py-2.5 text-sm font-semibold text-[#191c1e] transition-colors hover:bg-[#e6e8ea]';
+    'inline-flex items-center gap-2 rounded-lg bg-[#f2f4f6] px-4 py-2.5 text-sm font-semibold text-[#191c1e] transition-colors hover:bg-[#e6e8ea] disabled:opacity-50';
 
   return (
     <header className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
@@ -13,23 +23,25 @@ export const HandoverUpdateHeader = ({ onBack }: HandoverUpdateHeaderProps) => {
         <p className="mt-1 text-sm text-[#737784]">Edit memo handover proyek secara lengkap.</p>
       </div>
       <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={onBack} className={actionClass}>
+        <button type="button" onClick={onBack} disabled={busy} className={actionClass}>
           <span className="material-symbols-outlined text-[20px]">arrow_back</span>
           Back
         </button>
-        <button
-          type="button"
-          className={actionClass}
-        >
-          Save as Draft
-        </button>
-        <button
-          type="button"
-          className="inline-flex items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-[#003c90]/20 transition-opacity hover:opacity-90"
-        >
+        <button type="button" onClick={onSaveDraft} disabled={busy} className={actionClass}>
           <span className="material-symbols-outlined text-[20px]">save</span>
-          Submit Handover
+          {busy ? 'Menyimpan…' : 'Save as Draft'}
         </button>
+        {canSubmit ? (
+          <button
+            type="button"
+            onClick={onSubmit}
+            disabled={busy}
+            className="inline-flex items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-[#003c90]/20 transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-[20px]">send</span>
+            Submit Handover
+          </button>
+        ) : null}
       </div>
     </header>
   );

@@ -1,109 +1,64 @@
-import { handoverDetailMock } from '../mocks/handover-detail.mock';
-import { handoverMock } from '../mocks/handover.mock';
-import type {
-  HandoverApprovalAction,
-  HandoverApprovalTrailEntry,
-  HandoverDetail,
-  HandoverItem,
-  HandoverStatus
-} from '../types/handover.types';
-import type { Role } from '../../../app/permissions';
-
-const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
-
-const handoverStore: HandoverItem[] = clone(handoverMock);
-const handoverDetailStore: HandoverDetail = clone(handoverDetailMock);
-const trailByHandoverId: Record<string, HandoverApprovalTrailEntry[]> = {
-  [handoverDetailMock.id]: clone(handoverDetailMock.approvalTrail ?? [])
-};
-
-const PROJECT_STATUS_LABEL: Record<HandoverStatus, string> = {
-  Draft: 'Draft Project',
-  'Waiting CEO Approval': 'Awaiting CEO Approval',
-  'Revision Needed': 'Revision Required',
-  Approved: 'CEO Approved',
-  'Assigned to PM': 'Assigned to PM',
-  'In Project': 'Active Project',
-  Completed: 'Completed Project'
-};
-
-const appendTrail = (
-  id: string,
-  entry: Omit<HandoverApprovalTrailEntry, 'at'> & { at?: string }
-) => {
-  const list = trailByHandoverId[id] ?? [];
-  list.push({ ...entry, at: entry.at ?? new Date().toISOString() } as HandoverApprovalTrailEntry);
-  trailByHandoverId[id] = list;
-};
-
-const mutateStatus = (id: string, next: HandoverStatus): HandoverItem | undefined => {
-  const item = handoverStore.find((entry) => entry.id === id);
-  if (!item) return undefined;
-  item.status = next;
-  return item;
-};
+import {
+  getHandoverById,
+  getHandovers,
+  patchHandoverDraft,
+  submitHandover as submitHandoverApi
+} from './handover-api';
+import { mapApiHandoverDetailToDetail, mapApiHandoverListRowToItem } from '../utils/map-api-handover';
+import type { HandoverPatchExtras } from '../utils/build-handover-patch-payload';
+import { buildHandoverPatchFormData } from '../utils/build-handover-patch-payload';
+import type { HandoverDetail, HandoverItem } from '../types/handover.types';
 
 export const handoverService = {
   async getAll(): Promise<HandoverItem[]> {
-    return clone(handoverStore);
+    const rows = await getHandovers();
+    return rows.map(mapApiHandoverListRowToItem);
   },
+
   async getById(id: string): Promise<HandoverDetail | undefined> {
-    const fallback = handoverStore.find((item) => item.id === id);
-    if (!fallback) return undefined;
+    try {
+      const data = await getHandoverById(id);
+      return mapApiHandoverDetailToDetail(data);
+    } catch {
+      return undefined;
+    }
+  },
 
-    const baseDetail =
-      id === handoverDetailStore.id
-        ? clone(handoverDetailStore)
-        : {
-            ...clone(handoverDetailStore),
-            id: fallback.id,
-            docCode: fallback.docCode,
-            projectInformation: handoverDetailStore.projectInformation.map((info) => {
-              if (info.label === 'Client Name') return { ...info, value: fallback.client };
-              if (info.label === 'Project Title') return { ...info, value: fallback.project };
-              if (info.label === 'Service Line') return { ...info, value: fallback.serviceLine };
-              if (info.label === 'Project Period') return { ...info, value: fallback.period };
-              if (info.label === 'Engagement Letter Status')
-                return { ...info, value: `${fallback.engagementStatus} - ${fallback.engagementStatusDate}` };
-              return info;
-            })
-          };
-
-    return {
-      ...baseDetail,
-      status: fallback.status,
-      projectStatus: PROJECT_STATUS_LABEL[fallback.status],
-      approvalTrail: clone(trailByHandoverId[fallback.id] ?? [])
-    };
-  },
-  async submit(id: string, actor: { name: string; role: Role }, note?: string): Promise<void> {
-    const item = mutateStatus(id, 'Waiting CEO Approval');
-    if (!item) return;
-    appendTrail(id, { action: 'submitted', actor: actor.name, actorRole: actor.role, note });
-  },
-  async approve(id: string, actor: { name: string; role: Role }, note?: string): Promise<void> {
-    const item = mutateStatus(id, 'Approved');
-    if (!item) return;
-    appendTrail(id, { action: 'approved', actor: actor.name, actorRole: actor.role, note });
-  },
-  async requestRevision(id: string, actor: { name: string; role: Role }, note?: string): Promise<void> {
-    const item = mutateStatus(id, 'Revision Needed');
-    if (!item) return;
-    appendTrail(id, { action: 'revisionRequested', actor: actor.name, actorRole: actor.role, note });
-  },
-  async assignPM(id: string, actor: { name: string; role: Role }, note?: string): Promise<void> {
-    const item = mutateStatus(id, 'Assigned to PM');
-    if (!item) return;
-    appendTrail(id, { action: 'pmAssigned', actor: actor.name, actorRole: actor.role, note });
-  },
   async getItemById(id: string): Promise<HandoverItem | undefined> {
-    const found = handoverStore.find((entry) => entry.id === id);
-    return found ? clone(found) : undefined;
+    const items = await this.getAll();
+    return items.find((entry) => entry.id === id);
   },
-  async getTrail(id: string): Promise<HandoverApprovalTrailEntry[]> {
-    return clone(trailByHandoverId[id] ?? []);
+
+  async updateDraft(id: string, form: HandoverDetail, extras: HandoverPatchExtras): Promise<HandoverDetail> {
+    const formData = buildHandoverPatchFormData(form, extras);
+    const data = await patchHandoverDraft(id, formData);
+    return mapApiHandoverDetailToDetail(data);
   },
-  async appendTrailEntry(id: string, action: HandoverApprovalAction, actor: { name: string; role: Role }, note?: string): Promise<void> {
-    appendTrail(id, { action, actor: actor.name, actorRole: actor.role, note });
+
+  async submit(id: string): Promise<HandoverDetail> {
+    const data = await submitHandoverApi(id);
+    return mapApiHandoverDetailToDetail(data);
+  },
+
+  /** Mutasi approval/assign — belum diimplementasi (batch berikutnya). */
+  async approve(_id: string, _actor: { name: string; role: import('../../../app/permissions').Role }, _note?: string): Promise<void> {
+    throw new Error('Approval handover belum tersedia.');
+  },
+  async requestRevision(_id: string, _actor: { name: string; role: import('../../../app/permissions').Role }, _note?: string): Promise<void> {
+    throw new Error('Revision handover belum tersedia.');
+  },
+  async assignPM(_id: string, _actor: { name: string; role: import('../../../app/permissions').Role }, _note?: string): Promise<void> {
+    throw new Error('Assign PM belum tersedia.');
+  },
+  async getTrail(_id: string): Promise<never[]> {
+    return [];
+  },
+  async appendTrailEntry(
+    _id: string,
+    _action: import('../types/handover.types').HandoverApprovalAction,
+    _actor: { name: string; role: import('../../../app/permissions').Role },
+    _note?: string
+  ): Promise<void> {
+    throw new Error('Activity trail handover belum tersedia.');
   }
 };

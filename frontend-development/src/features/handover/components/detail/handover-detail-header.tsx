@@ -1,27 +1,38 @@
-import { ROLES } from '../../../../app/permissions';
+import { PERMISSIONS } from '../../../../app/permissions';
 import { useAuth } from '../../../../app/store/auth-store';
-import type { HandoverStatus } from '../../types/handover.types';
+import type { HandoverDbStatus, HandoverStatus } from '../../types/handover.types';
+import { isHandoverEditableDbStatus } from '../../utils/handover-editable';
 
 interface HandoverDetailHeaderProps {
-  onBack: () => void;
   onEdit: () => void;
-  /** Current handover status, drives which action button is shown. Optional for backward compat. */
   status?: HandoverStatus;
-  /** Called when COO clicks "Assign PM" (only rendered when status==='Approved' and role===COO). */
+  dbStatus?: HandoverDbStatus | string;
+  isOperator?: boolean;
+  onSubmit?: () => void;
   onAssignPM?: () => void;
 }
 
-const SECONDARY = 'inline-flex items-center gap-2 rounded-lg bg-[#f2f4f6] px-4 py-2.5 text-sm font-semibold text-[#191c1e] transition-colors hover:bg-[#e6e8ea]';
-const PRIMARY = 'inline-flex items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-[#003c90]/20 transition-opacity hover:opacity-90';
+const SECONDARY =
+  'inline-flex items-center gap-2 rounded-lg bg-[#f2f4f6] px-4 py-2.5 text-sm font-semibold text-[#191c1e] transition-colors hover:bg-[#e6e8ea]';
+const PRIMARY =
+  'inline-flex items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-[#003c90]/20 transition-opacity hover:opacity-90';
 
-export const HandoverDetailHeader = ({ onBack, onEdit, status, onAssignPM }: HandoverDetailHeaderProps) => {
-  const { role } = useAuth();
+export const HandoverDetailHeader = ({
+  onEdit,
+  status,
+  dbStatus,
+  isOperator = false,
+  onSubmit,
+  onAssignPM
+}: HandoverDetailHeaderProps) => {
+  const { can, canAny } = useAuth();
 
-  const isEditor = role === ROLES.BD || role === ROLES.STAFF_ADMIN;
-  const isAssigner = role === ROLES.COO;
+  const canManage = can(PERMISSIONS.HANDOVER_MANAGE);
+  const canView = canAny([PERMISSIONS.HANDOVER_MANAGE, PERMISSIONS.HANDOVER_APPROVE]);
 
-  const canEdit = !status || (isEditor && (status === 'Draft' || status === 'Revision Needed'));
-  const canAssignPM = isAssigner && status === 'Approved' && Boolean(onAssignPM);
+  const canEdit = canManage && isOperator && isHandoverEditableDbStatus(dbStatus);
+  const canSubmit = canEdit && Boolean(onSubmit);
+  const canAssignPM = canView && status === 'Approved' && Boolean(onAssignPM);
 
   return (
     <header className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
@@ -30,14 +41,16 @@ export const HandoverDetailHeader = ({ onBack, onEdit, status, onAssignPM }: Han
         <p className="mt-1 text-sm text-[#737784]">Menampilkan memo handover proyek secara lengkap.</p>
       </div>
       <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={onBack} className={SECONDARY}>
-          <span className="material-symbols-outlined text-[20px]">arrow_back</span>
-          Back
-        </button>
         {canEdit && (
-          <button type="button" onClick={onEdit} className={canAssignPM ? SECONDARY : PRIMARY}>
+          <button type="button" onClick={onEdit} className={canSubmit || canAssignPM ? SECONDARY : PRIMARY}>
             <span className="material-symbols-outlined text-[20px]">edit</span>
             Edit Handover
+          </button>
+        )}
+        {canSubmit && (
+          <button type="button" onClick={onSubmit} className={PRIMARY}>
+            <span className="material-symbols-outlined text-[20px]">send</span>
+            Submit Handover
           </button>
         )}
         {canAssignPM && (

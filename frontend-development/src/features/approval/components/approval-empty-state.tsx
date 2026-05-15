@@ -1,28 +1,35 @@
-import { CheckCircle2 } from 'lucide-react';
-
 interface ApprovalEmptyStateProps {
+  title?: string;
+  description?: string;
   onReset?: () => void;
+  resetLabel?: string;
 }
 
-export const ApprovalEmptyState = ({ onReset }: ApprovalEmptyStateProps) => {
+const DEFAULT_TITLE = 'No approval items found';
+const DEFAULT_DESCRIPTION = 'There are no submissions waiting for review at this time.';
+const FILTERED_DESCRIPTION = 'Try adjusting your search or reset filters to show the approval queue.';
+
+export const ApprovalEmptyState = ({
+  title = DEFAULT_TITLE,
+  description,
+  onReset,
+  resetLabel = 'Reset Filters'
+}: ApprovalEmptyStateProps) => {
+  const body = description ?? (onReset ? FILTERED_DESCRIPTION : DEFAULT_DESCRIPTION);
+
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-xl bg-white px-6 py-16 text-center shadow-sm ring-1 ring-[#eceef0]">
-      <span className="rounded-full bg-[#4edea3]/20 p-3">
-        <CheckCircle2 className="h-7 w-7 text-[#006544]" strokeWidth={2} />
-      </span>
-      <h3 className="text-lg font-semibold text-[#191c1e]">All caught up</h3>
-      <p className="max-w-md text-sm text-[#737784]">
-        Tidak ada item yang menunggu approval saat ini. Semua submission sudah di-review.
-      </p>
-      {onReset && (
+    <div className="rounded-xl border border-dashed border-[#c3c6d5] bg-white p-7 text-center shadow-sm">
+      <h3 className="text-sm font-semibold text-[#191c1e]">{title}</h3>
+      <p className="mt-1.5 text-xs text-[#737784] sm:text-sm">{body}</p>
+      {onReset ? (
         <button
           type="button"
           onClick={onReset}
-          className="mt-2 inline-flex items-center rounded-lg bg-[#003c90] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0f52ba]"
+          className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-5 py-2 text-sm font-bold text-white shadow-md shadow-[#003c90]/20 transition-opacity hover:opacity-90"
         >
-          Reset Filters
+          {resetLabel}
         </button>
-      )}
+      ) : null}
     </div>
   );
 };

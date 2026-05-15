@@ -24,6 +24,11 @@ export interface ApprovalItem {
   detailRoute: string;
   /** Diisi dari API pending EL; antrean bisa fallback ke map legacy bila tidak ada. */
   engagementQueueMeta?: ApprovalEngagementLetterQueueMeta;
+  handoverQueueMeta?: ApprovalHandoverQueueMeta;
+}
+
+export interface ApprovalHandoverQueueMeta {
+  handoverStatus: string;
 }
 
 export interface ApprovalFilters {

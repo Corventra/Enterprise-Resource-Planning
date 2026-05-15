@@ -1,5 +1,6 @@
 const leadWorkspaceEngagementsRepo = require('../repositories/lead-workspace-engagements.repo');
 const leadWorkspaceEngagementsWriteRepo = require('../repositories/lead-workspace-engagements-write.repo');
+const engagementLetterSignedRepo = require('../repositories/engagement-letter-signed.repo');
 const { ensureLeadWorkspaceOperator } = require('../utils/lead-workspace-operator');
 const { ValidationError } = require('../utils/validation');
 const { safeUnlinkOldUploadFile } = require('../utils/file');
@@ -109,6 +110,24 @@ const mapWriteFailure = (res, result) => {
       return res
         .status(409)
         .json({ success: false, message: 'Engagement letter hanya dapat ditandai terkirim saat status Disetujui (APPROVED).' });
+    case 'NOT_SENT':
+      return res
+        .status(409)
+        .json({ success: false, message: 'Engagement letter hanya dapat ditandai signed saat status Terkirim (SENT).' });
+    case 'ALREADY_SIGNED':
+      return res.status(409).json({ success: false, message: 'Engagement letter sudah ditandatangani.' });
+    case 'ALREADY_PROVISIONED':
+      return res.status(409).json({
+        success: false,
+        message: 'Handover atau akun invoice untuk engagement ini sudah ada.'
+      });
+    case 'TERMIN_DATA_INVALID':
+    case 'RETAINER_DATA_INVALID':
+    case 'RETAINER_PERIOD_INVALID':
+      return res.status(409).json({
+        success: false,
+        message: 'Data pembayaran engagement letter tidak lengkap untuk membuat invoice.'
+      });
     default:
       return res.status(500).json({ success: false, message: 'Internal server error' });
   }
@@ -280,6 +299,31 @@ const submitEngagementLetter = async (req, res) => {
   }
 };
 
+const markEngagementLetterSigned = async (req, res) => {
+  const leadId = requireLeadIdParam(req, res);
+  if (leadId == null) return;
+  const engagementId = requireEngagementIdParam(req, res);
+  if (engagementId == null) return;
+  const userId = getUserIdFromRequest(req, res);
+  if (userId == null) return;
+  if (!(await ensureLeadWorkspaceOperator(leadId, userId, res))) {
+    return undefined;
+  }
+
+  try {
+    const result = await engagementLetterSignedRepo.markEngagementLetterSigned(leadId, engagementId, userId);
+    if (!result.ok) {
+      return mapWriteFailure(res, result);
+    }
+    return res.json({
+      success: true,
+      data: { item: result.item, provisioning: result.provisioning ?? null }
+    });
+  } catch (e) {
+    return sendError(res, e);
+  }
+};
+
 const markEngagementLetterSentToClient = async (req, res) => {
   const leadId = requireLeadIdParam(req, res);
   if (leadId == null) return;
@@ -308,5 +352,6 @@ module.exports = {
   updateDraftEngagementLetter,
   deleteDraftEngagementLetter,
   submitEngagementLetter,
-  markEngagementLetterSentToClient
+  markEngagementLetterSentToClient,
+  markEngagementLetterSigned
 };

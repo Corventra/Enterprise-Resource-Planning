@@ -25,6 +25,13 @@ export const sidebarNavItems: SidebarNavItem[] = [
     group: 'Main'
   },
   {
+    label: 'Approval',
+    path: '/approval',
+    icon: CheckCircle2,
+    group: 'Main',
+    permission: [ROLES.CEO, ROLES.COO]
+  },
+  {
     label: 'Campaigns',
     path: '/campaigns',
     icon: Megaphone,
@@ -51,13 +58,6 @@ export const sidebarNavItems: SidebarNavItem[] = [
     icon: Handshake,
     group: 'Main',
     anyPermission: [PERMISSIONS.HANDOVER_MANAGE, PERMISSIONS.HANDOVER_APPROVE]
-  },
-  {
-    label: 'Approval',
-    path: '/approval',
-    icon: CheckCircle2,
-    group: 'Main',
-    permission: [ROLES.CEO, ROLES.COO]
   },
   {
     label: 'Projects',

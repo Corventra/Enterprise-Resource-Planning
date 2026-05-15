@@ -8,8 +8,7 @@ const navItems = [
   { href: '#risks', label: 'Key Risks / Red Flags' },
   { href: '#communication', label: 'Communication Protocol' },
   { href: '#team', label: 'Project Team Assignment' },
-  { href: '#checklist', label: 'Handover Checklist' },
-  { href: '#signoff', label: 'Sign-Off' }
+  { href: '#checklist', label: 'Handover Checklist' }
 ];
 
 export const HandoverQuickNavigation = () => {

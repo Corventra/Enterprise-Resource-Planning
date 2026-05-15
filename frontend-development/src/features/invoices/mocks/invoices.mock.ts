@@ -103,10 +103,18 @@ export const invoicesMock: InvoiceItem[] = [
 
 export const invoiceDetailsMock: InvoiceDetail[] = [
   {
+    leadId: 'LD-2026-0001',
+    issuerCompany: 'PT Dtax Profita',
+    issuerTaxProfile: 'DTAX',
+    subcontract: {
+      partnerName: 'PT Mitra Teknologi Nusantara',
+      payerParty: 'PT Maju Jaya (End Customer)'
+    },
     invoice: invoicesMock[0],
     contractSummary: {
       contractValue: 30000000,
       installmentScheme: '2 Termin (50/50)',
+      paymentMethod: 'Bank Transfer (BCA)',
       engagementLetterReference: 'EL/2025/089',
       engagementLetterDate: '2025-01-12'
     },
@@ -130,6 +138,9 @@ export const invoiceDetailsMock: InvoiceDetail[] = [
         id: 'ins-001',
         number: 1,
         invoiceNumber: 'INV/MJJ/01/25',
+        canonicalInvoiceNumber: 'INV-004/DSK Global/WD/I/2026',
+        pdfLineDescription:
+          'First Billing Web Development Documentation Preparation of PT Maju Jaya FY 2025 (Down Payment & Master File)',
         termName: 'Down Payment (DP)',
         percentage: 50,
         taxScheme: 'PPN + PPh 23',
@@ -145,6 +156,8 @@ export const invoiceDetailsMock: InvoiceDetail[] = [
         id: 'ins-002',
         number: 2,
         invoiceNumber: 'INV/MJJ/02/25',
+        pdfLineDescription:
+          'Second Billing Web Development Documentation Preparation of PT Maju Jaya FY 2025 (Final Payment & Master File)',
         termName: 'Final Payment',
         percentage: 50,
         taxScheme: 'PPN + PPh 23',
