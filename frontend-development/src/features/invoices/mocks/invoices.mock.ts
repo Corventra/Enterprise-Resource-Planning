@@ -173,6 +173,7 @@ export const invoiceDetailsMock: InvoiceDetail[] = [
     paymentHistory: [
       {
         id: 'pay-001',
+        invoiceTermId: '3',
         transactionDate: '2025-10-15',
         installmentName: 'Final Payment',
         amountReceived: 16350000,
@@ -185,6 +186,7 @@ export const invoiceDetailsMock: InvoiceDetail[] = [
       },
       {
         id: 'pay-002',
+        invoiceTermId: '1',
         transactionDate: '2025-01-12',
         installmentName: 'Down Payment (DP)',
         amountReceived: 16350000,
@@ -196,6 +198,7 @@ export const invoiceDetailsMock: InvoiceDetail[] = [
         status: 'Verified'
       }
     ],
+    activityLogs: [],
     timeline: [
       {
         id: 'tl-001',

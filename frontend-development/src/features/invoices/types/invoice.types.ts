@@ -1,61 +1,82 @@
-export type InvoiceServiceType = 'Web Dev' | 'Tax' | 'Audit' | 'App Dev' | 'Maintenance' | 'Consulting' | 'Security';
-
-export type InvoicePaymentStatus =
-  | 'Draft'
-  | 'Ready to Send'
-  | 'Sent'
-  | 'Partially Paid'
-  | 'Pending Verification'
-  | 'Paid'
-  | 'Overdue'
-  | 'Closed';
+export type InvoiceAccountStatusDb = 'READY_TO_BILL' | 'AWAITING_PAYMENT' | 'OVERDUE' | 'SETTLED';
 
 export type InvoiceDueStatus = 'Safe' | 'Due Soon' | 'Overdue';
 
 export interface InvoiceItem {
   id: string;
-  invoiceCode: string;
-  projectCode: string;
   clientName: string;
-  serviceType: InvoiceServiceType;
+  serviceName: string;
   contractValue: number;
-  totalInvoice: number;
-  settledValue: number;
-  outstandingValue: number;
+  estimatedNetReceipt: number;
   nextDueDate: string | null;
-  paymentStatus: InvoicePaymentStatus;
+  status: string;
+  statusDb: InvoiceAccountStatusDb | string;
+  progressSummary: string;
   paymentProgress: number;
+  nextAction: string;
 }
 
 export interface InvoiceFilters {
   search: string;
-  paymentStatus: InvoicePaymentStatus | 'All';
+  status: string;
   dueStatus: InvoiceDueStatus | 'All';
-  serviceType: InvoiceServiceType | 'All';
 }
+
+export type InvoiceTermStatusDb =
+  | 'DRAFT'
+  | 'READY_TO_ISSUE'
+  | 'ISSUED'
+  | 'SENT'
+  | 'PAID'
+  | 'OVERDUE';
+
+export type InvoicePaymentMethodDb =
+  | 'BANK_TRANSFER'
+  | 'CASH'
+  | 'GIRO'
+  | 'CHEQUE'
+  | 'OTHER';
+
+export type InvoiceTermTypeDb = 'DOWN_PAYMENT' | 'INSTALLMENT' | 'FINAL' | 'RETAINER';
+
+export type InvoiceBillingTriggerTypeDb =
+  | 'IMMEDIATE'
+  | 'SCHEDULE_DATE'
+  | 'PROJECT_COMPLETION'
+  | 'PERIOD_START'
+  | 'PERIOD_END';
 
 export interface InvoiceInstallment {
   id: string;
   number: number;
   invoiceNumber: string;
-  /** When set, PDF uses this exact invoice # (API). Else built from term + dates. */
   canonicalInvoiceNumber?: string;
   termName: string;
+  termType: InvoiceTermTypeDb | string;
+  billingTriggerType: InvoiceBillingTriggerTypeDb | string;
+  triggerReferenceValue?: string | null;
+  triggerConfirmedAt?: string | null;
   percentage: number;
   taxScheme: string;
   baseAmount: number;
   totalInvoice: number;
+  grossAmount: number;
+  ppnAmount: number;
+  pph23Amount: number;
   settledAmount: number;
   outstandingAmount: number;
+  billingScheduleDate: string;
   issuedDate: string;
   dueDate: string;
-  status: 'Paid' | 'Pending' | 'Overdue';
-  /** Single line for PDF DESCRIPTION column (e.g. billing scope sentence). */
+  sentToClientAt?: string | null;
+  status: 'Draft' | 'Ready to Issue' | 'Issued' | 'Sent' | 'Paid' | 'Overdue' | 'Pending';
+  statusDb: InvoiceTermStatusDb | string;
   pdfLineDescription?: string;
 }
 
 export interface InvoicePaymentHistoryItem {
   id: string;
+  invoiceTermId: string;
   transactionDate: string;
   installmentName: string;
   amountReceived: number;
@@ -64,7 +85,11 @@ export interface InvoicePaymentHistoryItem {
   settledAmount: number;
   method: string;
   verifiedBy: string;
-  status: 'Verified' | 'Pending';
+  status: 'Verified' | 'Pending' | 'Rejected';
+  proofFileName?: string | null;
+  proofFileUrl?: string | null;
+  verifiedAt?: string | null;
+  createdAt?: string | null;
 }
 
 export interface InvoiceTimelineItem {
@@ -74,10 +99,22 @@ export interface InvoiceTimelineItem {
   type: 'verified' | 'invoice' | 'note';
 }
 
+export interface InvoiceActivityLogItem {
+  id: string;
+  accountId: string;
+  invoiceId: string | null;
+  activityType: string;
+  title: string;
+  description: string | null;
+  createdByName: string | null;
+  createdAt: string | null;
+}
+
 export interface InvoiceRelatedDocument {
   id: string;
   name: string;
   type: 'pdf' | 'invoice' | 'tax';
+  url?: string;
 }
 
 export interface InvoiceClientInfo {
@@ -101,6 +138,7 @@ export interface InvoiceFinancialSummary {
   dppContract: number;
   grossInvoiceTotal: number;
   netPaymentTotal: number;
+  totalPaidNet: number;
   outstandingTotal: number;
   paymentProgress: number;
 }
@@ -111,11 +149,11 @@ export interface InvoiceSubcontractInfo {
 }
 
 export interface InvoiceDetail {
+  accountId: string;
   leadId: string;
-  /** Legal / display issuer name (UI). */
   issuerCompany: string;
-  /** Tax: DSK = no PPN + PPh23 2%; DTAX = PPN 11% + PPh23 2%. PDF letterhead always DSK branding. */
   issuerTaxProfile: 'DSK' | 'DTAX';
+  nextAction: string;
   subcontract: InvoiceSubcontractInfo | null;
   invoice: InvoiceItem;
   contractSummary: InvoiceContractSummary;
@@ -123,8 +161,7 @@ export interface InvoiceDetail {
   clientInfo: InvoiceClientInfo;
   installments: InvoiceInstallment[];
   paymentHistory: InvoicePaymentHistoryItem[];
+  activityLogs: InvoiceActivityLogItem[];
   timeline: InvoiceTimelineItem[];
   relatedDocuments: InvoiceRelatedDocument[];
-  internalNote: string;
-  internalNoteUpdatedAt: string;
 }

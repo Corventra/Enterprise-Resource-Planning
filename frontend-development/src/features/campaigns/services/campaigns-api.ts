@@ -1,4 +1,5 @@
 import { apiGet, apiPatch, apiPatchFormData, apiPostFormData } from '../../../services/api-client';
+import { normalizeDateOnlyString } from '../../../utils/format-date-only';
 import type {
   Campaign,
   CampaignApiStatus,
@@ -27,14 +28,6 @@ type ApiCampaignRow = {
   created_by_name: string;
 };
 
-const toYmd = (v: string | null | undefined): string => {
-  if (v == null || v === '') return '';
-  const s = String(v);
-  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
-  const d = new Date(s);
-  return Number.isNaN(d.getTime()) ? s.slice(0, 10) : d.toISOString().slice(0, 10);
-};
-
 export const mapApiRowToCampaign = (row: ApiCampaignRow): Campaign => {
   const status: CampaignApiStatus = row.status === 'ARCHIVED' ? 'ARCHIVED' : 'ACTIVE';
   return {
@@ -50,8 +43,8 @@ export const mapApiRowToCampaign = (row: ApiCampaignRow): Campaign => {
     topicName: row.topic_name,
     topicCode: row.topic_code,
     status,
-    startDate: toYmd(row.start_date),
-    endDate: row.end_date == null || row.end_date === '' ? null : toYmd(row.end_date),
+    startDate: normalizeDateOnlyString(row.start_date) ?? '',
+    endDate: normalizeDateOnlyString(row.end_date),
     notes: row.notes,
     imagePath: row.image_path,
     totalSubmissions: 0,

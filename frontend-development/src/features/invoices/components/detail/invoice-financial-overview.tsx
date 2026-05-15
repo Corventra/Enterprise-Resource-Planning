@@ -15,8 +15,8 @@ export const InvoiceFinancialOverview = ({ detail }: InvoiceFinancialOverviewPro
   const { financialSummary } = detail;
   const net = financialSummary.netPaymentTotal;
   const progress = Math.min(100, Math.max(0, financialSummary.paymentProgress));
-  const paidNet = Math.round((net * progress) / 100);
-  const remainingNet = Math.max(0, net - paidNet);
+  const paidNet = financialSummary.totalPaidNet;
+  const remainingNet = financialSummary.outstandingTotal;
 
   return (
     <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12 lg:gap-8">
@@ -75,14 +75,6 @@ export const InvoiceFinancialOverview = ({ detail }: InvoiceFinancialOverviewPro
             <p className="mb-0.5 text-[9px] font-bold uppercase tracking-widest text-white/60">Issuer Company</p>
             <p className="text-sm font-semibold leading-snug">{displayValue(detail.issuerCompany)}</p>
           </div>
-          <div>
-            <p className="mb-0.5 text-[9px] font-bold uppercase tracking-widest text-white/60">Subcontract</p>
-            <p className="text-sm font-semibold leading-snug">{displayValue(detail.subcontract?.partnerName)}</p>
-          </div>
-          <div>
-            <p className="mb-0.5 text-[9px] font-bold uppercase tracking-widest text-white/60">Payer party</p>
-            <p className="text-sm font-semibold leading-snug">{displayValue(detail.subcontract?.payerParty)}</p>
-          </div>
         </div>
         <div className="absolute -right-8 -bottom-8 h-32 w-32 rounded-full bg-white/5 blur-3xl" />
         <div className="absolute -left-4 top-1/2 h-20 w-20 rounded-full bg-white/5 blur-2xl" />
@@ -96,15 +88,11 @@ export const InvoiceFinancialOverview = ({ detail }: InvoiceFinancialOverviewPro
                 <h3 className="text-lg font-bold text-[#191c1e]">Estimasi Bersih Diterima</h3>
               </div>
               <h4 className="text-2xl font-bold tracking-tight text-[#191c1e]">{formatCurrency(net)}</h4>
-              <div className="mt-2 flex items-center gap-2 text-xs font-medium text-[#004b31]">
-                <span
-                  className="material-symbols-outlined text-base leading-none text-[#004b31]"
-                  style={{ fontVariationSettings: "'FILL' 1" }}
-                >
-                  verified
-                </span>
-                <span>Sudah termasuk PPN 11% dan PPh 23</span>
-              </div>
+              <p className="mt-2 text-xs font-medium text-[#004b31]">
+                {detail.issuerTaxProfile === 'DTAX'
+                  ? 'Estimasi bersih setelah PPN 11% dan PPh 23'
+                  : 'Estimasi bersih setelah PPh 23'}
+              </p>
             </div>
             <div className="mt-auto border-t border-[#eceef0] pt-6">
               <p className="mb-3 text-xs font-medium text-slate-600">Progress Pembayaran ({progress}%)</p>

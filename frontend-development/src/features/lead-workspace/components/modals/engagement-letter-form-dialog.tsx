@@ -6,12 +6,14 @@ import {
   SidePanelDialogHeader
 } from '../../../../components/ui/side-panel-dialog';
 import { EngagementLetterDocumentField } from './engagement-letter-document-field';
-import { EngagementLetterSubmitConfirmDialog } from './engagement-letter-submit-confirm-dialog';
+import { normalizeDateOnlyString } from '../../../../utils/format-date-only';
 import type {
   EngagementIssuerCompany,
   EngagementPaymentMethod,
   LeadWorkspaceEngagementLetterItem
 } from '../../types/lead-engagement-letters.types';
+
+const toDateOnlyField = (value: string | null | undefined) => normalizeDateOnlyString(value) ?? '';
 
 const inputClassName =
   'h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none';
@@ -36,6 +38,8 @@ interface EngagementLetterFormDialogProps {
   busyAction?: 'draft' | 'submit' | null;
   onClose: () => void;
   onSubmit: (formData: FormData, action: 'draft' | 'submit') => Promise<void> | void;
+  /** Tutup panel lalu tampilkan konfirmasi submit di parent (hindari dialog di belakang panel). */
+  onRequestSubmitConfirm?: (formData: FormData) => void;
 }
 
 const defaultDp = (): TerminEditableRow => ({
@@ -79,19 +83,19 @@ const mapItemToTerminParts = (item: LeadWorkspaceEngagementLetterItem) => {
       term_name: dpRow.term_name,
       percentage: String(dpRow.percentage),
       description: dpRow.description ?? '',
-      billing_schedule_date: dpRow.billing_schedule_date ? String(dpRow.billing_schedule_date).slice(0, 10) : ''
+      billing_schedule_date: toDateOnlyField(dpRow.billing_schedule_date)
     },
     installments: mid.map((t) => ({
       term_name: t.term_name,
       percentage: String(t.percentage),
       description: t.description ?? '',
-      billing_schedule_date: t.billing_schedule_date ? String(t.billing_schedule_date).slice(0, 10) : ''
+      billing_schedule_date: toDateOnlyField(t.billing_schedule_date)
     })),
     final: {
       term_name: finalRow.term_name,
       percentage: String(finalRow.percentage),
       description: finalRow.description ?? '',
-      billing_schedule_date: finalRow.billing_schedule_date ? String(finalRow.billing_schedule_date).slice(0, 10) : ''
+      billing_schedule_date: toDateOnlyField(finalRow.billing_schedule_date)
     }
   };
 };
@@ -100,8 +104,8 @@ const mapItemToRetainer = (item: LeadWorkspaceEngagementLetterItem) => {
   const d = item.elRetainerDraft;
   if (d) {
     return {
-      contract_start_date: d.contract_start_date ? String(d.contract_start_date).slice(0, 10) : '',
-      contract_end_date: d.contract_end_date ? String(d.contract_end_date).slice(0, 10) : '',
+      contract_start_date: toDateOnlyField(d.contract_start_date),
+      contract_end_date: toDateOnlyField(d.contract_end_date),
       billing_timing: d.billing_timing
     };
   }
@@ -239,7 +243,8 @@ export const EngagementLetterFormDialog = ({
   busy = false,
   busyAction = null,
   onClose,
-  onSubmit
+  onSubmit,
+  onRequestSubmitConfirm
 }: EngagementLetterFormDialogProps) => {
   const [issuer, setIssuer] = useState<EngagementIssuerCompany>('DSK');
   const [agreedFee, setAgreedFee] = useState('');
@@ -250,8 +255,6 @@ export const EngagementLetterFormDialog = ({
   const [retainerState, setRetainerState] = useState(() => defaultRetainer());
   const [file, setFile] = useState<File | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
-  const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
-
   const hasExistingDocument = Boolean(
     mode === 'edit' && initialEngagement?.document?.filePath && String(initialEngagement.document.filePath).trim() !== ''
   );
@@ -262,7 +265,6 @@ export const EngagementLetterFormDialog = ({
     }
     setLocalError(null);
     setFile(null);
-    setSubmitConfirmOpen(false);
     if (mode === 'edit' && initialEngagement) {
       setIssuer(initialEngagement.issuerCompany);
       setAgreedFee(
@@ -335,8 +337,44 @@ export const EngagementLetterFormDialog = ({
   const handleClose = () => {
     if (busy) return;
     setLocalError(null);
-    setSubmitConfirmOpen(false);
     onClose();
+  };
+
+  const tryOpenSubmitConfirm = () => {
+    const err = validateForm(
+      mode,
+      issuer,
+      agreedFee,
+      paymentMethod,
+      dpRow,
+      installments,
+      finalRow,
+      retainerState,
+      file,
+      'submit',
+      hasExistingDocument
+    );
+    if (err) {
+      setLocalError(err);
+      return;
+    }
+    setLocalError(null);
+    const fd = buildFormData(
+      'submit',
+      issuer,
+      agreedFee,
+      paymentMethod,
+      dpRow,
+      installments,
+      finalRow,
+      retainerState,
+      file
+    );
+    if (onRequestSubmitConfirm) {
+      onRequestSubmitConfirm(fd);
+      return;
+    }
+    void runSubmit('submit');
   };
 
   if (!open) {
@@ -673,27 +711,7 @@ export const EngagementLetterFormDialog = ({
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => {
-                  const err = validateForm(
-                    mode,
-                    issuer,
-                    agreedFee,
-                    paymentMethod,
-                    dpRow,
-                    installments,
-                    finalRow,
-                    retainerState,
-                    file,
-                    'submit',
-                    hasExistingDocument
-                  );
-                  if (err) {
-                    setLocalError(err);
-                    return;
-                  }
-                  setLocalError(null);
-                  setSubmitConfirmOpen(true);
-                }}
+                onClick={() => tryOpenSubmitConfirm()}
                 className="rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-4 py-2 text-sm font-bold text-white shadow-md shadow-[#003c90]/20 transition-opacity hover:opacity-90 disabled:opacity-60"
               >
                 {busy && busyAction === 'submit' ? 'Mengirim…' : 'Submit'}
@@ -702,23 +720,6 @@ export const EngagementLetterFormDialog = ({
           </SidePanelDialogFooter>
         </div>
       </SidePanelDialog>
-
-      <EngagementLetterSubmitConfirmDialog
-        open={submitConfirmOpen}
-        busy={busy && busyAction === 'submit'}
-        onClose={() => {
-          if (!busy) setSubmitConfirmOpen(false);
-        }}
-        onConfirm={async () => {
-          try {
-            await runSubmit('submit');
-          } catch {
-            /* error: banner di Lead Workspace page */
-          } finally {
-            setSubmitConfirmOpen(false);
-          }
-        }}
-      />
     </>
   );
 };

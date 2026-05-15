@@ -9,7 +9,7 @@ import { useInvoicesList } from '../hooks/use-invoices-list';
 
 export const InvoicesPage = () => {
   const navigate = useNavigate();
-  const { invoices, isLoading, summary } = useInvoicesList();
+  const { invoices, isLoading, loadError, summary } = useInvoicesList();
   const {
     filters,
     filteredInvoices,
@@ -27,7 +27,7 @@ export const InvoicesPage = () => {
   const rangeEnd = Math.min(currentPage * pageSize, filteredInvoices.length);
 
   const paginationFooter =
-    totalPages > 0 ? (
+    totalPages > 0 && filteredInvoices.length > 0 ? (
       <div className="flex flex-col gap-3 border-none bg-[#eceef0] px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs font-medium text-[#737784] sm:text-sm">
           Menampilkan{' '}
@@ -89,13 +89,14 @@ export const InvoicesPage = () => {
       <InvoiceFiltersSection
         filters={filters}
         onSearchChange={(value) => updateFilter('search', value)}
-        onPaymentStatusChange={(value) => updateFilter('paymentStatus', value)}
+        onStatusChange={(value) => updateFilter('status', value)}
         onDueStatusChange={(value) => updateFilter('dueStatus', value)}
-        onServiceTypeChange={(value) => updateFilter('serviceType', value)}
         onReset={resetFilters}
       />
 
-      {isLoading ? (
+      {loadError ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 shadow-sm">{loadError}</div>
+      ) : isLoading ? (
         <div className="rounded-xl border border-[#eceef0] bg-white p-4 text-sm text-[#737784] shadow-sm">
           Loading invoices...
         </div>

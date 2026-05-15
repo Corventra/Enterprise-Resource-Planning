@@ -9,6 +9,7 @@ import type {
   LeadWorkspaceEngagementLetterTerminRow
 } from '../types/lead-engagement-letters.types';
 import type { ApiEngagementWorkspaceItem } from '../services/lead-workspace-engagements-api';
+import { normalizeDateOnlyString } from '../../../utils/format-date-only';
 
 const formatIdr = (n: number | null | undefined): string => {
   if (n == null || Number.isNaN(Number(n))) return '-';
@@ -83,7 +84,7 @@ const mapTermins = (rows: ApiEngagementWorkspaceItem['termins']): LeadWorkspaceE
       t.percentage != null && !Number.isNaN(Number(t.percentage))
         ? `${Number(t.percentage).toLocaleString('id-ID', { maximumFractionDigits: 2 })}%`
         : '-',
-    billingScheduleDate: t.billing_schedule_date,
+    billingScheduleDate: normalizeDateOnlyString(t.billing_schedule_date),
     description: t.description
   }));
 
@@ -102,7 +103,7 @@ export const mapApiEngagementWorkspaceItemToLeadItem = (item: ApiEngagementWorks
             term_name: t.term_name,
             term_type: t.term_type as EngagementTerminType,
             percentage: t.percentage != null ? Number(t.percentage) : 0,
-            billing_schedule_date: t.billing_schedule_date,
+            billing_schedule_date: normalizeDateOnlyString(t.billing_schedule_date),
             description: t.description,
             sort_order: t.sort_order
           }))
@@ -110,8 +111,8 @@ export const mapApiEngagementWorkspaceItemToLeadItem = (item: ApiEngagementWorks
     elRetainerDraft:
       paymentMethod === 'RETAINER' && item.retainer
         ? {
-            contract_start_date: item.retainer.contract_start_date,
-            contract_end_date: item.retainer.contract_end_date,
+            contract_start_date: normalizeDateOnlyString(item.retainer.contract_start_date),
+            contract_end_date: normalizeDateOnlyString(item.retainer.contract_end_date),
             billing_timing: item.retainer.billing_timing as 'BEGINNING_OF_MONTH' | 'END_OF_MONTH'
           }
         : undefined,
@@ -133,8 +134,8 @@ export const mapApiEngagementWorkspaceItemToLeadItem = (item: ApiEngagementWorks
     retainer:
       paymentMethod === 'RETAINER' && item.retainer
         ? {
-            contractStartDate: item.retainer.contract_start_date,
-            contractEndDate: item.retainer.contract_end_date,
+            contractStartDate: normalizeDateOnlyString(item.retainer.contract_start_date),
+            contractEndDate: normalizeDateOnlyString(item.retainer.contract_end_date),
             billingTiming: item.retainer.billing_timing
           }
         : null,

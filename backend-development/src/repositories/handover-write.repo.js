@@ -2,21 +2,12 @@ const { pool } = require('../config/db');
 const { safeUnlinkOldUploadFile } = require('../utils/file');
 const { buildHandoverDetailPayload } = require('./handover.repo');
 const { recomputeDerivedHandoverChecklist } = require('../utils/handover-checklist');
+const { formatSqlDate } = require('../utils/sql-date');
 
 const normalizeHandoverId = (handoverId) => {
   const n = Number(handoverId);
   if (!Number.isSafeInteger(n) || n <= 0) return null;
   return n;
-};
-
-const formatSqlDate = (v) => {
-  if (v == null) return null;
-  if (v instanceof Date && !Number.isNaN(v.getTime())) {
-    return v.toISOString().slice(0, 10);
-  }
-  const s = String(v).trim();
-  if (s === '') return null;
-  return s.length >= 10 ? s.slice(0, 10) : s;
 };
 
 const normalizeOptionalDate = (v) => {

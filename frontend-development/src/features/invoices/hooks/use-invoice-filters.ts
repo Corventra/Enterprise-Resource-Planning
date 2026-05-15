@@ -3,17 +3,23 @@ import type { InvoiceDueStatus, InvoiceFilters, InvoiceItem } from '../types/inv
 
 const defaultFilters: InvoiceFilters = {
   search: '',
-  paymentStatus: 'All',
-  dueStatus: 'All',
-  serviceType: 'All'
+  status: 'All',
+  dueStatus: 'All'
 };
 
 const getDueStatus = (invoice: InvoiceItem): InvoiceDueStatus => {
-  if (invoice.paymentStatus === 'Overdue') {
+  if (invoice.statusDb === 'OVERDUE') {
     return 'Overdue';
   }
   if (invoice.nextDueDate) {
-    return 'Due Soon';
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const due = new Date(`${invoice.nextDueDate}T00:00:00`);
+    const inSeven = new Date(today);
+    inSeven.setDate(inSeven.getDate() + 7);
+    if (due >= today && due <= inSeven) {
+      return 'Due Soon';
+    }
   }
   return 'Safe';
 };
@@ -27,17 +33,14 @@ export const useInvoiceFilters = (invoices: InvoiceItem[], pageSize = 6) => {
       const q = filters.search.toLowerCase().trim();
       const matchSearch =
         q === '' ||
-        invoice.invoiceCode.toLowerCase().includes(q) ||
-        invoice.projectCode.toLowerCase().includes(q) ||
-        invoice.clientName.toLowerCase().includes(q);
+        invoice.clientName.toLowerCase().includes(q) ||
+        invoice.serviceName.toLowerCase().includes(q) ||
+        invoice.nextAction.toLowerCase().includes(q);
 
-      const matchPaymentStatus =
-        filters.paymentStatus === 'All' || invoice.paymentStatus === filters.paymentStatus;
-
-      const matchServiceType = filters.serviceType === 'All' || invoice.serviceType === filters.serviceType;
+      const matchStatus = filters.status === 'All' || invoice.status === filters.status;
       const matchDueStatus = filters.dueStatus === 'All' || getDueStatus(invoice) === filters.dueStatus;
 
-      return matchSearch && matchPaymentStatus && matchServiceType && matchDueStatus;
+      return matchSearch && matchStatus && matchDueStatus;
     });
   }, [invoices, filters]);
 

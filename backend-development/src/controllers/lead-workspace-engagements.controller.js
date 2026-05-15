@@ -121,6 +121,12 @@ const mapWriteFailure = (res, result) => {
         success: false,
         message: 'Handover atau akun invoice untuk engagement ini sudah ada.'
       });
+    case 'TERMIN_BILLING_SCHEDULE_REQUIRED':
+      return res.status(409).json({
+        success: false,
+        message:
+          'Semua termin engagement letter wajib memiliki billing schedule date sebelum ditandatangani.'
+      });
     case 'TERMIN_DATA_INVALID':
     case 'RETAINER_DATA_INVALID':
     case 'RETAINER_PERIOD_INVALID':

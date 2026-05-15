@@ -1,14 +1,22 @@
 const { pool } = require('../config/db');
 const { LEAD_ACTIVITY_TYPES } = require('../constants/lead-activity-types');
 const { computeInvoiceTermTax } = require('../utils/invoice-term-tax');
+const { formatSqlDate } = require('../utils/sql-date');
 const { generateHandoverCode } = require('../utils/handover-code');
-const { recomputeDerivedHandoverChecklist } = require('../utils/handover-checklist');
+const {
+  buildDefaultHandoverChecklist,
+  recomputeDerivedHandoverChecklist
+} = require('../utils/handover-checklist');
 const {
   buildEngagementWorkspaceItem,
   engagementBaseSelect,
   normalizeEngagementId,
   normalizeLeadId
 } = require('./lead-workspace-engagements.repo');
+const {
+  INVOICE_ACTIVITY_TYPES,
+  insertInvoiceActivityLog
+} = require('../utils/invoice-activity-log');
 
 const LEAD_WORKSPACE_ELIGIBLE_SNIPPET = `
   l.lead_status IN ('ACTIVE', 'WON', 'LOST')
@@ -94,64 +102,29 @@ const mapTerminInitialStatus = (termType) => {
   return 'DRAFT';
 };
 
-const buildDefaultHandoverChecklist = (paymentMethod) => {
-  const items = [
-    {
-      item_code: 'PROPOSAL_FINAL_STORED',
-      item_name: 'Proposal final tersimpan',
-      item_group: 'DOCUMENT',
-      status: 'YES',
-      sort_order: 1
-    },
-    {
-      item_code: 'ENGAGEMENT_SIGNED',
-      item_name: 'Engagement Letter ditandatangani',
-      item_group: 'ENGAGEMENT',
-      status: 'YES',
-      sort_order: 2
-    },
-    {
-      item_code: 'PROJECT_FOLDER_CREATED',
-      item_name: 'Folder project dibuat',
-      item_group: 'PROJECT',
-      status: 'YES',
-      sort_order: 4
-    },
-    {
-      item_code: 'CLIENT_DOCUMENTS_RECEIVED',
-      item_name: 'Dokumen klien diterima',
-      item_group: 'DOCUMENT',
-      status: 'NO',
-      sort_order: 5
-    },
-    {
-      item_code: 'DATA_REQUEST_PREPARED',
-      item_name: 'Data request disiapkan',
-      item_group: 'DATA',
-      status: 'NO',
-      sort_order: 6
-    }
-  ];
+const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-  if (paymentMethod === 'TERMIN') {
-    items.splice(2, 0, {
-      item_code: 'DP_RECEIVED',
-      item_name: 'DP sudah diterima',
-      item_group: 'PAYMENT',
-      status: 'PENDING',
-      sort_order: 3
-    });
-  } else {
-    items.splice(2, 0, {
-      item_code: 'DP_RECEIVED',
-      item_name: 'DP sudah diterima',
-      item_group: 'PAYMENT',
-      status: 'NO',
-      sort_order: 3
-    });
+/**
+ * DATE-only from EL termin / mysql2 Date — never String(date).slice(0,10) (yields "Wed May 15" → 0000-00-00).
+ */
+const normalizeBillingScheduleDate = (v) => {
+  const formatted = formatSqlDate(v);
+  if (!formatted || !DATE_ONLY_RE.test(formatted)) return null;
+  const [y, m, d] = formatted.split('-').map(Number);
+  const probe = new Date(y, m - 1, d);
+  if (probe.getFullYear() !== y || probe.getMonth() !== m - 1 || probe.getDate() !== d) {
+    return null;
   }
+  return formatted;
+};
 
-  return items;
+const requireBillingScheduleDate = (v, label) => {
+  const normalized = normalizeBillingScheduleDate(v);
+  if (!normalized) {
+    const preview = v instanceof Date ? v.toISOString() : String(v ?? '');
+    throw new Error(`billing_schedule_date tidak valid untuk ${label} (nilai: ${preview})`);
+  }
+  return normalized;
 };
 
 const pickRetainerReadyTermOrder = (months, billingTiming) => {
@@ -185,8 +158,10 @@ const buildInvoiceTermsFromTermins = ({ termins, agreedFee, issuerCompany, engag
       term_order: t.sort_order ?? idx + 1,
       percentage: pct,
       billing_trigger_type: mapTerminBillingTrigger(t.term_type),
-      billing_schedule_date:
-        t.term_type === 'INSTALLMENT' ? t.billing_schedule_date : null,
+      billing_schedule_date: requireBillingScheduleDate(
+        t.billing_schedule_date,
+        `EL termin ${t.term_name} (${t.term_type})`
+      ),
       department_code: departmentCode,
       status: mapTerminInitialStatus(t.term_type),
       ...tax
@@ -250,15 +225,36 @@ const insertHandoverChecklist = async (conn, handoverId, paymentMethod) => {
   for (const item of items) {
     await conn.execute(
       `INSERT INTO handover_checklist (
-          handover_id, item_code, item_name, item_group, status, sort_order
-        ) VALUES (?, ?, ?, ?, ?, ?)`,
-      [handoverId, item.item_code, item.item_name, item.item_group, item.status, item.sort_order]
+          handover_id,
+          item_code,
+          item_name,
+          item_group,
+          status,
+          sort_order,
+          is_required_for_submit,
+          is_required_for_start
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        handoverId,
+        item.item_code,
+        item.item_name,
+        item.item_group,
+        item.status,
+        item.sort_order,
+        item.is_required_for_submit,
+        item.is_required_for_start
+      ]
     );
   }
 };
 
 const insertInvoiceTerms = async (conn, accountId, terms) => {
   for (const t of terms) {
+    const billingScheduleDate = requireBillingScheduleDate(
+      t.billing_schedule_date,
+      `invoice term "${t.term_name}" (order ${t.term_order})`
+    );
+
     await conn.execute(
       `INSERT INTO invoice_terms (
           account_id, engagement_id, project_id,
@@ -287,7 +283,7 @@ const insertInvoiceTerms = async (conn, accountId, terms) => {
         t.term_order,
         t.percentage,
         t.billing_trigger_type,
-        t.billing_schedule_date,
+        billingScheduleDate,
         t.department_code,
         t.dpp_amount,
         t.ppn_rate,
@@ -463,12 +459,13 @@ const markEngagementLetterSigned = async (leadIdRaw, engagementIdRaw, userId) =>
         await conn.rollback();
         return { ok: false, reason: 'TERMIN_DATA_INVALID' };
       }
+      const missingSchedule = terminRows.some((r) => normalizeBillingScheduleDate(r.billing_schedule_date) == null);
+      if (missingSchedule) {
+        await conn.rollback();
+        return { ok: false, reason: 'TERMIN_BILLING_SCHEDULE_REQUIRED' };
+      }
       invoiceTerms = buildInvoiceTermsFromTermins({
-        termins: terminRows.map((r) => ({
-          ...r,
-          billing_schedule_date:
-            r.billing_schedule_date != null ? String(r.billing_schedule_date).slice(0, 10) : null
-        })),
+        termins: terminRows,
         agreedFee: el.agreed_fee,
         issuerCompany: el.issuer_company,
         engagementId,
@@ -531,6 +528,25 @@ const markEngagementLetterSigned = async (leadIdRaw, engagementIdRaw, userId) =>
     );
     const accountId = accountInsert.insertId;
     await insertInvoiceTerms(conn, accountId, invoiceTerms);
+
+    await insertInvoiceActivityLog(conn, {
+      accountId,
+      invoiceId: null,
+      activityType: INVOICE_ACTIVITY_TYPES.INVOICE_ACCOUNT_CREATED,
+      title: 'Akun invoice dibuat',
+      description: 'Akun invoice dibuat otomatis setelah engagement letter ditandatangani.',
+      createdBy: userId
+    });
+
+    const termCountLabel = termCount === 1 ? '1 termin invoice' : `${termCount} termin invoice`;
+    await insertInvoiceActivityLog(conn, {
+      accountId,
+      invoiceId: null,
+      activityType: INVOICE_ACTIVITY_TYPES.INVOICE_TERMS_CREATED,
+      title: 'Termin invoice dibuat',
+      description: `${termCountLabel} berhasil dibuat otomatis dari engagement letter.`,
+      createdBy: userId
+    });
 
     await insertActivityLog(conn, {
       leadId,

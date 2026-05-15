@@ -1,4 +1,5 @@
 import { getApiOrigin } from '../../../services/api-client';
+import { formatDateOnlyId, formatDateOnlyRangeId } from '../../../utils/format-date-only';
 import type {
   ApiHandoverDetailPayload,
   ApiHandoverListRow
@@ -23,7 +24,7 @@ const dash = (v?: string | null) => {
   return t === '' ? '-' : t;
 };
 
-const formatDateId = (iso?: string | null) => {
+const formatDateTimeId = (iso?: string | null) => {
   if (!iso) return '-';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '-';
@@ -56,10 +57,7 @@ const mapChecklistStatus = (status: ApiHandoverDetailPayload['checklist'][0]['st
 };
 
 export const mapApiHandoverListRowToItem = (row: ApiHandoverListRow): HandoverItem => {
-  const period =
-    row.project_start_date || row.project_end_date
-      ? [row.project_start_date, row.project_end_date].filter(Boolean).join(' – ')
-      : '-';
+  const period = formatDateOnlyRangeId(row.project_start_date, row.project_end_date);
 
   return {
     id: String(row.handover_id),
@@ -70,7 +68,7 @@ export const mapApiHandoverListRowToItem = (row: ApiHandoverListRow): HandoverIt
     period: period === '' ? '-' : period,
     engagementStatus: mapEngagementStatus(row.engagement_status),
     engagementStatusDate:
-      row.engagement_status === 'SIGNED' ? formatDateId(row.engagement_signed_at) : '-',
+      row.engagement_status === 'SIGNED' ? formatDateTimeId(row.engagement_signed_at) : '-',
     status: mapHandoverDbStatusToLabel(row.handover_status),
     dbStatus: row.handover_status,
     createdBy: dash(row.created_by_name),
@@ -84,7 +82,7 @@ export const mapApiHandoverDetailToDetail = (api: ApiHandoverDetailPayload): Han
 
   const engagementLabel =
     pi.engagement_status === 'SIGNED'
-      ? `Signed · ${formatDateId(pi.engagement_signed_at)}`
+      ? `Signed · ${formatDateTimeId(pi.engagement_signed_at)}`
       : dash(pi.engagement_status);
 
   const feeItems: HandoverFeeItem[] = api.fee_structure.fee_items.map((item) => ({
@@ -95,9 +93,9 @@ export const mapApiHandoverDetailToDetail = (api: ApiHandoverDetailPayload): Han
 
   const paymentTerms =
     api.fee_structure.payment_method === 'RETAINER' && api.fee_structure.retainer_summary
-      ? `Retainer · ${api.fee_structure.retainer_summary.contract_start_date ?? '-'} s/d ${
-          api.fee_structure.retainer_summary.contract_end_date ?? '-'
-        } · penagihan ${
+      ? `Retainer · ${formatDateOnlyId(api.fee_structure.retainer_summary.contract_start_date)} s/d ${formatDateOnlyId(
+          api.fee_structure.retainer_summary.contract_end_date
+        )} · penagihan ${
           api.fee_structure.retainer_summary.billing_timing === 'BEGINNING_OF_MONTH'
             ? 'awal bulan'
             : 'akhir bulan'
@@ -108,7 +106,7 @@ export const mapApiHandoverDetailToDetail = (api: ApiHandoverDetailPayload): Han
 
   const timelineMilestones: HandoverTimelineItem[] = api.scope.milestones.map((m) => ({
     milestone: m.milestone_name,
-    targetDate: formatDateId(m.target_date),
+    targetDate: formatDateOnlyId(m.target_date),
     targetDateIso: m.target_date,
     notes: dash(m.notes)
   }));
@@ -140,7 +138,7 @@ export const mapApiHandoverDetailToDetail = (api: ApiHandoverDetailPayload): Han
       name: doc.document_name,
       filePath: path,
       downloadUrl: url,
-      uploadedAt: formatDateId(doc.created_at)
+      uploadedAt: formatDateTimeId(doc.created_at)
     };
   });
 
@@ -180,7 +178,10 @@ export const mapApiHandoverDetailToDetail = (api: ApiHandoverDetailPayload): Han
       { label: 'Client Name', value: dash(pi.client_name) },
       { label: 'Company Group', value: dash(pi.company_group) },
       { label: 'Service Line', value: dash(pi.service_line) },
-      { label: 'Project Period', value: dash(pi.project_period) },
+      {
+        label: 'Project Period',
+        value: formatDateOnlyRangeId(pi.project_start_date, pi.project_end_date, { empty: '-' })
+      },
       { label: 'PIC Client', value: dash(pi.pic_client_name) },
       { label: 'Client Contact', value: dash(pi.client_contact), accent: 'primary' },
       { label: 'Engagement Status', value: engagementLabel, accent: pi.engagement_status === 'SIGNED' ? 'success' : undefined },

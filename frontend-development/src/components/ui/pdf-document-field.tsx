@@ -13,6 +13,12 @@ export interface PdfDocumentFieldProps {
   clearPendingAriaLabel?: string;
   /** Contoh nama file di area kosong (opsional). */
   emptyStateExampleHint?: string;
+  /** Atribut accept pada input file. */
+  accept?: string;
+  /** Validasi tipe file; default hanya PDF. */
+  isAcceptedFile?: (file: File) => boolean;
+  /** Teks bantuan format di area kosong. */
+  formatHint?: string;
 }
 
 const ACCEPTED_PDF_TYPES = new Set(['application/pdf']);
@@ -43,7 +49,10 @@ export const PdfDocumentField = ({
   onClearPending,
   existingDocumentDescription = 'Dokumen saat ini',
   clearPendingAriaLabel = 'Hapus file yang dipilih',
-  emptyStateExampleHint
+  emptyStateExampleHint,
+  accept = 'application/pdf,.pdf',
+  isAcceptedFile = isAcceptedPdfFile,
+  formatHint = 'PDF saja — maks. 20 MB'
 }: PdfDocumentFieldProps) => {
   const fileInputId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -63,7 +72,7 @@ export const PdfDocumentField = ({
       onSelectFile(null);
       return;
     }
-    if (!isAcceptedPdfFile(file)) {
+    if (!isAcceptedFile(file)) {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -86,7 +95,7 @@ export const PdfDocumentField = ({
         ref={fileInputRef}
         id={fileInputId}
         type="file"
-        accept="application/pdf,.pdf"
+        accept={accept}
         className="sr-only"
         disabled={disabled}
         onChange={(event) => handleSelectFile(event.target.files?.[0] ?? null)}
@@ -147,7 +156,7 @@ export const PdfDocumentField = ({
             strokeWidth={1.75}
           />
           <p className="text-sm font-medium text-slate-700">Seret & lepas PDF di sini, atau klik untuk memilih</p>
-          <p className="text-xs text-slate-500">PDF saja — maks. 20 MB</p>
+          <p className="text-xs text-slate-500">{formatHint}</p>
           {emptyStateExampleHint ? (
             <p className="text-xs font-medium text-slate-400">{emptyStateExampleHint}</p>
           ) : null}

@@ -1,29 +1,30 @@
 import { Filter, Search } from 'lucide-react';
-import type {
-  InvoiceDueStatus,
-  InvoiceFilters,
-  InvoicePaymentStatus,
-  InvoiceServiceType
-} from '../../types/invoice.types';
+import type { InvoiceDueStatus, InvoiceFilters } from '../../types/invoice.types';
 
 interface InvoiceFiltersSectionProps {
   filters: InvoiceFilters;
   onSearchChange: (value: string) => void;
-  onPaymentStatusChange: (value: InvoicePaymentStatus | 'All') => void;
+  onStatusChange: (value: string) => void;
   onDueStatusChange: (value: InvoiceDueStatus | 'All') => void;
-  onServiceTypeChange: (value: InvoiceServiceType | 'All') => void;
   onReset: () => void;
 }
 
 const fieldFocus = 'focus:outline-none focus:ring-2 focus:ring-[#1d59c1]/20';
 const selectClassName = `rounded-lg border-none bg-white py-2 pl-3 pr-8 text-xs font-semibold text-[#434653] shadow-sm ${fieldFocus}`;
 
+const ACCOUNT_STATUS_OPTIONS = [
+  'All',
+  'Ready to Bill',
+  'Awaiting Payment',
+  'Overdue',
+  'Settled'
+] as const;
+
 export const InvoiceFiltersSection = ({
   filters,
   onSearchChange,
-  onPaymentStatusChange,
+  onStatusChange,
   onDueStatusChange,
-  onServiceTypeChange,
   onReset
 }: InvoiceFiltersSectionProps) => {
   return (
@@ -35,26 +36,22 @@ export const InvoiceFiltersSection = ({
           value={filters.search}
           onChange={(event) => onSearchChange(event.target.value)}
           className={`w-full rounded-lg border-none bg-white py-2 pl-10 pr-3 text-sm text-[#191c1e] shadow-sm placeholder:text-[#737784]/80 ${fieldFocus}`}
-          placeholder="Cari invoice, client, atau proyek..."
+          placeholder="Cari client, layanan, atau next action..."
         />
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <select
-          value={filters.paymentStatus}
-          onChange={(event) => onPaymentStatusChange(event.target.value as InvoicePaymentStatus | 'All')}
+          value={filters.status}
+          onChange={(event) => onStatusChange(event.target.value)}
           className={selectClassName}
-          aria-label="Filter by payment status"
+          aria-label="Filter by account status"
         >
-          <option value="All">Status: Semua</option>
-          <option value="Draft">Draft</option>
-          <option value="Ready to Send">Ready to Send</option>
-          <option value="Sent">Sent</option>
-          <option value="Partially Paid">Partially Paid</option>
-          <option value="Pending Verification">Pending Verification</option>
-          <option value="Paid">Paid</option>
-          <option value="Overdue">Overdue</option>
-          <option value="Closed">Closed</option>
+          {ACCOUNT_STATUS_OPTIONS.map((option) => (
+            <option key={option} value={option}>
+              Status: {option === 'All' ? 'Semua' : option}
+            </option>
+          ))}
         </select>
 
         <select
@@ -67,22 +64,6 @@ export const InvoiceFiltersSection = ({
           <option value="Safe">Safe</option>
           <option value="Due Soon">Due Soon</option>
           <option value="Overdue">Overdue</option>
-        </select>
-
-        <select
-          value={filters.serviceType}
-          onChange={(event) => onServiceTypeChange(event.target.value as InvoiceServiceType | 'All')}
-          className={selectClassName}
-          aria-label="Filter by service type"
-        >
-          <option value="All">Layanan: Semua</option>
-          <option value="Web Dev">Web Dev</option>
-          <option value="Tax">Tax</option>
-          <option value="Audit">Audit</option>
-          <option value="App Dev">App Dev</option>
-          <option value="Maintenance">Maintenance</option>
-          <option value="Consulting">Consulting</option>
-          <option value="Security">Security</option>
         </select>
       </div>
 
