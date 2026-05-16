@@ -67,7 +67,7 @@ export const taskTemplateService = {
    * - status default 'Pending', updateLog kosong, owner = PM yang di-assign
    */
   /**
-   * HRD + COO collaborative action: update a task template. For MVP semua role
+   * CEO + COO collaborative action: update a task template. For MVP semua role
    * dengan TASK_TEMPLATE_MANAGE bisa langsung simpan. Audit info akan
    * di-tampilkan di UI dari `_actor` di v2.
    */

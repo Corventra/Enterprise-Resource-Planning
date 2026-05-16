@@ -26,11 +26,16 @@ export const rolePermissionMap: Record<Role, Permission[]> = {
     PERMISSIONS.PROJECT_VIEW,
     PERMISSIONS.PROJECT_VIEW_FINANCIALS,
     PERMISSIONS.DOCUMENT_VIEW,
-    // KPI: oversight + finalize (co-authority dengan HRD), view config tapi tidak edit harian
+    // KPI: primary owner Performance Management framework — configure bobot
+    // dimensi & threshold, finalize period, manual recompute, export laporan.
+    // Task template manage collaborative dengan COO.
     PERMISSIONS.KPI_VIEW_OWN,
     PERMISSIONS.KPI_VIEW_ALL,
     PERMISSIONS.KPI_FINALIZE_PERIOD,
-    PERMISSIONS.KPI_CONFIGURE
+    PERMISSIONS.KPI_CONFIGURE,
+    PERMISSIONS.KPI_RECOMPUTE,
+    PERMISSIONS.KPI_EXPORT,
+    PERMISSIONS.TASK_TEMPLATE_MANAGE
   ],
   [ROLES.COO]: [
     PERMISSIONS.LEAD_VIEW,
@@ -64,18 +69,6 @@ export const rolePermissionMap: Record<Role, Permission[]> = {
     PERMISSIONS.KPI_VIEW_OWN
   ],
   [ROLES.STAFF_ADMIN]: [PERMISSIONS.DOCUMENT_VIEW, PERMISSIONS.INVOICE_MANAGE],
-  [ROLES.HRD]: [
-    PERMISSIONS.PROJECT_VIEW,
-    PERMISSIONS.DOCUMENT_VIEW,
-    // KPI: HRD = primary owner Performance Management framework
-    PERMISSIONS.KPI_VIEW_OWN,
-    PERMISSIONS.KPI_VIEW_ALL,
-    PERMISSIONS.KPI_CONFIGURE,
-    PERMISSIONS.KPI_FINALIZE_PERIOD,
-    PERMISSIONS.KPI_RECOMPUTE,
-    PERMISSIONS.KPI_EXPORT,
-    PERMISSIONS.TASK_TEMPLATE_MANAGE
-  ],
   // Superadmin = administrator teknis sistem (full access teknis).
   // Otomatis ikut semua permission saat ini & yang ditambahkan ke depan.
   [ROLES.SUPERADMIN]: Object.values(PERMISSIONS)

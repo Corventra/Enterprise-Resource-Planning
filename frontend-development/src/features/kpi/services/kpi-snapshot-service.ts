@@ -62,7 +62,7 @@ export const kpiSnapshotService = {
     if (idx >= 0) {
       if (snapshotStore[idx].finalizedAt) {
         throw new Error(
-          `Snapshot ${snapshot.consultantId} ${snapshot.period} sudah finalized. Pakai overwriteFinalized() (HRD/COO).`
+          `Snapshot ${snapshot.consultantId} ${snapshot.period} sudah finalized. Pakai overwriteFinalized() (CEO/COO).`
         );
       }
       snapshotStore[idx] = clone(snapshot);
@@ -73,7 +73,7 @@ export const kpiSnapshotService = {
     return clone(snapshot);
   },
   /**
-   * HRD/CEO action: lock snapshot — set `finalizedAt` & `finalizedBy`. Snapshot
+   * CEO action: lock snapshot — set `finalizedAt` & `finalizedBy`. Snapshot
    * jadi immutable via `save()` setelah ini.
    */
   async finalize(
@@ -94,7 +94,7 @@ export const kpiSnapshotService = {
     return clone(snapshotStore[idx]);
   },
   /**
-   * HRD/COO action: recompute even if finalized — for data correction. Bypasses
+   * CEO/COO action: recompute even if finalized — for data correction. Bypasses
    * the finalized lock. Caller is responsible for audit logging at the wrapper.
    */
   async overwriteFinalized(snapshot: KpiSnapshot): Promise<KpiSnapshot> {

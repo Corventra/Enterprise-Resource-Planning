@@ -6,7 +6,6 @@ export const ROLES = {
   PM: 'PM',
   CONSULTANT: 'CONSULTANT',
   STAFF_ADMIN: 'STAFF_ADMIN',
-  HRD: 'HRD',
   SUPERADMIN: 'SUPERADMIN'
 } as const;
 
@@ -20,6 +19,5 @@ export const ROLE_LABELS: Record<Role, string> = {
   PM: 'Project Manager',
   CONSULTANT: 'Consultant',
   STAFF_ADMIN: 'Staff Admin',
-  HRD: 'Human Resources Department',
   SUPERADMIN: 'Superadmin'
 };

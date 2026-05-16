@@ -3,7 +3,7 @@ import type { TaskTemplate } from '../types/project.types';
 /**
  * Default task templates per Service Line. Sum of `weight` per template = 100
  * (memudahkan kalkulasi KPI Task Completion). Akan di-edit collaborative oleh
- * HRD + COO via Settings → Task Templates di Step 6f.
+ * CEO + COO via Settings → Task Templates di Step 6f.
  *
  * Transfer Pricing template mirror screenshot referensi tesis (10 tasks).
  */

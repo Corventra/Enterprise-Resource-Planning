@@ -43,7 +43,7 @@ export const KpiConsultantPage = () => {
   // Authorization guard:
   // - Consultant: hanya boleh lihat dirinya sendiri
   // - PM: hanya boleh lihat consultant di project-nya
-  // - HRD/COO/CEO/Staff Admin: full
+  // - CEO/COO/Staff Admin: full
   useEffect(() => {
     if (!consultantId || !user || !role) return;
     let cancelled = false;
@@ -325,7 +325,7 @@ export const KpiConsultantPage = () => {
             <p className="text-sm font-bold text-[#a16207]">Snapshot masih preliminary</p>
             <p className="mt-0.5 text-xs text-[#a16207]/80">
               Finalize untuk lock snapshot. Setelah lock, angka tidak akan berubah meski raw data
-              mengalami perubahan. Hanya HRD/COO via "manual recompute" yang bisa override.
+              mengalami perubahan. Hanya CEO/COO via "manual recompute" yang bisa override.
             </p>
             {finalizeError && (
               <p className="mt-2 rounded-md bg-orange-100 px-2 py-1 text-xs text-[#c2410c]">{finalizeError}</p>
