@@ -1,16 +1,15 @@
-import type { CampaignType } from '../../types/campaign.types';
 import { getCampaignBadgeColor } from '../../utils/get-campaign-badge-color';
 
 interface CampaignTypeBadgeProps {
-  type: CampaignType;
+  label: string;
 }
 
-export const CampaignTypeBadge = ({ type }: CampaignTypeBadgeProps) => {
+export const CampaignTypeBadge = ({ label }: CampaignTypeBadgeProps) => {
   return (
     <span
-      className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-semibold ${getCampaignBadgeColor('type', type)}`}
+      className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-semibold ${getCampaignBadgeColor('type', label)}`}
     >
-      {type}
+      {label}
     </span>
   );
 };

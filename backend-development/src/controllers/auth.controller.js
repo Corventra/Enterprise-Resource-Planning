@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const userRepo = require('../repositories/user.repo');
 const permissionRepo = require('../repositories/permission.repo');
+const { resolveEffectivePermissions } = require('../services/permission-resolver');
 const { sign } = require('../utils/jwt');
 
 const buildUserPublic = (user, permissions) => ({
@@ -46,9 +47,13 @@ const login = async (req, res) => {
     return res.status(401).json({ error: 'Email atau password salah.' });
   }
 
-  // Fetch permissions berdasarkan role — di-cache di JWT supaya middleware
-  // request berikutnya tidak query DB.
-  const permissions = await permissionRepo.listCodesByRoleId(user.role.id);
+  // Permission list untuk token: snapshot saat login. Perubahan di DB/resolver baru dipakai route guard setelah login ulang.
+  const rolePermissionsFromDb = await permissionRepo.listCodesByRoleId(user.role.id);
+  const permissions = resolveEffectivePermissions({
+    roleCode: user.role.code,
+    departments: user.departments,
+    rolePermissionsFromDb
+  });
 
   const token = sign({
     sub: user.id,
@@ -76,9 +81,13 @@ const me = async (req, res) => {
     if (!user || !user.isActive) {
       return res.status(401).json({ error: 'User tidak aktif atau tidak ditemukan' });
     }
-    // Re-fetch permissions setiap /me — supaya kalau role-nya berubah / permission
-    // di-grant/revoke setelah login, frontend dapat update tanpa harus re-login.
-    const permissions = await permissionRepo.listCodesByRoleId(user.role.id);
+    // Selalu resolve dari DB + resolver terbaru (untuk tampilan /me). requirePermission tetap membaca permissions di JWT.
+    const rolePermissionsFromDb = await permissionRepo.listCodesByRoleId(user.role.id);
+    const permissions = resolveEffectivePermissions({
+      roleCode: user.role.code,
+      departments: user.departments,
+      rolePermissionsFromDb
+    });
     return res.json({ user: buildUserPublic(user, permissions) });
   } catch (e) {
     // eslint-disable-next-line no-console

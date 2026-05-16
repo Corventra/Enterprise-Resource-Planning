@@ -1,5 +1,7 @@
-import { useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useEffect, useState } from 'react';
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
+import { useAuth } from '../../../app/store/auth-store';
+import { useCampaignPermissions } from '../hooks/use-campaign-permissions';
 import { CampaignDetailHeader } from '../components/detail/campaign-detail-header';
 import { CampaignDetailSpecifications } from '../components/detail/campaign-detail-specifications';
 import { CampaignDetailSummaryCards } from '../components/detail/campaign-detail-summary-cards';
@@ -8,29 +10,102 @@ import { CampaignDetailTabs, type CampaignDetailTab } from '../components/detail
 import { FormsTab } from '../components/detail/forms-tab';
 import { SubmissionsTab } from '../components/detail/submissions-tab';
 import { DeleteCampaignConfirmDialog } from '../components/modals/delete-campaign-confirm-dialog';
-import { DeleteFormConfirmDialog } from '../components/modals/delete-form-confirm-dialog';
 import { EditCampaignModal } from '../components/modals/edit-campaign-modal';
 import { SubmissionDetailModal } from '../components/modals/submission-detail-modal';
 import { useCampaignDetail } from '../hooks/use-campaign-detail';
-import { campaignsService } from '../services/campaigns-service';
-import type { Form, Submission } from '../types/campaign.types';
+import { getCampaignTopics, getCampaignTypes } from '../services/campaigns-api';
+import type { CampaignLookupTopic, CampaignLookupType } from '../types/campaign.types';
 
 export const CampaignDetailPage = () => {
   const navigate = useNavigate();
   const { campaignId } = useParams();
-  const { campaign, forms, submissions, bankDataEntries, isLoading, deleteForm, updateForm, refetch } =
-    useCampaignDetail(campaignId);
+  const { user } = useAuth();
+  const { canViewCampaignArea, canManageCampaigns, canViewForms, canManageForms } = useCampaignPermissions();
+  const {
+    campaign,
+    forms,
+    submissionsCount,
+    isLoading,
+    updateCampaign,
+    archiveCampaign,
+    refetch
+  } = useCampaignDetail(campaignId);
 
-  const [activeTab, setActiveTab] = useState<CampaignDetailTab>('forms');
-  const [selectedSubmission, setSelectedSubmission] = useState<Submission | undefined>();
-  const [deletingForm, setDeletingForm] = useState<Form | undefined>();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [lookups, setLookups] = useState<{
+    types: CampaignLookupType[];
+    topics: CampaignLookupTopic[];
+  }>({ types: [], topics: [] });
+
+  useEffect(() => {
+    if (!canViewCampaignArea) return;
+    let cancelled = false;
+    void Promise.all([getCampaignTypes(), getCampaignTopics()])
+      .then(([types, topics]) => {
+        if (!cancelled) setLookups({ types, topics });
+      })
+      .catch(() => {
+        if (!cancelled) setLookups({ types: [], topics: [] });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [canViewCampaignArea]);
+
+  const [activeTab, setActiveTab] = useState<CampaignDetailTab>(() => (canViewForms ? 'forms' : 'submissions'));
+  const [highlightFormId, setHighlightFormId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'forms' && canViewForms) {
+      setActiveTab('forms');
+    }
+    const focus = searchParams.get('focusForm');
+    if (focus) {
+      if (canViewForms) setActiveTab('forms');
+      void refetch().finally(() => {
+        setHighlightFormId(focus);
+      });
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete('focusForm');
+          return next;
+        },
+        { replace: true }
+      );
+    }
+  }, [searchParams, canViewForms, refetch, setSearchParams]);
+  const [selectedFormIdForSubmissions, setSelectedFormIdForSubmissions] = useState<string | null>(null);
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
   const [showEditCampaign, setShowEditCampaign] = useState(false);
-  const [showDeleteCampaign, setShowDeleteCampaign] = useState(false);
+  const [showArchiveCampaign, setShowArchiveCampaign] = useState(false);
 
-  const qualifiedSubmissions = useMemo(
-    () => submissions.filter((submission) => submission.status === 'Qualified').length,
-    [submissions]
-  );
+  useEffect(() => {
+    if (!canViewForms && activeTab === 'forms') {
+      setActiveTab('submissions');
+    }
+  }, [canViewForms, activeTab]);
+
+  const canOwnerManage =
+    Boolean(campaign) &&
+    canManageCampaigns &&
+    user?.id != null &&
+    Number(user.id) === Number(campaign!.createdById);
+
+  const canManageCampaignForms = canOwnerManage && canManageForms;
+
+  const handleChangeTab = (tab: CampaignDetailTab) => {
+    if (tab === 'submissions') {
+      setSelectedFormIdForSubmissions(null);
+    }
+    setActiveTab(tab);
+  };
+
+  if (!canViewCampaignArea) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   if (isLoading) {
     return (
@@ -59,9 +134,10 @@ export const CampaignDetailPage = () => {
     <div className="space-y-5">
       <CampaignDetailHeader
         campaign={campaign}
+        canOwnerManage={canOwnerManage}
         onBack={() => navigate('/campaigns')}
         onEditCampaign={() => setShowEditCampaign(true)}
-        onDeleteCampaign={() => setShowDeleteCampaign(true)}
+        onArchiveCampaign={() => setShowArchiveCampaign(true)}
       />
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-12 lg:items-stretch lg:gap-6">
@@ -69,9 +145,8 @@ export const CampaignDetailPage = () => {
           <CampaignDetailSpecifications campaign={campaign} />
           <CampaignDetailSummaryCards
             formsCount={forms.length}
-            submissionsCount={submissions.length}
-            qualifiedSubmissions={qualifiedSubmissions}
-            bankEntriesCount={bankDataEntries.length}
+            submissionsCount={submissionsCount}
+            qualifiedSubmissions={0}
           />
         </div>
         <div className="flex min-h-0 lg:col-span-4">
@@ -82,72 +157,74 @@ export const CampaignDetailPage = () => {
       <section className="mt-6 overflow-hidden rounded-xl border border-[#eceef0] bg-white shadow-sm">
         <CampaignDetailTabs
           activeTab={activeTab}
-          onChangeTab={setActiveTab}
+          onChangeTab={handleChangeTab}
+          showFormsTab={canViewForms}
           formsCount={forms.length}
-          submissionsCount={submissions.length}
         />
 
         <div className="px-4 pb-4 sm:px-5 sm:pb-5">
-          {activeTab === 'forms' && (
+          {activeTab === 'forms' && canViewForms && (
             <FormsTab
               campaignId={campaign.id}
-              campaignName={campaign.name}
               forms={forms}
+              canManageCampaignForms={canManageCampaignForms}
+              highlightFormId={highlightFormId}
+              onHighlightConsumed={() => setHighlightFormId(null)}
+              onRefetchForms={() => void refetch()}
               onCreateForm={() => {
-                const campaignNameParam = encodeURIComponent(campaign.name);
-                navigate(`/forms?campaignId=${campaign.id}&campaignName=${campaignNameParam}`);
+                navigate(`/campaigns/${campaign.id}/forms/new`);
               }}
-              onDeleteForm={(form) => setDeletingForm(form)}
-              onToggleStatus={async (form) => {
-                await updateForm(form.id, { status: form.status === 'Active' ? 'Archived' : 'Active' });
+              onViewSubmissions={(formId) => {
+                setSelectedFormIdForSubmissions(formId);
+                setActiveTab('submissions');
               }}
             />
           )}
 
           {activeTab === 'submissions' && (
             <SubmissionsTab
-              submissions={submissions}
-              onViewSubmission={(submission) => setSelectedSubmission(submission)}
+              forms={forms}
+              selectedFormId={selectedFormIdForSubmissions}
+              onSelectedFormChange={setSelectedFormIdForSubmissions}
+              onViewSubmission={(formId, submissionId) => {
+                setSelectedFormIdForSubmissions(formId);
+                setSelectedSubmissionId(String(submissionId));
+              }}
             />
           )}
         </div>
       </section>
 
       <EditCampaignModal
+        key={campaign.id}
         open={showEditCampaign}
         campaign={campaign}
+        typeOptions={lookups.types}
+        topicOptions={lookups.topics}
         onClose={() => setShowEditCampaign(false)}
-        onSuccess={async (id, payload) => {
-          await campaignsService.update(id, payload);
-          await refetch();
+        onSuccess={async (_id, input) => {
+          await updateCampaign(input);
           setShowEditCampaign(false);
         }}
       />
 
       <DeleteCampaignConfirmDialog
-        open={showDeleteCampaign}
+        open={showArchiveCampaign}
         campaign={campaign}
-        onClose={() => setShowDeleteCampaign(false)}
+        onClose={() => setShowArchiveCampaign(false)}
         onConfirm={async (id) => {
-          await campaignsService.delete(id);
-          navigate('/campaigns');
+          void id;
+          await archiveCampaign();
         }}
       />
 
       <SubmissionDetailModal
-        open={Boolean(selectedSubmission)}
-        submission={selectedSubmission}
-        onClose={() => setSelectedSubmission(undefined)}
+        open={Boolean(selectedSubmissionId)}
+        formId={selectedFormIdForSubmissions ?? undefined}
+        submissionId={selectedSubmissionId ?? undefined}
+        onClose={() => setSelectedSubmissionId(null)}
       />
 
-      <DeleteFormConfirmDialog
-        open={Boolean(deletingForm)}
-        form={deletingForm}
-        onClose={() => setDeletingForm(undefined)}
-        onConfirm={async (formId) => {
-          await deleteForm(formId);
-        }}
-      />
     </div>
   );
 };

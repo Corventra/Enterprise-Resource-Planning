@@ -1,12 +1,12 @@
 import { Filter, Search } from 'lucide-react';
-import type { CampaignFilters, CampaignStatus, CampaignType, Channel } from '../../types/campaign.types';
+import type { CampaignApiStatus, CampaignFilters } from '../../types/campaign.types';
 
 interface CampaignFiltersProps {
   filters: CampaignFilters;
+  typeFilterOptions: string[];
   onSearchChange: (value: string) => void;
-  onTypeChange: (value: CampaignType | 'All') => void;
-  onChannelChange: (value: Channel | 'All') => void;
-  onStatusChange: (value: CampaignStatus | 'All') => void;
+  onTypeChange: (value: string) => void;
+  onStatusChange: (value: CampaignApiStatus | 'All') => void;
   onReset: () => void;
 }
 
@@ -16,9 +16,9 @@ const selectClassName = `rounded-lg border-none bg-white py-2 pl-3 pr-8 text-xs 
 
 export const CampaignFiltersSection = ({
   filters,
+  typeFilterOptions,
   onSearchChange,
   onTypeChange,
-  onChannelChange,
   onStatusChange,
   onReset
 }: CampaignFiltersProps) => {
@@ -31,48 +31,33 @@ export const CampaignFiltersSection = ({
           value={filters.search}
           onChange={(event) => onSearchChange(event.target.value)}
           className={`w-full rounded-lg border-none bg-white py-2 pl-10 pr-3 text-sm text-[#191c1e] shadow-sm placeholder:text-[#737784]/80 ${fieldFocus}`}
-          placeholder="Search by name, tag or ID..."
+          placeholder="Search by name, topic, or code..."
         />
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <select
           value={filters.type}
-          onChange={(event) => onTypeChange(event.target.value as CampaignType | 'All')}
+          onChange={(event) => onTypeChange(event.target.value)}
           className={selectClassName}
           aria-label="Filter by type"
         >
-          <option value="All">All Types</option>
-          <option value="Acquisition">Acquisition</option>
-          <option value="Retention">Retention</option>
-          <option value="Awareness">Awareness</option>
-        </select>
-
-        <select
-          value={filters.channel}
-          onChange={(event) => onChannelChange(event.target.value as Channel | 'All')}
-          className={selectClassName}
-          aria-label="Filter by channel"
-        >
-          <option value="All">All Channels</option>
-          <option value="Email">Email</option>
-          <option value="WhatsApp">WhatsApp</option>
-          <option value="Instagram">Instagram</option>
-          <option value="LinkedIn">LinkedIn</option>
-          <option value="Website">Website</option>
+          {typeFilterOptions.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt === 'All' ? 'All types' : opt}
+            </option>
+          ))}
         </select>
 
         <select
           value={filters.status}
-          onChange={(event) => onStatusChange(event.target.value as CampaignStatus | 'All')}
+          onChange={(event) => onStatusChange(event.target.value as CampaignApiStatus | 'All')}
           className={selectClassName}
           aria-label="Filter by status"
         >
-          <option value="All">All Statuses</option>
-          <option value="Draft">Draft</option>
-          <option value="Active">Active</option>
-          <option value="Paused">Paused</option>
-          <option value="Completed">Completed</option>
+          <option value="All">All statuses</option>
+          <option value="ACTIVE">Active</option>
+          <option value="ARCHIVED">Archived</option>
         </select>
       </div>
 

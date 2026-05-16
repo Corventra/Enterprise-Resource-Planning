@@ -2,7 +2,7 @@ const { verify } = require('../utils/jwt');
 
 /**
  * Middleware: verify Authorization: Bearer <token>.
- * Set req.user dari payload JWT. Reject 401 kalau invalid/expired.
+ * Set req.user dari payload JWT (termasuk permissions snapshot saat login). Reject 401 kalau invalid/expired.
  */
 const authenticate = (req, res, next) => {
   const header = req.headers['authorization'] || '';

@@ -1,39 +1,61 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { leadTrackerService } from '../services/lead-tracker-service';
-import type { LeadTrackerItem } from '../types/lead-tracker.types';
+import type { CreateManualLeadPayload, LeadTrackerItem, MarkLeadLostPayload } from '../types/lead-tracker.types';
 
 export const useLeadTrackerList = () => {
   const [items, setItems] = useState<LeadTrackerItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const fetchItems = useCallback(async () => {
     setIsLoading(true);
-    const data = await leadTrackerService.getAll();
-    setItems(data);
-    setIsLoading(false);
+    setLoadError(null);
+    try {
+      const data = await leadTrackerService.getAll();
+      setItems(data);
+    } catch (e) {
+      setItems([]);
+      setLoadError(e instanceof Error ? e.message : 'Gagal memuat Lead Tracker.');
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     void fetchItems();
   }, [fetchItems]);
 
+  const createManualLead = async (payload: CreateManualLeadPayload) => {
+    await leadTrackerService.createManual(payload);
+    await fetchItems();
+  };
+
+  const markLeadLost = async (leadId: string, payload: MarkLeadLostPayload) => {
+    await leadTrackerService.markLost(leadId, payload);
+    await fetchItems();
+  };
+
   const summary = useMemo(() => {
     const totalLeads = items.length;
-    const needFollowUp = items.filter((item) => item.status === 'Need Follow Up').length;
-    const needRevision = items.filter((item) => item.status === 'Need Revision').length;
-    const readyForHandover = items.filter((item) => item.status === 'Ready for Handover').length;
+    const activeLeads = items.filter((item) => item.leadStatus === 'ACTIVE').length;
+    const wonLeads = items.filter((item) => item.leadStatus === 'WON').length;
+    const lostLeads = items.filter((item) => item.leadStatus === 'LOST').length;
 
     return {
       totalLeads,
-      needFollowUp,
-      needRevision,
-      readyForHandover
+      activeLeads,
+      wonLeads,
+      lostLeads
     };
   }, [items]);
 
   return {
     items,
     isLoading,
-    summary
+    loadError,
+    summary,
+    refetch: fetchItems,
+    createManualLead,
+    markLeadLost
   };
 };

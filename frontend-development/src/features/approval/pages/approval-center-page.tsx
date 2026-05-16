@@ -1,73 +1,101 @@
-import { useNavigate } from 'react-router';
+import { useEffect, useMemo, useState } from 'react';
+import { Outlet, useLocation } from 'react-router';
 import { ROLES } from '../../../app/permissions';
 import { useAuth } from '../../../app/store/auth-store';
-import { ApprovalEmptyState } from '../components/approval-empty-state';
-import { ApprovalSearch } from '../components/approval-search';
+import { buildLeadWorkspacePreview } from '../../lead-workspace/utils/lead-workspace-preview';
 import { ApprovalSummaryCards } from '../components/approval-summary-cards';
-import { ApprovalTable } from '../components/approval-table';
 import { ApprovalTabs } from '../components/approval-tabs';
-import { useApprovalFilters } from '../hooks/use-approval-filters';
 import { useApprovalQueue } from '../hooks/use-approval-queue';
-import type { ApprovalItem } from '../types/approval.types';
+import type { ApprovalKind, ApprovalOutletContext, ApprovalTab } from '../types/approval.types';
+
+const tabKindMap: Record<ApprovalTab, ApprovalKind> = {
+  proposal: 'Proposal',
+  'engagement-letter': 'EngagementLetter',
+  handover: 'HandoverMemo'
+};
+
+const resolveApprovalTab = (pathname: string): ApprovalTab => {
+  if (pathname.includes('/engagement-letter')) return 'engagement-letter';
+  if (pathname.includes('/handover')) return 'handover';
+  return 'proposal';
+};
+
+const emptyWorkspacePreview = buildLeadWorkspacePreview({
+  id: '',
+  leadCode: '',
+  companyName: '',
+  address: '',
+  desiredServices: null,
+  companyPicName: '',
+  companyPicPhone: '',
+  companyPicEmail: '',
+  leadSource: '',
+  processedAt: null,
+  processedBy: null,
+  processedByUserId: null,
+  updatedAt: null,
+  activityLogs: []
+});
 
 export const ApprovalCenterPage = () => {
-  const navigate = useNavigate();
   const { role } = useAuth();
-  const { items, isLoading, summary, approve, requestRevision } = useApprovalQueue();
-  const { filters, filteredItems, updateFilter, setKind, resetFilters } = useApprovalFilters(items);
+  const location = useLocation();
+  const activeTab = resolveApprovalTab(location.pathname);
+  const { items, isLoading, summary, approve, requestRevision, refresh } = useApprovalQueue();
+  const [selectedPendingId, setSelectedPendingId] = useState<string | null>(null);
+
+  const pendingItems = useMemo(
+    () => items.filter((item) => item.kind === tabKindMap[activeTab]),
+    [activeTab, items]
+  );
+
+  useEffect(() => {
+    if (pendingItems.length === 0) {
+      setSelectedPendingId(null);
+      return;
+    }
+
+    const isStillAvailable = pendingItems.some((item) => item.id === selectedPendingId);
+    if (!isStillAvailable) {
+      setSelectedPendingId(pendingItems[0].id);
+    }
+  }, [pendingItems, selectedPendingId]);
 
   const isReadOnly = role === ROLES.COO;
 
-  const handleView = (item: ApprovalItem) => {
-    navigate(item.detailRoute);
-  };
-
-  const handleApprove = (item: ApprovalItem) => {
-    void approve(item);
-  };
-
-  const handleRequestRevision = (item: ApprovalItem) => {
-    void requestRevision(item);
-  };
+  const outletContext = {
+    workspace: emptyWorkspacePreview,
+    leadId: '',
+    processedByUserId: null,
+    refetchWorkspace: async () => {},
+    pendingItems,
+    selectedPendingId,
+    setSelectedPendingId,
+    queueLoading: isLoading,
+    isReadOnly,
+    approve,
+    requestRevision,
+    refreshQueue: refresh
+  } satisfies ApprovalOutletContext;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Approval Center</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-2xl font-semibold text-[#191c1e]">Approval Center</h1>
+          <p className="mt-1 text-sm text-[#737784]">
             {isReadOnly
-              ? 'Pantau seluruh proposal, engagement letter, dan handover memo yang sedang menunggu approval CEO.'
-              : 'Review dan approve proposal, engagement letter, dan handover memo yang menunggu sign-off Anda.'}
+              ? 'Pantau proposal, engagement letter, dan handover yang menunggu approval CEO.'
+              : 'Review dan approve proposal, engagement letter, dan handover yang menunggu sign-off Anda.'}
           </p>
         </div>
       </header>
 
       <ApprovalSummaryCards summary={summary} />
 
-      <ApprovalTabs active={filters.kind} summary={summary} onChange={setKind} />
+      <ApprovalTabs />
 
-      <ApprovalSearch
-        search={filters.search}
-        onSearchChange={(value) => updateFilter('search', value)}
-        onReset={resetFilters}
-      />
-
-      {isLoading ? (
-        <div className="rounded-xl border border-[#eceef0] bg-white p-4 text-sm text-[#737784] shadow-sm">
-          Loading approval queue...
-        </div>
-      ) : filteredItems.length === 0 ? (
-        <ApprovalEmptyState onReset={filters.search || filters.kind !== 'All' ? resetFilters : undefined} />
-      ) : (
-        <ApprovalTable
-          items={filteredItems}
-          onView={handleView}
-          onApprove={handleApprove}
-          onRequestRevision={handleRequestRevision}
-          isReadOnly={isReadOnly}
-        />
-      )}
+      <Outlet context={outletContext} />
     </div>
   );
 };

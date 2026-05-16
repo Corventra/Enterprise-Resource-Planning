@@ -1,5 +1,6 @@
 import type { FormBuilderField } from '../types/form-builder.types';
 
+/** Contoh lokal — integrasi API memakai field dari backend. */
 export const CORE_FIELDS: FormBuilderField[] = [
   {
     id: 'core-company-name',
@@ -8,7 +9,9 @@ export const CORE_FIELDS: FormBuilderField[] = [
     note: 'Masukkan nama perusahaan atau nama client.',
     placeholder: 'PT Contoh Sejahtera',
     required: true,
-    isCore: true
+    isCore: true,
+    isLocked: true,
+    isSystem: true
   },
   {
     id: 'core-pic-name',
@@ -17,7 +20,9 @@ export const CORE_FIELDS: FormBuilderField[] = [
     note: 'Nama penanggung jawab utama.',
     placeholder: 'Nama PIC',
     required: true,
-    isCore: true
+    isCore: true,
+    isLocked: true,
+    isSystem: true
   },
   {
     id: 'core-email',
@@ -26,7 +31,9 @@ export const CORE_FIELDS: FormBuilderField[] = [
     note: 'Email aktif untuk komunikasi lanjutan.',
     placeholder: 'nama@perusahaan.com',
     required: true,
-    isCore: true
+    isCore: true,
+    isLocked: true,
+    isSystem: true
   },
   {
     id: 'core-phone',
@@ -35,6 +42,8 @@ export const CORE_FIELDS: FormBuilderField[] = [
     note: 'Gunakan nomor yang aktif dan bisa dihubungi.',
     placeholder: '+62...',
     required: true,
-    isCore: true
+    isCore: true,
+    isLocked: true,
+    isSystem: true
   }
 ];

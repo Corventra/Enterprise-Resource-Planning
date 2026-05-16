@@ -2,8 +2,8 @@
  * Middleware factory: terima permission code (single string atau array), reject 403
  * kalau req.user.permissions tidak punya salah satu dari yang dibutuhkan.
  *
- * Pakai SETELAH authenticate. Permissions di-attach ke JWT payload saat login,
- * jadi cek-nya in-memory (tidak query DB per request).
+ * Pakai SETELAH authenticate. Permissions dibaca dari req.user (JWT), bukan dari DB —
+ * samakan dengan token: setelah admin ubah hak di DB, user perlu login ulang agar guard ikut berubah.
  *
  * Mode:
  *   requirePermission('USER_MANAGE')         — wajib punya 1 permission

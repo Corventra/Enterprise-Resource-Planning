@@ -6,6 +6,8 @@ import { AppShellLayout } from '../layouts/app-shell-layout';
 import { CampaignsPage } from '../../features/campaigns/pages/campaigns-page';
 import { CampaignDetailPage } from '../../features/campaigns/pages/campaign-detail-page';
 import { FormBuilderPage } from '../../features/forms/pages/form-builder-page';
+import { FormPreviewPage } from '../../features/forms/pages/form-preview-page';
+import { PublicFormPage } from '../../features/forms/pages/public-form-page';
 import { BankDataPage } from '../../features/bank-data/pages/bank-data-page';
 import { LeadTrackerPage } from '../../features/lead-tracker/pages/lead-tracker-page';
 import { LeadWorkspacePage } from '../../features/lead-workspace/pages/lead-workspace-page';
@@ -19,6 +21,9 @@ import { InvoicesPage } from '../../features/invoices/pages/invoices-page';
 import { InvoiceDetailPage } from '../../features/invoices/pages/invoice-detail-page';
 import { DocumentCenterPage } from '../../features/document-center/pages/document-center-page';
 import { ApprovalCenterPage } from '../../features/approval/pages/approval-center-page';
+import { ApprovalEngagementLetterPage } from '../../features/approval/pages/approval-engagement-letter-page';
+import { ApprovalHandoverPage } from '../../features/approval/pages/approval-handover-page';
+import { ApprovalProposalPage } from '../../features/approval/pages/approval-proposal-page';
 import { ProjectsPage } from '../../features/projects/pages/projects-page';
 import { ProjectDetailPage } from '../../features/projects/pages/project-detail-page';
 import { ProjectOverviewPage } from '../../features/projects/pages/project-overview-page';
@@ -44,6 +49,8 @@ export const AppRouter = () => {
     <Routes>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
+      <Route path="/forms/public/:linkCode" element={<PublicFormPage />} />
+
       <Route element={<GuestGuard />}>
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginPage />} />
@@ -54,11 +61,22 @@ export const AppRouter = () => {
         <Route element={<AppShellLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
 
-          <Route element={<PermissionGuard permissions={[PERMISSIONS.CAMPAIGN_MANAGE]} />}>
+          <Route
+            element={
+              <PermissionGuard permissions={[PERMISSIONS.CAMPAIGN_VIEW, PERMISSIONS.CAMPAIGN_MANAGE]} />
+            }
+          >
             <Route path="/campaigns" element={<CampaignsPage />} />
             <Route path="/campaigns/:campaignId" element={<CampaignDetailPage />} />
-            <Route path="/forms" element={<FormBuilderPage />} />
+          </Route>
+
+          <Route element={<PermissionGuard permissions={[PERMISSIONS.FORM_VIEW, PERMISSIONS.FORM_MANAGE]} />}>
+            <Route path="/campaigns/:campaignId/forms/new" element={<FormBuilderPage />} />
+            <Route path="/campaigns/:campaignId/forms/:formId" element={<FormBuilderPage />} />
+            <Route path="/campaigns/:campaignId/forms/:formId/preview" element={<FormPreviewPage />} />
             <Route path="/forms/:formId" element={<FormBuilderPage />} />
+            <Route path="/forms/:formId/preview" element={<FormPreviewPage />} />
+            <Route path="/forms" element={<Navigate to="/campaigns" replace />} />
           </Route>
 
           <Route element={<PermissionGuard permissions={[PERMISSIONS.BANK_DATA_VIEW]} />}>
@@ -96,7 +114,12 @@ export const AppRouter = () => {
           </Route>
 
           <Route element={<PermissionGuard roles={[ROLES.CEO, ROLES.COO]} />}>
-            <Route path="/approval" element={<ApprovalCenterPage />} />
+            <Route path="/approval" element={<ApprovalCenterPage />}>
+              <Route index element={<Navigate to="proposal" replace />} />
+              <Route path="proposal" element={<ApprovalProposalPage />} />
+              <Route path="engagement-letter" element={<ApprovalEngagementLetterPage />} />
+              <Route path="handover" element={<ApprovalHandoverPage />} />
+            </Route>
           </Route>
 
           <Route element={<PermissionGuard permissions={[PERMISSIONS.PROJECT_VIEW]} />}>

@@ -5,12 +5,20 @@ import type { BankDataEntry } from '../types/bank-data.types';
 export const useBankDataList = () => {
   const [entries, setEntries] = useState<BankDataEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const fetchEntries = useCallback(async () => {
     setIsLoading(true);
-    const data = await bankDataService.getAll();
-    setEntries(data);
-    setIsLoading(false);
+    setLoadError(null);
+    try {
+      const data = await bankDataService.getAll();
+      setEntries(data);
+    } catch (e) {
+      setEntries([]);
+      setLoadError(e instanceof Error ? e.message : 'Gagal memuat Bank Data.');
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -18,12 +26,12 @@ export const useBankDataList = () => {
   }, [fetchEntries]);
 
   const processEntry = async (entryId: string) => {
-    await bankDataService.updateStatus(entryId, 'Processed');
+    await bankDataService.process(entryId);
     await fetchEntries();
   };
 
   const archiveEntry = async (entryId: string) => {
-    await bankDataService.updateStatus(entryId, 'Archived');
+    await bankDataService.archive(entryId);
     await fetchEntries();
   };
 
@@ -44,6 +52,7 @@ export const useBankDataList = () => {
   return {
     entries,
     isLoading,
+    loadError,
     summary,
     refetch: fetchEntries,
     processEntry,

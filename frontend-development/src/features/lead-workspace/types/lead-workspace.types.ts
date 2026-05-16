@@ -1,4 +1,42 @@
+import type { LeadWorkspaceActivityLogItem } from './lead-activity.types';
+import type { LeadWorkspaceEngagementLetterItem } from './lead-engagement-letters.types';
+
+export type { LeadWorkspaceEngagementLetterItem } from './lead-engagement-letters.types';
+
 export type WorkspaceTab = 'meeting' | 'proposal' | 'engagement-letter';
+
+export interface LeadWorkspaceDetail {
+  id: string;
+  leadCode: string;
+  companyName: string;
+  address: string;
+  desiredServices: string | null;
+  companyPicName: string;
+  companyPicPhone: string;
+  companyPicEmail: string;
+  leadSource: string;
+  processedAt: string | null;
+  processedBy: string | null;
+  processedByUserId: number | null;
+  updatedAt: string | null;
+  activityLogs: LeadWorkspaceActivityLogItem[];
+}
+
+export interface UpdateLeadWorkspaceDetailsPayload {
+  companyName: string;
+  companyAddress: string;
+  picName: string;
+  email: string;
+  phoneNumber: string;
+  desiredServices?: string;
+}
+
+export type LeadWorkspaceOutletContext = {
+  workspace: LeadWorkspace;
+  leadId: string;
+  processedByUserId: number | null;
+  refetchWorkspace: () => Promise<void>;
+};
 
 export interface LeadWorkspaceMeetingItem {
   id: string;
@@ -100,24 +138,6 @@ export interface LeadWorkspaceEngagementLetter {
   lastUpdatedAt: string;
   owner: string;
   notes: string;
-}
-
-export interface LeadWorkspaceEngagementLetterItem {
-  id: string;
-  title: string;
-  serviceName: string;
-  createdAt: string;
-  agreeFee: string;
-  paymentTypeFinal: string;
-  hasSubcon: boolean;
-  signedAt?: string;
-  status: 'DRAFT' | 'PENDING' | 'SENT' | 'AWAITING_SIGNATURE' | 'SIGNED' | 'REPLACED';
-  document: {
-    uploadedFileName?: string;
-    uploadedAt?: string;
-    uploadedSize?: string;
-    thumbnailUrl?: string;
-  };
 }
 
 export interface LeadWorkspaceNextStep {

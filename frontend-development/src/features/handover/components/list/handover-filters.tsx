@@ -3,14 +3,14 @@ import {
   HANDOVER_STATUS_OPTIONS,
   type HandoverEngagementStatus,
   type HandoverFilters,
-  type HandoverItem,
   type HandoverStatus
 } from '../../types/handover.types';
 
 interface HandoverFiltersProps {
   filters: HandoverFilters;
+  serviceLineOptions?: string[];
   onSearchChange: (value: string) => void;
-  onServiceLineChange: (value: HandoverItem['serviceLine'] | 'All') => void;
+  onServiceLineChange: (value: string) => void;
   onEngagementStatusChange: (value: HandoverEngagementStatus | 'All') => void;
   onStatusChange: (value: HandoverStatus | 'All') => void;
   onReset: () => void;
@@ -21,6 +21,7 @@ const selectClassName = `rounded-lg border-none bg-white py-2 pl-3 pr-8 text-xs 
 
 export const HandoverFiltersSection = ({
   filters,
+  serviceLineOptions = [],
   onSearchChange,
   onServiceLineChange,
   onEngagementStatusChange,
@@ -36,22 +37,23 @@ export const HandoverFiltersSection = ({
           value={filters.search}
           onChange={(event) => onSearchChange(event.target.value)}
           className={`w-full rounded-lg border-none bg-white py-2 pl-10 pr-3 text-sm text-[#191c1e] shadow-sm placeholder:text-[#737784]/80 ${fieldFocus}`}
-          placeholder="Search doc code, client, project..."
+          placeholder="Search doc code, client, title..."
         />
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <select
           value={filters.serviceLine}
-          onChange={(event) => onServiceLineChange(event.target.value as HandoverItem['serviceLine'] | 'All')}
+          onChange={(event) => onServiceLineChange(event.target.value)}
           className={selectClassName}
-          aria-label="Filter by service line"
+          aria-label="Filter by service"
         >
-          <option value="All">All Service Lines</option>
-          <option value="Transfer Pricing">Transfer Pricing</option>
-          <option value="Tax">Tax</option>
-          <option value="Advisory">Advisory</option>
-          <option value="Audit">Audit</option>
+          <option value="All">All Services</option>
+          {serviceLineOptions.map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
         </select>
 
         <select

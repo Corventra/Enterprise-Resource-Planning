@@ -1,123 +1,84 @@
-import { campaignsMock } from '../mocks/campaigns.mock';
-import { formsMock } from '../mocks/forms.mock';
-import { bankDataEntriesMock, submissionsMock } from '../mocks/submissions.mock';
-import type {
-  BankDataEntry,
-  Campaign,
-  CampaignPayload,
-  Form,
-  Submission
-} from '../types/campaign.types';
-
-const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
-
-let campaignsStore: Campaign[] = clone(campaignsMock);
-let formsStore: Form[] = clone(formsMock);
-let submissionsStore: Submission[] = clone(submissionsMock);
-let bankDataStore: BankDataEntry[] = clone(bankDataEntriesMock);
-
-const generateId = (prefix: string) =>
-  `${prefix}-${Math.random().toString(36).slice(2, 8)}-${Date.now().toString(36)}`;
-
-const recalculateCampaignSubmissions = (campaignId: string) => {
-  const totalSubmissions = submissionsStore.filter(
-    (submission) => submission.campaignId === campaignId
-  ).length;
-
-  campaignsStore = campaignsStore.map((campaign) =>
-    campaign.id === campaignId ? { ...campaign, totalSubmissions, updatedAt: new Date().toISOString() } : campaign
-  );
-};
+import { deleteDraftForm, getCampaignForms } from '../../forms/services/forms-api';
+import type { Campaign, Form } from '../types/campaign.types';
+import {
+  archiveCampaignApi,
+  createCampaignApi,
+  getCampaignById,
+  getCampaigns,
+  updateCampaignApi
+} from './campaigns-api';
 
 export const campaignsService = {
   async getAll(): Promise<Campaign[]> {
-    return clone(campaignsStore);
+    return getCampaigns();
   },
 
   async getById(campaignId: string): Promise<Campaign | undefined> {
-    return clone(campaignsStore.find((campaign) => campaign.id === campaignId));
+    const c = await getCampaignById(campaignId);
+    return c ?? undefined;
   },
 
-  async create(payload: CampaignPayload): Promise<Campaign> {
-    const now = new Date().toISOString();
-    const newCampaign: Campaign = {
-      id: generateId('cmp'),
-      ...payload,
-      createdBy: 'Current User',
-      totalSubmissions: 0,
-      createdAt: now,
-      updatedAt: now
-    };
-
-    campaignsStore = [newCampaign, ...campaignsStore];
-    return clone(newCampaign);
+  async create(input: {
+    name: string;
+    campaignTypeId: number;
+    topicId: number;
+    startDate: string;
+    endDate: string | null;
+    notes: string;
+    imageFile: File | null;
+  }): Promise<Campaign> {
+    return createCampaignApi(input);
   },
 
-  async update(campaignId: string, payload: CampaignPayload): Promise<Campaign> {
-    const target = campaignsStore.find((campaign) => campaign.id === campaignId);
-    if (!target) {
-      throw new Error('Campaign not found');
+  async update(
+    campaignId: string,
+    input: {
+      name: string;
+      campaignTypeId: number;
+      topicId: number;
+      startDate: string;
+      endDate: string | null;
+      notes: string;
+      imageFile: File | null;
     }
-
-    const updatedCampaign: Campaign = {
-      ...target,
-      ...payload,
-      updatedAt: new Date().toISOString()
-    };
-
-    campaignsStore = campaignsStore.map((campaign) =>
-      campaign.id === campaignId ? updatedCampaign : campaign
-    );
-
-    return clone(updatedCampaign);
+  ): Promise<Campaign> {
+    return updateCampaignApi(campaignId, input);
   },
 
-  async delete(campaignId: string): Promise<void> {
-    campaignsStore = campaignsStore.filter((campaign) => campaign.id !== campaignId);
-    formsStore = formsStore.filter((form) => form.campaignId !== campaignId);
-    submissionsStore = submissionsStore.filter((submission) => submission.campaignId !== campaignId);
-    bankDataStore = bankDataStore.filter((entry) => entry.campaignId !== campaignId);
+  async archiveCampaign(campaignId: string): Promise<void> {
+    await archiveCampaignApi(campaignId);
   },
 
   async getFormsByCampaign(campaignId: string): Promise<Form[]> {
-    return clone(formsStore.filter((form) => form.campaignId === campaignId));
+    const rows = await getCampaignForms(campaignId);
+    return rows.map((r) => ({
+      id: String(r.form_id),
+      campaignId: String(r.campaign_id),
+      name: r.title,
+      status:
+        r.status === 'PUBLISHED'
+          ? 'Active'
+          : r.status === 'INACTIVE'
+            ? 'Inactive'
+            : ('Draft' as const),
+      publishedAt: r.published_at ?? '',
+      formCode: r.form_code ?? undefined,
+      submissionCount: 0,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+      createdBy: String(r.created_by),
+      backendFormStatus: r.status,
+      isAcceptingResponses: r.is_accepting_responses,
+      formCategory: r.form_category
+    }));
   },
 
-  async updateForm(formId: string, payload: Partial<Form>): Promise<Form> {
-    const target = formsStore.find((form) => form.id === formId);
-    if (!target) {
-      throw new Error('Form not found');
-    }
-
-    const updatedForm: Form = {
-      ...target,
-      ...payload
-    };
-
-    formsStore = formsStore.map((form) => (form.id === formId ? updatedForm : form));
-    return clone(updatedForm);
+  /** Phase A: tidak ada endpoint ubah status form di backend — noop untuk kompat hook lama. */
+  async updateForm(_formId: string, _payload: Partial<Form>): Promise<Form> {
+    throw new Error('Update form status belum tersedia pada Phase A.');
   },
 
   async deleteForm(formId: string): Promise<void> {
-    const target = formsStore.find((form) => form.id === formId);
-    if (!target) {
-      return;
-    }
-
-    formsStore = formsStore.filter((form) => form.id !== formId);
-    submissionsStore = submissionsStore.filter((submission) => submission.formId !== formId);
-    recalculateCampaignSubmissions(target.campaignId);
-  },
-
-  async getBankDataEntries(campaignId: string): Promise<BankDataEntry[]> {
-    return clone(bankDataStore.filter((entry) => entry.campaignId === campaignId));
-  },
-
-  async getSubmissionsByCampaign(campaignId: string): Promise<Submission[]> {
-    return clone(submissionsStore.filter((submission) => submission.campaignId === campaignId));
-  },
-
-  async getSubmissionById(submissionId: string): Promise<Submission | undefined> {
-    return clone(submissionsStore.find((submission) => submission.id === submissionId));
+    await deleteDraftForm(formId);
   }
 };
