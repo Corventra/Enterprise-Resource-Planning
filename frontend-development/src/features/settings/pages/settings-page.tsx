@@ -17,7 +17,7 @@ const cards: SettingsCardDef[] = [
     to: '/settings/kpi-config',
     title: 'KPI Configuration',
     description:
-      'Atur bobot 4 dimensi KPI, threshold on-time tolerance, dan target update gap. HRD primary owner — perubahan major (bobot dimensi) di-approve CEO.',
+      'Atur bobot 4 dimensi KPI, threshold on-time tolerance, dan target update gap. CEO primary owner — perubahan bobot dimensi masuk pending state lalu di-approve sendiri sebagai konfirmasi audit-trail.',
     icon: Sliders,
     iconClass: 'text-[#003c90] bg-[#003c90]/10',
     requiredPermissions: [PERMISSIONS.KPI_CONFIGURE]
@@ -26,7 +26,7 @@ const cards: SettingsCardDef[] = [
     to: '/settings/task-templates',
     title: 'Task Templates',
     description:
-      'Kelola task default per service line (TP / Tax / Advisory / Audit). Collaborative HRD + COO — task list di-clone otomatis saat COO assign PM.',
+      'Kelola task default per service line (TP / Tax / Advisory / Audit). Collaborative CEO + COO — task list di-clone otomatis saat COO assign PM.',
     icon: ListChecks,
     iconClass: 'text-[#a16207] bg-amber-100',
     requiredPermissions: [PERMISSIONS.TASK_TEMPLATE_MANAGE]
@@ -50,7 +50,7 @@ export const SettingsPage = () => {
         <div className="flex flex-col items-center justify-center gap-3 rounded-xl bg-white px-6 py-16 text-center shadow-sm ring-1 ring-[#eceef0]">
           <h3 className="text-lg font-semibold text-[#191c1e]">No settings available</h3>
           <p className="max-w-md text-sm text-[#737784]">
-            Anda tidak memiliki permission untuk mengubah settings sistem. Hubungi HRD atau COO untuk
+            Anda tidak memiliki permission untuk mengubah settings sistem. Hubungi CEO atau COO untuk
             perubahan KPI Config / Task Template.
           </p>
         </div>

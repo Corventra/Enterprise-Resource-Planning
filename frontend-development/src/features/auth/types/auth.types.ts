@@ -29,7 +29,7 @@ export interface DummyUser {
   id?: number;
   /** Display name & metadata role (optional). */
   roleInfo?: UserRoleInfo;
-  /** Department user — kosong array untuk role all-spanning (CEO, HRD, dll). */
+  /** Department user — kosong array untuk role all-spanning (CEO, Superadmin, dll). */
   departments?: UserDepartment[];
   /**
    * Permission codes yang dimiliki user — di-fetch dari backend saat login & /me.

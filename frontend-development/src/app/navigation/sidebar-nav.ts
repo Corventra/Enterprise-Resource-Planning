@@ -64,14 +64,14 @@ export const sidebarNavItems: SidebarNavItem[] = [
     path: '/projects',
     icon: Briefcase,
     group: 'Main',
-    permission: [ROLES.COO, ROLES.PM, ROLES.CONSULTANT, ROLES.CEO, ROLES.HRD]
+    permission: [ROLES.COO, ROLES.PM, ROLES.CONSULTANT, ROLES.CEO]
   },
   {
     label: 'KPI',
     path: '/kpi',
     icon: TrendingUp,
     group: 'Main',
-    permission: [ROLES.HRD, ROLES.CEO, ROLES.COO, ROLES.PM, ROLES.CONSULTANT]
+    permission: [ROLES.CEO, ROLES.COO, ROLES.PM, ROLES.CONSULTANT]
   },
   {
     label: 'Invoice',
@@ -85,7 +85,7 @@ export const sidebarNavItems: SidebarNavItem[] = [
     path: '/document-center',
     icon: FolderOpen,
     group: 'Main',
-    permission: [ROLES.BD, ROLES.CEO, ROLES.COO, ROLES.PM, ROLES.CONSULTANT, ROLES.STAFF_ADMIN, ROLES.HRD]
+    permission: [ROLES.BD, ROLES.CEO, ROLES.COO, ROLES.PM, ROLES.CONSULTANT, ROLES.STAFF_ADMIN]
   },
   {
     label: 'Settings',

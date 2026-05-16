@@ -16,7 +16,7 @@ export const kpiSnapshotsMock: KpiSnapshot[] = [
     period: '2026-02',
     computedAt: '2026-03-01T08:00:00.000Z',
     finalizedAt: '2026-03-05T10:00:00.000Z',
-    finalizedBy: { id: 'hrd@erp.local', name: 'HRD User', role: 'HRD' },
+    finalizedBy: { id: 'ceo@erp.local', name: 'CEO User', role: 'CEO' },
     dimensions: {
       taskCompletion: {
         weight: 0.35,
@@ -52,7 +52,7 @@ export const kpiSnapshotsMock: KpiSnapshot[] = [
     period: '2026-03',
     computedAt: '2026-04-01T08:00:00.000Z',
     finalizedAt: '2026-04-05T10:00:00.000Z',
-    finalizedBy: { id: 'hrd@erp.local', name: 'HRD User', role: 'HRD' },
+    finalizedBy: { id: 'ceo@erp.local', name: 'CEO User', role: 'CEO' },
     dimensions: {
       taskCompletion: {
         weight: 0.35,

@@ -49,7 +49,7 @@ export interface KpiDimensionScore {
 /**
  * Hasil agregat KPI consultant untuk satu period (default monthly).
  * `finalizedAt` null = preliminary (live, masih bisa berubah).
- * `finalizedAt` ada = locked oleh HRD/CEO, immutable.
+ * `finalizedAt` ada = locked oleh CEO, immutable.
  */
 export interface KpiSnapshot {
   consultantId: string;
@@ -66,7 +66,8 @@ export interface KpiSnapshot {
 
 /**
  * Konfigurasi periode KPI: bobot dimensi, threshold, periode.
- * HRD primary edit. CEO approve untuk perubahan major (mis. ubah bobot dimensi).
+ * CEO primary edit + approve. Major change (bobot dimensi) masuk pending state
+ * lalu CEO approve sendiri sebagai konfirmasi audit-trail.
  */
 export interface KpiPeriodConfig {
   effectiveFrom: string;

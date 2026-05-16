@@ -28,7 +28,9 @@ export const KpiConfigPage = () => {
   const [isApproving, setIsApproving] = useState(false);
   const [feedback, setFeedback] = useState<{ kind: 'success' | 'error'; message: string } | null>(null);
 
-  const canEdit = can(PERMISSIONS.KPI_CONFIGURE) && role === ROLES.HRD;
+  // Setelah HRD dihapus (post-bimbingan): CEO = primary owner KPI framework.
+  // CEO submit perubahan bobot + approve sendiri (dua step deliberate konfirmasi).
+  const canEdit = can(PERMISSIONS.KPI_CONFIGURE) && role === ROLES.CEO;
   const canApproveMajor = role === ROLES.CEO;
 
   useEffect(() => {
@@ -258,8 +260,9 @@ export const KpiConfigPage = () => {
           </p>
         </div>
         <p className="mb-4 text-xs text-[#737784]">
-          Perubahan bobot dimensi adalah <strong>major change</strong> — wajib di-approve CEO setelah HRD
-          submit. Threshold operational di bawah dapat di-adjust HRD tanpa CEO approve.
+          Perubahan bobot dimensi adalah <strong>major change</strong> — masuk pending state setelah
+          submit, lalu CEO approve sendiri sebagai konfirmasi audit-trail. Threshold operational di
+          bawah dapat di-adjust langsung tanpa pending.
         </p>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {KPI_DIMENSION_KEYS.map((key) => (
@@ -287,7 +290,7 @@ export const KpiConfigPage = () => {
       <section className={sectionClass}>
         <h2 className={sectionTitleClass}>Threshold Operational</h2>
         <p className="mb-4 text-xs text-[#737784]">
-          Threshold ini dapat di-adjust HRD tanpa approval CEO.
+          Threshold ini dapat di-adjust langsung tanpa masuk pending approval.
         </p>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="rounded-xl border border-[#eceef0] bg-[#f9fafb] p-4">
@@ -380,13 +383,6 @@ export const KpiConfigPage = () => {
             </p>
           </div>
         </div>
-        {!canEdit && canApproveMajor && (
-          <div className="mt-4 rounded-lg border border-[#003c90]/20 bg-[#d5e3fc]/40 p-3 text-xs text-[#003c90]">
-            <CheckCircle2 className="mr-1 inline h-3.5 w-3.5" />
-            Sebagai CEO, Anda hanya bisa approve perubahan major yang sudah di-submit HRD. Untuk
-            edit langsung, login sebagai HRD.
-          </div>
-        )}
       </section>
 
       {feedback && (

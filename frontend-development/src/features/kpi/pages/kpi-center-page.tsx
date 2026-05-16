@@ -80,8 +80,8 @@ export const KpiCenterPage = () => {
   const subtitle =
     role === ROLES.PM
       ? 'Pantau performa consultant di tim Anda untuk period berjalan.'
-      : role === ROLES.HRD
-        ? 'Performance Management dashboard — owner: HRD, view-only: CEO/COO/Staff Admin.'
+      : role === ROLES.CEO
+        ? 'Performance Management dashboard — owner: CEO, view-only: COO/Staff Admin.'
         : 'Pantau KPI semua consultant aktif untuk period berjalan.';
 
   if (role === ROLES.CONSULTANT) {
