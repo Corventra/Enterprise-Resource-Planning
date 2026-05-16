@@ -10,7 +10,9 @@ export const handoverMock: HandoverItem[] = [
     period: 'Januari - Maret 2025',
     engagementStatus: 'Signed',
     engagementStatusDate: '26 Jan 2025',
-    status: 'Waiting CEO Approval'
+    status: 'Waiting CEO Approval',
+    createdBy: 'Budi Santoso',
+    createdAt: '2025-01-28T08:00:00.000Z'
   },
   {
     id: 'ho-002',
@@ -21,7 +23,9 @@ export const handoverMock: HandoverItem[] = [
     period: 'Februari - April 2025',
     engagementStatus: 'Pending',
     engagementStatusDate: 'N/A',
-    status: 'Draft'
+    status: 'Draft',
+    createdBy: '—',
+    createdAt: null
   },
   {
     id: 'ho-003',
@@ -32,7 +36,9 @@ export const handoverMock: HandoverItem[] = [
     period: 'Januari 2025',
     engagementStatus: 'Signed',
     engagementStatusDate: '15 Jan 2025',
-    status: 'Approved'
+    status: 'Approved',
+    createdBy: 'Dewi Lestari',
+    createdAt: '2025-01-20T10:30:00.000Z'
   },
   {
     id: 'ho-004',
@@ -43,7 +49,9 @@ export const handoverMock: HandoverItem[] = [
     period: 'Maret - April 2025',
     engagementStatus: 'Pending',
     engagementStatusDate: 'Awaiting Client',
-    status: 'Draft'
+    status: 'Draft',
+    createdBy: '—',
+    createdAt: null
   },
   {
     id: 'ho-005',
@@ -54,7 +62,9 @@ export const handoverMock: HandoverItem[] = [
     period: 'Januari - Juni 2025',
     engagementStatus: 'Signed',
     engagementStatusDate: '05 Jan 2025',
-    status: 'Assigned to PM'
+    status: 'Assigned to PM',
+    createdBy: 'Rina Wijaya',
+    createdAt: '2025-01-10T14:00:00.000Z'
   },
   {
     id: 'ho-006',
@@ -65,6 +75,8 @@ export const handoverMock: HandoverItem[] = [
     period: 'April - Mei 2025',
     engagementStatus: 'Signed',
     engagementStatusDate: '20 Jan 2025',
-    status: 'Draft'
+    status: 'Draft',
+    createdBy: '—',
+    createdAt: null
   }
 ];

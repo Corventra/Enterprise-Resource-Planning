@@ -1,4 +1,8 @@
+import type { LeadWorkspaceOutletContext } from '../../lead-workspace/types/lead-workspace.types';
+
 export type ApprovalKind = 'Proposal' | 'EngagementLetter' | 'HandoverMemo';
+
+export type ApprovalTab = 'proposal' | 'engagement-letter' | 'handover';
 
 export const APPROVAL_KIND_LABELS: Record<ApprovalKind, string> = {
   Proposal: 'Proposal',
@@ -18,6 +22,13 @@ export interface ApprovalItem {
   submittedAt: string;
   summary?: string;
   detailRoute: string;
+  /** Diisi dari API pending EL; antrean bisa fallback ke map legacy bila tidak ada. */
+  engagementQueueMeta?: ApprovalEngagementLetterQueueMeta;
+  handoverQueueMeta?: ApprovalHandoverQueueMeta;
+}
+
+export interface ApprovalHandoverQueueMeta {
+  handoverStatus: string;
 }
 
 export interface ApprovalFilters {
@@ -30,4 +41,42 @@ export interface ApprovalSummary {
   proposals: number;
   engagementLetters: number;
   handoverMemos: number;
+}
+
+export interface ApprovalProposalLeadSummary {
+  companyName: string | null;
+  picName: string | null;
+  email: string | null;
+  phoneNumber: string | null;
+  leadSourceLabel: string | null;
+  processedByName: string | null;
+  processedAt: string | null;
+  desiredServices: string | null;
+}
+
+/** Meta baris antrean approval EL (satu baris = satu item approval). */
+export interface ApprovalEngagementLetterQueueMeta {
+  issuerCompany: string;
+  paymentMethod: 'TERMIN' | 'RETAINER';
+  /** Status EL yang sedang diajukan untuk approval CEO. */
+  engagementStatus:
+    | 'DRAFT'
+    | 'WAITING_CEO_APPROVAL'
+    | 'NEED_REVISION'
+    | 'APPROVED'
+    | 'SENT'
+    | 'SIGNED'
+    | 'REPLACED';
+  agreedFeeDisplay: string;
+}
+
+export interface ApprovalOutletContext extends LeadWorkspaceOutletContext {
+  pendingItems: ApprovalItem[];
+  selectedPendingId: string | null;
+  setSelectedPendingId: (id: string) => void;
+  queueLoading: boolean;
+  isReadOnly: boolean;
+  approve: (item: ApprovalItem, note?: string) => Promise<void>;
+  requestRevision: (item: ApprovalItem, note?: string) => Promise<void>;
+  refreshQueue: () => Promise<void>;
 }

@@ -1,45 +1,34 @@
-import type { CampaignFormErrors, CampaignPayload } from '../types/campaign.types';
+import type { CampaignFormErrors, CampaignFormValues } from '../types/campaign.types';
 
-interface ValidateCampaignPayloadInput {
-  payload: CampaignPayload;
+interface ValidateCampaignFormInput {
+  values: CampaignFormValues;
   noEndDate: boolean;
 }
 
-export const validateCampaignPayload = ({
-  payload,
-  noEndDate
-}: ValidateCampaignPayloadInput): CampaignFormErrors => {
+export const validateCampaignFormValues = ({ values, noEndDate }: ValidateCampaignFormInput): CampaignFormErrors => {
   const errors: CampaignFormErrors = {};
 
-  if (!payload.name.trim()) {
+  if (!values.name.trim()) {
     errors.name = 'Campaign name is required.';
   }
 
-  if (!payload.type) {
-    errors.type = 'Campaign type is required.';
+  if (values.campaignTypeId === '' || !Number.isFinite(Number(values.campaignTypeId))) {
+    errors.campaignTypeId = 'Campaign type is required.';
   }
 
-  if (!payload.channel) {
-    errors.channel = 'Channel is required.';
+  if (values.topicId === '' || !Number.isFinite(Number(values.topicId))) {
+    errors.topicId = 'Topic is required.';
   }
 
-  if (!payload.status) {
-    errors.status = 'Status is required.';
-  }
-
-  if (!payload.topic.trim()) {
-    errors.topic = 'Topic tag is required.';
-  }
-
-  if (!payload.startDate) {
+  if (!values.startDate) {
     errors.startDate = 'Start date is required.';
   }
 
-  if (!noEndDate && !payload.endDate) {
+  if (!noEndDate && !values.endDate) {
     errors.endDate = 'End date is required.';
   }
 
-  if (!noEndDate && payload.startDate && payload.endDate && payload.endDate < payload.startDate) {
+  if (!noEndDate && values.startDate && values.endDate && values.endDate < values.startDate) {
     errors.endDate = 'End date cannot be before start date.';
   }
 

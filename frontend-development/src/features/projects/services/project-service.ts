@@ -62,7 +62,9 @@ export const projectService = {
     // Spawn milestones dari TaskTemplate per service line. Kalau template tidak
     // ada (mis. service line baru), fallback ke handover.timelineMilestones biar
     // tidak gagal — tapi default-nya selalu pakai template (KPI-friendly).
-    const template = await taskTemplateService.getDefaultByServiceLine(handoverItem.serviceLine);
+    const template = await taskTemplateService.getDefaultByServiceLine(
+      handoverItem.serviceLine as import('../types/project.types').ProjectServiceLine
+    );
     let milestones: ProjectMilestone[];
     if (template) {
       milestones = taskTemplateService.cloneAsMilestones(template, startIso, pm, `mil-${projectIdSuffix}`);
@@ -87,7 +89,7 @@ export const projectService = {
       handoverId,
       client: handoverItem.client,
       projectName: handoverItem.project,
-      serviceLine: handoverItem.serviceLine,
+      serviceLine: handoverItem.serviceLine as import('../types/project.types').ProjectServiceLine,
       status: 'Awaiting Consultant',
       pm,
       consultants: [],

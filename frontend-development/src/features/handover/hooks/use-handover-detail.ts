@@ -1,31 +1,33 @@
 import { useCallback, useEffect, useState } from 'react';
-import { projectService } from '../../projects/services/project-service';
-import type { Project } from '../../projects/types/project.types';
 import { handoverService } from '../services/handover-service';
 import type { HandoverDetail } from '../types/handover.types';
 
 export const useHandoverDetail = (handoverId?: string) => {
   const [detail, setDetail] = useState<HandoverDetail | undefined>();
-  const [linkedProject, setLinkedProject] = useState<Project | undefined>();
+  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchDetail = useCallback(async () => {
     if (!handoverId) {
       setDetail(undefined);
-      setLinkedProject(undefined);
+      setError(null);
       setIsLoading(false);
       return;
     }
     setIsLoading(true);
-    const data = await handoverService.getById(handoverId);
-    setDetail(data);
-    if (data) {
-      const project = await projectService.getByHandoverId(data.id);
-      setLinkedProject(project);
-    } else {
-      setLinkedProject(undefined);
+    setError(null);
+    try {
+      const data = await handoverService.getById(handoverId);
+      setDetail(data);
+      if (!data) {
+        setError('Handover tidak ditemukan.');
+      }
+    } catch (e) {
+      setDetail(undefined);
+      setError(e instanceof Error ? e.message : 'Gagal memuat detail handover.');
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, [handoverId]);
 
   useEffect(() => {
@@ -34,7 +36,8 @@ export const useHandoverDetail = (handoverId?: string) => {
 
   return {
     detail,
-    linkedProject,
-    isLoading
+    error,
+    isLoading,
+    refetch: fetchDetail
   };
 };

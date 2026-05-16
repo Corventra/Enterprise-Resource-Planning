@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface SidePanelDialogProps {
@@ -67,26 +68,27 @@ export const SidePanelDialog = ({
     return null;
   }
 
-  return (
+  return createPortal(
     <SidePanelDialogContext.Provider
       value={{ onClose: () => onOpenChange(false), showCloseButton }}
     >
-      <div className="fixed inset-0 z-50 bg-slate-900/40">
+      <div className="fixed inset-0 z-50 min-h-[100dvh] w-screen bg-slate-900/40" role="presentation">
         <button
           type="button"
           className="absolute inset-0 h-full w-full cursor-default"
           onClick={() => onOpenChange(false)}
           aria-label="Close panel"
         />
-        <div className="absolute inset-y-0 right-0 flex w-full justify-end">
+        <div className="absolute inset-y-0 right-0 flex h-full w-full justify-end">
           <div
-            className={`flex h-full w-full max-w-2xl flex-col border-l border-slate-200 bg-white shadow-xl ${className}`}
+            className={`flex h-[100dvh] max-h-[100dvh] min-h-0 w-full max-w-2xl flex-col overflow-hidden border-l border-slate-200 bg-white shadow-xl ${className}`}
           >
             {children}
           </div>
         </div>
       </div>
-    </SidePanelDialogContext.Provider>
+    </SidePanelDialogContext.Provider>,
+    document.body
   );
 };
 
@@ -99,7 +101,7 @@ export const SidePanelDialogHeader = ({
   const { onClose, showCloseButton } = useSidePanelDialogContext();
 
   return (
-    <div className={`flex items-start justify-between border-b border-slate-200 px-6 py-4 ${className}`}>
+    <div className={`flex shrink-0 items-start justify-between border-b border-slate-200 px-6 py-4 ${className}`}>
       <div>
         <h2 className="text-base font-semibold text-slate-900">{title}</h2>
         {description && <p className="mt-1 text-xs text-slate-500">{description}</p>}
@@ -126,5 +128,5 @@ export const SidePanelDialogBody = ({ children, className = '' }: SidePanelDialo
 };
 
 export const SidePanelDialogFooter = ({ children, className = '' }: SidePanelDialogFooterProps) => {
-  return <div className={`border-t border-slate-200 bg-white px-6 py-4 ${className}`}>{children}</div>;
+  return <div className={`shrink-0 border-t border-slate-200 bg-white px-6 py-4 ${className}`}>{children}</div>;
 };

@@ -1,13 +1,19 @@
+import type { ReactNode } from 'react';
 import type { HandoverDetail } from '../../types/handover.types';
 
 interface HandoverDocumentSectionsProps {
   detail: HandoverDetail;
+  ceoApprovalActions?: ReactNode;
 }
 
 const sectionTitleClass = 'mb-4 text-lg font-bold text-[#003c90]';
 const labelClass = 'text-xs font-bold uppercase tracking-wider text-[#737784]';
 
-export const HandoverDocumentSections = ({ detail }: HandoverDocumentSectionsProps) => {
+const EmptyHint = ({ children }: { children: string }) => (
+  <p className="rounded-lg border border-dashed border-[#c3c6d5] bg-[#fafbfc] px-4 py-4 text-sm text-[#737784]">{children}</p>
+);
+
+export const HandoverDocumentSections = ({ detail, ceoApprovalActions }: HandoverDocumentSectionsProps) => {
   return (
     <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-[#eceef0]">
       <section className="border-b border-[#f2f4f6] p-6">
@@ -67,37 +73,49 @@ export const HandoverDocumentSections = ({ detail }: HandoverDocumentSectionsPro
         <div className="grid grid-cols-1 gap-7 md:grid-cols-2">
           <div>
             <p className={`${labelClass} mb-3 text-[#004b31]`}>3.1 Scope Included</p>
-            <ul className="space-y-2">
-              {detail.scopeIncluded.map((item) => (
-                <li key={item} className="flex items-center gap-2 text-sm font-medium text-[#191c1e]">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#006544]" />
-                  {item}
-                </li>
-              ))}
-            </ul>
+            {detail.scopeIncluded.length === 0 ? (
+              <EmptyHint>Belum ada scope included.</EmptyHint>
+            ) : (
+              <ul className="space-y-2">
+                {detail.scopeIncluded.map((item) => (
+                  <li key={item} className="flex items-center gap-2 text-sm font-medium text-[#191c1e]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#006544]" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           <div>
             <p className={`${labelClass} mb-3 text-[#ba1a1a]`}>3.2 Exclusions</p>
-            <ul className="space-y-2">
-              {detail.scopeExcluded.map((item) => (
-                <li key={item} className="flex items-center gap-2 text-sm font-medium text-[#737784]">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#737784]" />
-                  {item}
-                </li>
-              ))}
-            </ul>
+            {detail.scopeExcluded.length === 0 ? (
+              <EmptyHint>Belum ada exclusions.</EmptyHint>
+            ) : (
+              <ul className="space-y-2">
+                {detail.scopeExcluded.map((item) => (
+                  <li key={item} className="flex items-center gap-2 text-sm font-medium text-[#737784]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#737784]" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
 
         <div className="mt-7">
           <p className={`${labelClass} mb-3`}>3.3 Deliverables</p>
-          <div className="flex flex-wrap gap-2">
-            {detail.deliverables.map((item) => (
-              <span key={item} className="rounded-full bg-[#d5e3fc] px-3 py-1.5 text-xs font-bold text-[#57657a]">
-                {item}
-              </span>
-            ))}
-          </div>
+          {detail.deliverables.length === 0 ? (
+            <EmptyHint>Belum ada deliverables.</EmptyHint>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {detail.deliverables.map((item) => (
+                <span key={item} className="rounded-full bg-[#d5e3fc] px-3 py-1.5 text-xs font-bold text-[#57657a]">
+                  {item}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="mt-7">
@@ -113,13 +131,21 @@ export const HandoverDocumentSections = ({ detail }: HandoverDocumentSectionsPro
               </tr>
             </thead>
             <tbody className="divide-y divide-[#eceef0]">
-              {detail.timelineMilestones.map((item) => (
-                <tr key={item.milestone}>
-                  <td className="px-4 py-3 font-semibold text-[#191c1e]">{item.milestone}</td>
-                  <td className="px-4 py-3 text-[#434653]">{item.targetDate}</td>
-                  <td className="px-4 py-3 text-[#737784]">{item.notes}</td>
+              {detail.timelineMilestones.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="px-4 py-6 text-center text-sm text-[#737784]">
+                    Belum ada milestone.
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                detail.timelineMilestones.map((item) => (
+                  <tr key={item.milestone}>
+                    <td className="px-4 py-3 font-semibold text-[#191c1e]">{item.milestone}</td>
+                    <td className="px-4 py-3 text-[#434653]">{item.targetDate}</td>
+                    <td className="px-4 py-3 text-[#737784]">{item.notes}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -140,13 +166,21 @@ export const HandoverDocumentSections = ({ detail }: HandoverDocumentSectionsPro
               </tr>
             </thead>
             <tbody className="divide-y divide-[#eceef0]">
-              {detail.feeItems.map((item) => (
-                <tr key={item.item}>
-                  <td className="px-4 py-3 font-semibold text-[#191c1e]">{item.item}</td>
-                  <td className="px-4 py-3 text-[#434653]">{item.amount}</td>
-                  <td className="px-4 py-3 text-[#737784]">{item.notes}</td>
+              {detail.feeItems.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="px-4 py-6 text-center text-sm text-[#737784]">
+                    Belum ada struktur fee dari engagement letter.
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                detail.feeItems.map((item) => (
+                  <tr key={item.item}>
+                    <td className="px-4 py-3 font-semibold text-[#191c1e]">{item.item}</td>
+                    <td className="px-4 py-3 text-[#434653]">{item.amount}</td>
+                    <td className="px-4 py-3 text-[#737784]">{item.notes}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -163,35 +197,51 @@ export const HandoverDocumentSections = ({ detail }: HandoverDocumentSectionsPro
               <span className="material-symbols-outlined">folder_shared</span>
               5. Client Documents
             </h3>
-            <ul className="space-y-3">
-              {detail.clientDocuments.map((item) => (
-                <li key={item} className="flex items-center gap-2 text-sm font-medium text-[#191c1e]">
-                  <span className="material-symbols-outlined text-[#006544]">check_circle</span>
-                  {item}
-                </li>
-              ))}
-            </ul>
-            <div className="mt-5 rounded-lg border border-dashed border-[#c3c6d5] p-4">
-              <p className={labelClass}>Storage Location</p>
-              <p className="mt-1 flex items-center gap-2 rounded bg-[#f7f9fb] px-2 py-1 font-mono text-xs text-[#434653]">
-                <span className="material-symbols-outlined text-[18px]">cloud</span>
-                {detail.storageLocation}
-              </p>
-            </div>
+            {detail.clientDocuments.length === 0 ? (
+              <EmptyHint>Belum ada dokumen klien diunggah.</EmptyHint>
+            ) : (
+              <ul className="space-y-3">
+                {detail.clientDocuments.map((doc) => (
+                  <li key={doc.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#eceef0] bg-[#fafbfc] px-3 py-2">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="material-symbols-outlined shrink-0 text-[#006544]">description</span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-[#191c1e]">{doc.name}</p>
+                        <p className="text-[11px] text-[#737784]">{doc.uploadedAt}</p>
+                      </div>
+                    </div>
+                    {doc.downloadUrl ? (
+                      <a
+                        href={doc.downloadUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="shrink-0 text-xs font-bold text-[#003c90] hover:underline"
+                      >
+                        Buka
+                      </a>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           <div>
             <h3 id="outstanding-data" className="mb-4 scroll-mt-24 flex items-center gap-2 text-lg font-bold text-[#ba1a1a]">
               <span className="material-symbols-outlined">pending</span>
               6. Outstanding Data
             </h3>
-            <ul className="space-y-3">
-              {detail.outstandingData.map((item) => (
-                <li key={item} className="flex items-center gap-2 text-sm font-medium text-[#191c1e]">
-                  <span className="material-symbols-outlined text-[#ba1a1a]">warning</span>
-                  {item}
-                </li>
-              ))}
-            </ul>
+            {detail.outstandingData.length === 0 ? (
+              <EmptyHint>Belum ada outstanding data requirements.</EmptyHint>
+            ) : (
+              <ul className="space-y-3">
+                {detail.outstandingData.map((item) => (
+                  <li key={item} className="flex items-center gap-2 text-sm font-medium text-[#191c1e]">
+                    <span className="material-symbols-outlined text-[#ba1a1a]">warning</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       </section>
@@ -225,15 +275,21 @@ export const HandoverDocumentSections = ({ detail }: HandoverDocumentSectionsPro
           <span className="material-symbols-outlined">connect_without_contact</span>
           8. Communication Protocol
         </h3>
-        <ul className="space-y-2">
-          {detail.communicationProtocol.map((item) => (
-            <li key={item} className="flex items-center gap-2 text-sm font-medium text-[#191c1e]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#003c90]" />
-              {item}
-            </li>
-          ))}
-        </ul>
-        <div className="mt-4 overflow-hidden rounded-xl border border-[#e6e8ea]">
+        <p className={`${labelClass} mb-2`}>8.1 Internal</p>
+        {detail.communicationProtocol.length === 0 ? (
+          <EmptyHint>Belum ada protokol internal.</EmptyHint>
+        ) : (
+          <ul className="space-y-2">
+            {detail.communicationProtocol.map((item) => (
+              <li key={item} className="flex items-center gap-2 text-sm font-medium text-[#191c1e]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#003c90]" />
+                {item}
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className={`${labelClass} mb-2 mt-5`}>8.2 External</p>
+        <div className="overflow-hidden rounded-xl border border-[#e6e8ea]">
           <table className="w-full text-left text-sm">
             <thead className="bg-[#f2f4f6] font-bold text-[#434653]">
               <tr>
@@ -244,14 +300,22 @@ export const HandoverDocumentSections = ({ detail }: HandoverDocumentSectionsPro
               </tr>
             </thead>
             <tbody className="divide-y divide-[#eceef0]">
-              {detail.communicationContacts.map((item) => (
-                <tr key={`${item.role}-${item.name}`}>
-                  <td className="px-4 py-3 font-semibold text-[#191c1e]">{item.role}</td>
-                  <td className="px-4 py-3 text-[#191c1e]">{item.name}</td>
-                  <td className="px-4 py-3 text-[#003c90]">{item.contact}</td>
-                  <td className="px-4 py-3 text-[#737784]">{item.instruction}</td>
+              {detail.communicationContacts.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-4 py-6 text-center text-sm text-[#737784]">
+                    Belum ada kontak eksternal.
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                detail.communicationContacts.map((item) => (
+                  <tr key={`${item.role}-${item.name}`}>
+                    <td className="px-4 py-3 font-semibold text-[#191c1e]">{item.role}</td>
+                    <td className="px-4 py-3 text-[#191c1e]">{item.name}</td>
+                    <td className="px-4 py-3 text-[#003c90]">{item.contact}</td>
+                    <td className="px-4 py-3 text-[#737784]">{item.instruction}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -267,18 +331,26 @@ export const HandoverDocumentSections = ({ detail }: HandoverDocumentSectionsPro
             <thead className="bg-[#f2f4f6] font-bold text-[#434653]">
               <tr>
                 <th className="px-4 py-3">Role</th>
-                <th className="px-4 py-3">Name</th>
+                <th className="px-4 py-3">Needed</th>
                 <th className="px-4 py-3">Responsibilities</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#eceef0]">
-              {detail.teamAssignments.map((item) => (
-                <tr key={`${item.role}-${item.name}`}>
-                  <td className="px-4 py-3 font-semibold text-[#191c1e]">{item.role}</td>
-                  <td className="px-4 py-3 text-[#191c1e]">{item.name}</td>
-                  <td className="px-4 py-3 text-[#737784]">{item.responsibilities}</td>
+              {detail.teamAssignments.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="px-4 py-6 text-center text-sm text-[#737784]">
+                    Belum ada kebutuhan tim.
+                  </td>
                 </tr>
-              ))}
+              ) : (
+                detail.teamAssignments.map((item) => (
+                  <tr key={`${item.role}-${item.name}`}>
+                    <td className="px-4 py-3 font-semibold text-[#191c1e]">{item.role}</td>
+                    <td className="px-4 py-3 text-[#191c1e]">{item.name}</td>
+                    <td className="px-4 py-3 text-[#737784]">{item.responsibilities}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -305,24 +377,8 @@ export const HandoverDocumentSections = ({ detail }: HandoverDocumentSectionsPro
             </div>
           ))}
         </div>
-      </section>
 
-      <section id="signoff" className="scroll-mt-24 border-t border-[#f2f4f6] px-6 py-7">
-        <h3 className={`${sectionTitleClass} flex items-center gap-2`}>
-          <span className="material-symbols-outlined">draw</span>
-          11. Sign-Off
-        </h3>
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          {detail.signOff.map((item) => (
-            <div key={`${item.name}-${item.role}`} className="rounded-xl border-2 border-[#e6e8ea] p-5">
-              <div className="mb-4 flex h-24 items-end justify-center border-b-2 border-dashed border-[#e6e8ea] pb-2">
-                <p className="font-mono text-xs text-[#c3c6d5]">ELECTRONIC SIGNATURE PENDING</p>
-              </div>
-              <p className="text-center font-bold text-[#191c1e]">{item.name}</p>
-              <p className="text-center text-xs font-bold uppercase tracking-wider text-[#737784]">{item.role}</p>
-            </div>
-          ))}
-        </div>
+        {ceoApprovalActions}
       </section>
 
     </div>

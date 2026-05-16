@@ -1,22 +1,63 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { invoicesService } from '../services/invoices-service';
+import type { InvoiceItem } from '../types/invoice.types';
 
 export const useInvoicesList = () => {
-  const invoices = useMemo(() => invoicesService.getAllSync(), []);
-  const isLoading = false;
+  const [invoices, setInvoices] = useState<InvoiceItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setIsLoading(true);
+    setLoadError(null);
+    invoicesService
+      .getAll()
+      .then((items) => {
+        if (!cancelled) setInvoices(items);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLoadError('Gagal memuat daftar invoice.');
+          setInvoices([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const summary = useMemo(() => {
-    const totalOutstanding = invoices.reduce((sum, item) => sum + item.outstandingValue, 0);
-    const dueSoonCount = invoices.filter((item) => item.nextDueDate !== null && item.paymentStatus !== 'Overdue').length;
-    const overdueCount = invoices.filter((item) => item.paymentStatus === 'Overdue').length;
-    const paidThisMonth = invoices.reduce((sum, item) => sum + item.settledValue, 0);
-    const pendingVerification = invoices.filter((item) => item.paymentStatus === 'Pending Verification').length;
-    const readyToInvoice = invoices.filter(
-      (item) => item.paymentStatus === 'Draft' || item.paymentStatus === 'Ready to Send'
-    ).length;
-    const needsFinalBilling = invoices.filter(
-      (item) => item.paymentStatus === 'Partially Paid' && item.outstandingValue > 0
-    ).length;
+    const totalOutstanding = invoices.reduce((sum, item) => {
+      const outstanding = Math.max(0, item.estimatedNetReceipt * (1 - item.paymentProgress / 100));
+      return sum + outstanding;
+    }, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const inSevenDays = new Date(today);
+    inSevenDays.setDate(inSevenDays.getDate() + 7);
+
+    let dueSoonCount = 0;
+    let overdueCount = 0;
+    let paidThisMonth = 0;
+    let pendingVerification = 0;
+    let readyToInvoice = 0;
+
+    for (const item of invoices) {
+      if (item.statusDb === 'OVERDUE') overdueCount += 1;
+      if (item.statusDb === 'READY_TO_BILL') readyToInvoice += 1;
+      if (item.nextAction.toLowerCase().includes('generate invoice')) readyToInvoice += 0;
+
+      if (item.nextDueDate) {
+        const due = new Date(`${item.nextDueDate}T00:00:00`);
+        if (item.statusDb !== 'SETTLED' && due >= today && due <= inSevenDays) {
+          dueSoonCount += 1;
+        }
+      }
+    }
 
     return {
       totalOutstanding,
@@ -25,13 +66,15 @@ export const useInvoicesList = () => {
       paidThisMonth,
       pendingVerification,
       readyToInvoice,
-      needsFinalBilling
+      needsFinalBilling: invoices.filter((i) => i.statusDb === 'AWAITING_PAYMENT' && i.paymentProgress > 0 && i.paymentProgress < 100)
+        .length
     };
   }, [invoices]);
 
   return {
     invoices,
     isLoading,
+    loadError,
     summary
   };
 };

@@ -5,6 +5,7 @@ import { BankDataTableRowActions } from './bank-data-table-row-actions';
 
 interface BankDataTableProps {
   entries: BankDataEntry[];
+  allowMutations?: boolean;
   onView: (entry: BankDataEntry) => void;
   onProcess: (entry: BankDataEntry) => void;
   onArchive: (entry: BankDataEntry) => void;
@@ -39,22 +40,42 @@ const formatSubmitted = (iso: string) => {
   });
 };
 
-export const BankDataTable = ({ entries, onView, onProcess, onArchive, footer }: BankDataTableProps) => {
+const formatHandledAt = (iso: string | null) => {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString('id-ID', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+export const BankDataTable = ({
+  entries,
+  allowMutations = false,
+  onView,
+  onProcess,
+  onArchive,
+  footer
+}: BankDataTableProps) => {
   return (
     <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-[#eceef0]/80">
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left">
           <thead>
             <tr className="border-none bg-[#eceef0]">
-              <th className={`${thBase} text-left`}>Submitted</th>
+              <th className={`${thBase} text-left`}>Submitted At</th>
               <th className={`${thBase} text-left`}>Company Name</th>
               <th className={`${thBase} text-left`}>Contact</th>
               <th className={`${thBase} text-left`}>Source</th>
-              <th className={`${thBase} text-left`}>Entry Slug</th>
               <th className={`${thBase} text-left`}>Campaign</th>
-              <th className={`${thBase} text-left`}>Form</th>
               <th className={`${thBase} text-center`}>Status</th>
-              <th className={`${thBase} text-center`}>Actions</th>
+              <th className={`${thBase} text-left`}>Handled By</th>
+              <th className={`${thBase} text-left`}>Handled At</th>
+              <th className={`${thBase} text-center`}>Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#eceef0]">
@@ -71,18 +92,12 @@ export const BankDataTable = ({ entries, onView, onProcess, onArchive, footer }:
                   <p className="mt-0.5">{entry.contactEmail}</p>
                 </td>
                 <td className="px-4 py-3.5 text-xs font-medium text-[#434653]">{entry.source}</td>
-                <td className="px-4 py-3.5">
-                  <span className="inline-flex max-w-[12rem] items-center truncate rounded-full bg-[#d5e3fc] px-2.5 py-0.5 text-[11px] font-bold text-[#57657a]">
-                    {entry.entrySlug}
-                  </span>
-                </td>
                 <td className="px-4 py-3.5 text-xs text-[#434653]">
                   <div className="inline-flex items-center gap-1.5">
                     <Building2 className="h-3.5 w-3.5 text-[#737784]" />
                     <span>{entry.campaignName}</span>
                   </div>
                 </td>
-                <td className="px-4 py-3.5 text-xs text-[#434653]">{entry.formName}</td>
                 <td className="px-4 py-3.5 align-middle">
                   <div className="flex justify-center">
                     <span className={`inline-flex rounded-full px-3 py-1 text-[11px] font-bold ${statusClass(entry.status)}`}>
@@ -90,13 +105,16 @@ export const BankDataTable = ({ entries, onView, onProcess, onArchive, footer }:
                     </span>
                   </div>
                 </td>
+                <td className="px-4 py-3.5 text-xs text-[#434653]">{entry.handledBy ?? '—'}</td>
+                <td className="px-4 py-3.5 text-xs text-[#434653]">{formatHandledAt(entry.handledAt)}</td>
                 <td className="py-3.5 pl-4 pr-5 align-middle">
                   <BankDataTableRowActions
+                    allowMutations={allowMutations}
                     onView={() => onView(entry)}
                     onProcess={() => onProcess(entry)}
                     onArchive={() => onArchive(entry)}
                     canProcess={entry.status === 'New'}
-                    canArchive={entry.status !== 'Archived'}
+                    canArchive={entry.status === 'New'}
                   />
                 </td>
               </tr>

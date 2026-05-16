@@ -8,9 +8,14 @@ export const useHandoverList = () => {
 
   const fetchItems = useCallback(async () => {
     setIsLoading(true);
-    const data = await handoverService.getAll();
-    setItems(data);
-    setIsLoading(false);
+    try {
+      const data = await handoverService.getAll();
+      setItems(data);
+    } catch {
+      setItems([]);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -24,7 +29,7 @@ export const useHandoverList = () => {
     ).length;
     const totalAwaitingApproval = items.filter((item) => item.status === 'Waiting CEO Approval').length;
     const totalActive = items.filter((item) =>
-      ['Approved', 'Assigned to PM', 'In Project', 'Completed'].includes(item.status)
+      ['Approved', 'Routed to COO', 'Assigned to PM'].includes(item.status)
     ).length;
 
     return {

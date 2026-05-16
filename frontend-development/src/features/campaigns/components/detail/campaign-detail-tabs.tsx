@@ -3,19 +3,19 @@ type CampaignDetailTab = 'forms' | 'submissions';
 interface CampaignDetailTabsProps {
   activeTab: CampaignDetailTab;
   onChangeTab: (tab: CampaignDetailTab) => void;
+  showFormsTab: boolean;
   formsCount: number;
-  submissionsCount: number;
 }
 
 export const CampaignDetailTabs = ({
   activeTab,
   onChangeTab,
-  formsCount,
-  submissionsCount
+  showFormsTab,
+  formsCount
 }: CampaignDetailTabsProps) => {
   const tabs: Array<{ key: CampaignDetailTab; label: string }> = [
-    { key: 'forms', label: `Forms (${formsCount})` },
-    { key: 'submissions', label: `Submissions (${submissionsCount})` }
+    ...(showFormsTab ? [{ key: 'forms' as const, label: `Forms (${formsCount})` }] : []),
+    { key: 'submissions', label: 'Submissions' }
   ];
 
   return (

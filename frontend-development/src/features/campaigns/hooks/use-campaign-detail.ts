@@ -1,20 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
 import { campaignsService } from '../services/campaigns-service';
-import type { BankDataEntry, Campaign, Form, Submission } from '../types/campaign.types';
+import { getCampaignSubmissionsCount } from '../../forms/services/form-submissions-api';
+import type { Campaign, CampaignSubmitInput, Form } from '../types/campaign.types';
 
 interface CampaignDetailState {
   campaign?: Campaign;
   forms: Form[];
-  submissions: Submission[];
-  bankDataEntries: BankDataEntry[];
+  submissionsCount: number;
 }
 
 export const useCampaignDetail = (campaignId?: string) => {
   const [state, setState] = useState<CampaignDetailState>({
     campaign: undefined,
     forms: [],
-    submissions: [],
-    bankDataEntries: []
+    submissionsCount: 0
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -25,20 +24,27 @@ export const useCampaignDetail = (campaignId?: string) => {
     }
 
     setIsLoading(true);
-    const [campaign, forms, submissions, bankDataEntries] = await Promise.all([
-      campaignsService.getById(campaignId),
-      campaignsService.getFormsByCampaign(campaignId),
-      campaignsService.getSubmissionsByCampaign(campaignId),
-      campaignsService.getBankDataEntries(campaignId)
-    ]);
+    try {
+      const [campaign, forms, submissionsCount] = await Promise.all([
+        campaignsService.getById(campaignId),
+        campaignsService.getFormsByCampaign(campaignId),
+        getCampaignSubmissionsCount(campaignId).catch(() => 0)
+      ]);
 
-    setState({
-      campaign,
-      forms,
-      submissions,
-      bankDataEntries
-    });
-    setIsLoading(false);
+      setState({
+        campaign,
+        forms,
+        submissionsCount
+      });
+    } catch {
+      setState({
+        campaign: undefined,
+        forms: [],
+        submissionsCount: 0
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }, [campaignId]);
 
   useEffect(() => {
@@ -55,11 +61,33 @@ export const useCampaignDetail = (campaignId?: string) => {
     await fetchDetail();
   };
 
+  const updateCampaign = async (input: CampaignSubmitInput) => {
+    if (!campaignId) return;
+    await campaignsService.update(campaignId, {
+      name: input.values.name,
+      campaignTypeId: Number(input.values.campaignTypeId),
+      topicId: Number(input.values.topicId),
+      startDate: input.values.startDate,
+      endDate: input.noEndDate ? null : input.values.endDate || null,
+      notes: input.values.notes,
+      imageFile: input.imageFile
+    });
+    await fetchDetail();
+  };
+
+  const archiveCampaign = async () => {
+    if (!campaignId) return;
+    await campaignsService.archiveCampaign(campaignId);
+    await fetchDetail();
+  };
+
   return {
     ...state,
     isLoading,
     refetch: fetchDetail,
     deleteForm,
-    updateForm
+    updateForm,
+    updateCampaign,
+    archiveCampaign
   };
 };

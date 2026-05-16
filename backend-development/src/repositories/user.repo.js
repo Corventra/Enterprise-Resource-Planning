@@ -217,6 +217,16 @@ const deleteById = async (userId) => {
   await pool.execute('DELETE FROM users WHERE id = ?', [userId]);
 };
 
+const listDepartmentIdsByUserId = async (userId) => {
+  const [rows] = await pool.execute(
+    `SELECT department_id
+       FROM user_departments
+      WHERE user_id = ?`,
+    [userId]
+  );
+  return rows.map((row) => Number(row.department_id)).filter((id) => Number.isInteger(id) && id > 0);
+};
+
 const logLoginAttempt = async ({ userId, emailTried, ip, userAgent, success }) => {
   try {
     await pool.execute(
@@ -240,5 +250,6 @@ module.exports = {
   updateWithDepartments,
   updatePassword,
   deleteById,
+  listDepartmentIdsByUserId,
   logLoginAttempt
 };
