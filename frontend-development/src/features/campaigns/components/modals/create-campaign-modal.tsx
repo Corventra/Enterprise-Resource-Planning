@@ -59,7 +59,6 @@ export const CreateCampaignModal = ({
       await onSuccess(input);
       resetForm();
       setImageFile(null);
-      onClose();
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : 'Failed to create campaign.';
       setSubmitError(msg);

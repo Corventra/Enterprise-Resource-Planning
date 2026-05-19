@@ -4,7 +4,8 @@ import type { Campaign, CampaignFilters } from '../types/campaign.types';
 const defaultFilters: CampaignFilters = {
   search: '',
   type: 'All',
-  status: 'All'
+  status: 'All',
+  createdBy: 'All'
 };
 
 export const useCampaignFilters = (campaigns: Campaign[], pageSize = 5) => {
@@ -15,6 +16,13 @@ export const useCampaignFilters = (campaigns: Campaign[], pageSize = 5) => {
     const uniq = Array.from(new Set(campaigns.map((c) => c.campaignTypeName)))
       .filter(Boolean)
       .sort();
+    return ['All', ...uniq];
+  }, [campaigns]);
+
+  const createdByFilterOptions = useMemo(() => {
+    const uniq = Array.from(new Set(campaigns.map((c) => c.createdBy)))
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b, 'id'));
     return ['All', ...uniq];
   }, [campaigns]);
 
@@ -29,8 +37,9 @@ export const useCampaignFilters = (campaigns: Campaign[], pageSize = 5) => {
         campaign.id.toLowerCase().includes(q);
       const matchType = filters.type === 'All' || campaign.campaignTypeName === filters.type;
       const matchStatus = filters.status === 'All' || campaign.status === filters.status;
+      const matchCreatedBy = filters.createdBy === 'All' || campaign.createdBy === filters.createdBy;
 
-      return matchSearch && matchType && matchStatus;
+      return matchSearch && matchType && matchStatus && matchCreatedBy;
     });
   }, [campaigns, filters]);
 
@@ -60,6 +69,7 @@ export const useCampaignFilters = (campaigns: Campaign[], pageSize = 5) => {
     totalPages,
     pageSize,
     typeFilterOptions,
+    createdByFilterOptions,
     setCurrentPage,
     updateFilter,
     resetFilters

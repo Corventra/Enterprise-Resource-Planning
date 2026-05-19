@@ -17,11 +17,10 @@ export const useApprovalProposals = () => {
   const [actionBusy, setActionBusy] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  const fetchList = useCallback(async () => {
-    setIsLoading(true);
+  const fetchList = useCallback(async (options?: { silent?: boolean }) => {
+    if (!options?.silent) {
+      setIsLoading(true);
+    }
     setLoadError(null);
     try {
       const data = await approvalProposalsService.listPending();
@@ -41,7 +40,9 @@ export const useApprovalProposals = () => {
       setSelectedProposalId(null);
       setLoadError(e instanceof ApiError ? e.message : 'Gagal memuat proposal pending approval.');
     } finally {
-      setIsLoading(false);
+      if (!options?.silent) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
@@ -90,14 +91,12 @@ export const useApprovalProposals = () => {
   const approveSelected = useCallback(async () => {
     if (!selectedProposalId) return;
     setActionBusy(true);
-    setActionError(null);
     try {
       await approvalProposalsService.approve(selectedProposalId);
-      setSuccessMessage('Proposal berhasil disetujui.');
-      await fetchList();
+      await fetchList({ silent: true });
     } catch (e) {
-      setActionError(e instanceof ApiError ? e.message : 'Gagal menyetujui proposal.');
-      throw e;
+      const message = e instanceof ApiError ? e.message : 'Gagal menyetujui proposal.';
+      throw new Error(message);
     } finally {
       setActionBusy(false);
     }
@@ -107,26 +106,18 @@ export const useApprovalProposals = () => {
     async (note: string) => {
       if (!selectedProposalId) return;
       setActionBusy(true);
-      setActionError(null);
       try {
         await approvalProposalsService.reject(selectedProposalId, note);
-        setSuccessMessage('Permintaan revisi proposal berhasil dikirim.');
-        await fetchList();
+        await fetchList({ silent: true });
       } catch (e) {
-        setActionError(e instanceof ApiError ? e.message : 'Gagal menolak proposal.');
-        throw e;
+        const message = e instanceof ApiError ? e.message : 'Gagal menolak proposal.';
+        throw new Error(message);
       } finally {
         setActionBusy(false);
       }
     },
     [fetchList, selectedProposalId]
   );
-
-  useEffect(() => {
-    if (!successMessage) return;
-    const timer = window.setTimeout(() => setSuccessMessage(null), 3000);
-    return () => window.clearTimeout(timer);
-  }, [successMessage]);
 
   return {
     items,
@@ -141,8 +132,6 @@ export const useApprovalProposals = () => {
     actionBusy,
     loadError,
     detailError,
-    actionError,
-    successMessage,
     approveSelected,
     rejectSelected,
     refresh: fetchList

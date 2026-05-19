@@ -35,6 +35,8 @@ export interface LeadTrackerFilters {
   search: string;
   stage: LeadStage | 'All';
   status: LeadPipelineStatus | 'All';
+  /** Nama user yang memproses lead dari API, `Unassigned`, atau `All` */
+  processedBy: string;
 }
 
 export type LostReasonCode =

@@ -39,8 +39,11 @@ export const formatMeetingDateLines = (iso: string) => {
   };
 };
 
-export const meetingStatusClass = (status: 'SCHEDULED' | 'DONE' | 'CANCELLED') =>
-  status === 'DONE' ? 'bg-[#006544]/10 text-[#006544]' : 'bg-[#d5e3fc] text-[#57657a]';
+export const meetingStatusClass = (status: 'SCHEDULED' | 'DONE' | 'CANCELLED') => {
+  if (status === 'DONE') return 'bg-[#006544]/10 text-[#006544]';
+  if (status === 'CANCELLED') return 'bg-red-100 text-red-800';
+  return 'bg-[#d5e3fc] text-[#57657a]';
+};
 
 export const meetingStatusLabel = (status: 'SCHEDULED' | 'DONE' | 'CANCELLED') => {
   if (status === 'DONE') return 'Done';

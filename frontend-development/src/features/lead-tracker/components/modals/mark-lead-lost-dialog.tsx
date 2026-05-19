@@ -17,7 +17,7 @@ interface MarkLeadLostDialogProps {
 const lostReasonCodes = Object.keys(lostReasonLabelMap) as LostReasonCode[];
 
 const fieldClassName =
-  'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1d59c1]/20';
+  'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1d59c1]/20';
 
 export const MarkLeadLostDialog = ({ open, item, busy = false, onClose, onConfirm }: MarkLeadLostDialogProps) => {
   const [lostReasonCode, setLostReasonCode] = useState<LostReasonCode>('NO_RESPONSE');
@@ -81,6 +81,7 @@ export const MarkLeadLostDialog = ({ open, item, busy = false, onClose, onConfir
               value={lostReasonNote}
               onChange={(event) => setLostReasonNote(event.target.value)}
               rows={3}
+              placeholder="Opsional — tambahkan detail atau konteks alasan lost"
               className={`${fieldClassName} mt-1 resize-y`}
             />
           </label>

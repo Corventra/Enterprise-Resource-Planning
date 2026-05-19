@@ -7,7 +7,8 @@ import type {
   SensorDescriptor
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import type { FormBuilderDocument, FormFieldType } from '../../types/form-builder.types';
+import type { ReactNode } from 'react';
+import type { FormBuilderDocument, FormBuilderMetadataErrors, FormFieldType } from '../../types/form-builder.types';
 import { getFormDisplayBadge } from '../../utils/form-display-status';
 import { isFieldPinnedForDnD } from '../../utils/local-draft-fields';
 import { FieldPalette } from './field-palette';
@@ -15,8 +16,27 @@ import { FormHeaderImageField } from './form-header-image-field';
 import { SortableFieldCard, StaticFormFieldCard } from './sortable-field-card';
 import { HtmlRichTextEditor } from '../editors/html-rich-text-editor';
 
+const labelClassName = 'mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500';
+
+const RequiredMark = () => (
+  <span className="ml-0.5 text-red-600" aria-hidden="true">
+    *
+  </span>
+);
+
+const FieldLabel = ({ children, required }: { children: ReactNode; required?: boolean }) => (
+  <label className={labelClassName}>
+    {children}
+    {required ? <RequiredMark /> : null}
+  </label>
+);
+
+const FieldError = ({ message }: { message?: string }) =>
+  message ? <p className="mt-1 text-xs text-red-600">{message}</p> : null;
+
 interface FormBuilderCanvasProps {
   form: FormBuilderDocument;
+  metadataErrors?: FormBuilderMetadataErrors;
   selectedFieldId: string | null;
   /** View-only / non-owner */
   readOnly?: boolean;
@@ -42,6 +62,7 @@ interface FormBuilderCanvasProps {
 
 export const FormBuilderCanvas = ({
   form,
+  metadataErrors = {},
   selectedFieldId,
   readOnly,
   canvasLocked = false,
@@ -133,7 +154,7 @@ export const FormBuilderCanvas = ({
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Form Title</label>
+            <FieldLabel required>Form Title</FieldLabel>
             <input
               value={form.title}
               onChange={(event) => onSetMetadata('title', event.target.value)}
@@ -141,28 +162,27 @@ export const FormBuilderCanvas = ({
               disabled={metaLocked}
               placeholder="Contoh: Form Konsultasi Pajak Gratis"
             />
+            <FieldError message={metadataErrors.title} />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Form Description
-            </label>
+            <FieldLabel required>Form Description</FieldLabel>
             <HtmlRichTextEditor
               value={form.description}
               onChange={(html) => onSetMetadata('description', html)}
               placeholder="Jelaskan tujuan atau konteks formulir ini…"
               readOnly={metaLocked}
             />
+            <FieldError message={metadataErrors.description} />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Success Message
-            </label>
+            <FieldLabel required>Success Message</FieldLabel>
             <HtmlRichTextEditor
               value={form.successMessage}
               onChange={(html) => onSetMetadata('successMessage', html)}
               placeholder="Pesan yang ditampilkan setelah pengisi mengirim formulir…"
               readOnly={metaLocked}
             />
+            <FieldError message={metadataErrors.successMessage} />
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             <div>

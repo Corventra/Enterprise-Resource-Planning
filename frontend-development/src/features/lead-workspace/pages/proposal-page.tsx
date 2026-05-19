@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { useOutletContext } from 'react-router';
+import { Toast } from '../../../components/ui/toast';
+import { useToast } from '../../../hooks/use-toast';
 import { ApiError } from '../../../services/api-client';
+import { PROPOSAL_TOAST } from '../constants/lead-proposal-toast';
 import { CreateEditProposalDialog } from '../components/modals/create-edit-proposal-dialog';
+import { DeleteProposalDraftDialog } from '../components/modals/delete-proposal-draft-dialog';
 import { MarkProposalRespondedDialog } from '../components/modals/mark-proposal-responded-dialog';
 import { SentToClientProposalDialog } from '../components/modals/sent-to-client-proposal-dialog';
 import { ProposalDetailSection } from '../components/proposal-detail-section';
@@ -22,16 +26,15 @@ export const ProposalPage = () => {
   const [lifecycleBusy, setLifecycleBusy] = useState(false);
   const [sentDialogOpen, setSentDialogOpen] = useState(false);
   const [respondedDialogOpen, setRespondedDialogOpen] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const { message: toastMessage, variant: toastVariant, dismiss: dismissToast, show: showToast } = useToast();
 
   const openCreateDialog = () => {
-    setActionError(null);
     setDialogMode('create');
     setDialogOpen(true);
   };
 
   const openEditDialog = () => {
-    setActionError(null);
     setDialogMode('edit');
     setDialogOpen(true);
   };
@@ -50,15 +53,14 @@ export const ProposalPage = () => {
   const handleSaveDraft = async (payload: SaveProposalDraftPayload) => {
     setDialogBusy(true);
     setBusyAction('draft');
-    setActionError(null);
     try {
       await persistProposal(payload, 'draft');
       setDialogOpen(false);
-      await refetch();
+      showToast(PROPOSAL_TOAST.draftSaved);
+      await refetch({ silent: true });
     } catch (e) {
       const message = e instanceof ApiError ? e.message : 'Gagal menyimpan draft proposal.';
-      setActionError(message);
-      throw e;
+      throw new Error(message);
     } finally {
       setDialogBusy(false);
       setBusyAction(null);
@@ -68,34 +70,31 @@ export const ProposalPage = () => {
   const handleSubmitProposal = async (payload: SaveProposalDraftPayload) => {
     setDialogBusy(true);
     setBusyAction('submit');
-    setActionError(null);
     try {
       await persistProposal(payload, 'submit');
       setDialogOpen(false);
-      await refetch();
-      await refetchWorkspace();
+      showToast(PROPOSAL_TOAST.submitted);
+      await refetch({ silent: true });
+      await refetchWorkspace({ silent: true });
     } catch (e) {
       const message = e instanceof ApiError ? e.message : 'Gagal submit proposal.';
-      setActionError(message);
-      throw e;
+      throw new Error(message);
     } finally {
       setDialogBusy(false);
       setBusyAction(null);
     }
   };
 
-  const handleDeleteDraft = async () => {
-    if (!proposal) return;
-    const confirmed = window.confirm('Hapus draft proposal ini?');
-    if (!confirmed) return;
-
+  const handleDeleteDraftConfirm = async (proposalId: string) => {
     setDeleteBusy(true);
-    setActionError(null);
     try {
-      await deleteDraft(proposal.id);
-      await refetch();
+      await deleteDraft(proposalId);
+      showToast(PROPOSAL_TOAST.draftDeleted);
+      await refetch({ silent: true });
     } catch (e) {
-      setActionError(e instanceof ApiError ? e.message : 'Gagal menghapus draft proposal.');
+      const message = e instanceof ApiError ? e.message : 'Gagal menghapus draft proposal.';
+      showToast(message, { variant: 'error' });
+      throw e;
     } finally {
       setDeleteBusy(false);
     }
@@ -104,14 +103,15 @@ export const ProposalPage = () => {
   const handleMarkSentToClient = async () => {
     if (!proposal) return;
     setLifecycleBusy(true);
-    setActionError(null);
     try {
       await markSentToClient(proposal.id);
       setSentDialogOpen(false);
-      await refetch();
-      await refetchWorkspace();
+      showToast(PROPOSAL_TOAST.sentToClient);
+      await refetch({ silent: true });
+      await refetchWorkspace({ silent: true });
     } catch (e) {
-      setActionError(e instanceof ApiError ? e.message : 'Gagal menandai proposal terkirim ke client.');
+      const message = e instanceof ApiError ? e.message : 'Gagal menandai proposal terkirim ke client.';
+      showToast(message, { variant: 'error' });
     } finally {
       setLifecycleBusy(false);
     }
@@ -120,14 +120,15 @@ export const ProposalPage = () => {
   const handleMarkResponded = async () => {
     if (!proposal) return;
     setLifecycleBusy(true);
-    setActionError(null);
     try {
       await markResponded(proposal.id);
       setRespondedDialogOpen(false);
-      await refetch();
-      await refetchWorkspace();
+      showToast(PROPOSAL_TOAST.markedResponded);
+      await refetch({ silent: true });
+      await refetchWorkspace({ silent: true });
     } catch (e) {
-      setActionError(e instanceof ApiError ? e.message : 'Gagal menandai proposal direspons client.');
+      const message = e instanceof ApiError ? e.message : 'Gagal menandai proposal direspons client.';
+      showToast(message, { variant: 'error' });
     } finally {
       setLifecycleBusy(false);
     }
@@ -142,58 +143,71 @@ export const ProposalPage = () => {
   }
 
   return (
-    <section className="grid grid-cols-12 gap-6">
-      {loadError ? (
-        <div className="col-span-12 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          {loadError}
-          <button
-            type="button"
-            onClick={() => void refetch()}
-            className="ml-3 font-bold text-[#003c90] underline"
-          >
-            Coba lagi
-          </button>
-        </div>
-      ) : null}
-      {actionError ? (
-        <div className="col-span-12 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{actionError}</div>
-      ) : null}
+    <>
+      <section className="grid grid-cols-12 gap-6">
+        {loadError ? (
+          <div className="col-span-12 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            {loadError}
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              className="ml-3 font-bold text-[#003c90] underline"
+            >
+              Coba lagi
+            </button>
+          </div>
+        ) : null}
 
-      <ProposalHistorySection proposal={proposal} isLoading={false} onCreateProposal={openCreateDialog} />
-      <ProposalDetailSection
-        proposal={proposal}
-        onEditProposal={openEditDialog}
-        onCreateProposal={openCreateDialog}
-        onDeleteDraft={() => void handleDeleteDraft()}
-        deleteBusy={deleteBusy}
-        onSendToClient={() => setSentDialogOpen(true)}
-        onMarkResponded={() => setRespondedDialogOpen(true)}
-        lifecycleActionsDisabled={lifecycleBusy}
-      />
+        <ProposalHistorySection proposal={proposal} isLoading={false} onCreateProposal={openCreateDialog} />
+        <ProposalDetailSection
+          proposal={proposal}
+          onEditProposal={openEditDialog}
+          onCreateProposal={openCreateDialog}
+          onDeleteDraft={() => setDeleteDialogOpen(true)}
+          deleteBusy={deleteBusy}
+          onSendToClient={() => setSentDialogOpen(true)}
+          onMarkResponded={() => setRespondedDialogOpen(true)}
+          lifecycleActionsDisabled={lifecycleBusy}
+        />
 
-      <CreateEditProposalDialog
-        open={dialogOpen}
-        mode={dialogMode}
-        initialProposal={proposal}
-        busy={dialogBusy}
-        busyAction={busyAction}
-        onClose={() => setDialogOpen(false)}
-        onSaveDraft={handleSaveDraft}
-        onSubmitProposal={handleSubmitProposal}
-      />
+        <CreateEditProposalDialog
+          open={dialogOpen}
+          mode={dialogMode}
+          initialProposal={proposal}
+          busy={dialogBusy}
+          busyAction={busyAction}
+          onClose={() => setDialogOpen(false)}
+          onSaveDraft={handleSaveDraft}
+          onSubmitProposal={handleSubmitProposal}
+        />
 
-      <SentToClientProposalDialog
-        open={sentDialogOpen}
-        busy={lifecycleBusy}
-        onClose={() => setSentDialogOpen(false)}
-        onConfirm={handleMarkSentToClient}
+        <SentToClientProposalDialog
+          open={sentDialogOpen}
+          busy={lifecycleBusy}
+          onClose={() => setSentDialogOpen(false)}
+          onConfirm={handleMarkSentToClient}
+        />
+        <MarkProposalRespondedDialog
+          open={respondedDialogOpen}
+          busy={lifecycleBusy}
+          onClose={() => setRespondedDialogOpen(false)}
+          onConfirm={handleMarkResponded}
+        />
+        <DeleteProposalDraftDialog
+          open={deleteDialogOpen}
+          proposal={proposal}
+          busy={deleteBusy}
+          onClose={() => setDeleteDialogOpen(false)}
+          onConfirm={handleDeleteDraftConfirm}
+        />
+      </section>
+
+      <Toast
+        open={toastMessage != null}
+        message={toastMessage ?? ''}
+        variant={toastVariant}
+        onClose={dismissToast}
       />
-      <MarkProposalRespondedDialog
-        open={respondedDialogOpen}
-        busy={lifecycleBusy}
-        onClose={() => setRespondedDialogOpen(false)}
-        onConfirm={handleMarkResponded}
-      />
-    </section>
+    </>
   );
 };

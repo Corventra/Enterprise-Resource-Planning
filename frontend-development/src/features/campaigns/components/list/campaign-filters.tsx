@@ -4,9 +4,11 @@ import type { CampaignApiStatus, CampaignFilters } from '../../types/campaign.ty
 interface CampaignFiltersProps {
   filters: CampaignFilters;
   typeFilterOptions: string[];
+  createdByFilterOptions: string[];
   onSearchChange: (value: string) => void;
   onTypeChange: (value: string) => void;
   onStatusChange: (value: CampaignApiStatus | 'All') => void;
+  onCreatedByChange: (value: string) => void;
   onReset: () => void;
 }
 
@@ -17,9 +19,11 @@ const selectClassName = `rounded-lg border-none bg-white py-2 pl-3 pr-8 text-xs 
 export const CampaignFiltersSection = ({
   filters,
   typeFilterOptions,
+  createdByFilterOptions,
   onSearchChange,
   onTypeChange,
   onStatusChange,
+  onCreatedByChange,
   onReset
 }: CampaignFiltersProps) => {
   return (
@@ -58,6 +62,19 @@ export const CampaignFiltersSection = ({
           <option value="All">All statuses</option>
           <option value="ACTIVE">Active</option>
           <option value="ARCHIVED">Archived</option>
+        </select>
+
+        <select
+          value={filters.createdBy}
+          onChange={(event) => onCreatedByChange(event.target.value)}
+          className={selectClassName}
+          aria-label="Filter by created by"
+        >
+          {createdByFilterOptions.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt === 'All' ? 'All creators' : opt}
+            </option>
+          ))}
         </select>
       </div>
 

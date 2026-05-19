@@ -21,8 +21,11 @@ const formatMeetingDate = (iso: string) => {
   return d.toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
 
-const detailStatusClass = (status: LeadWorkspaceMeetingMinutesView['meeting']['status']) =>
-  status === 'DONE' ? 'bg-[#006544]/10 text-[#006544]' : 'bg-[#d5e3fc] text-[#57657a]';
+const detailStatusClass = (status: LeadWorkspaceMeetingMinutesView['meeting']['status']) => {
+  if (status === 'DONE') return 'bg-[#006544]/10 text-[#006544]';
+  if (status === 'CANCELLED') return 'bg-red-100 text-red-800';
+  return 'bg-[#d5e3fc] text-[#57657a]';
+};
 
 const detailStatusLabel = (status: LeadWorkspaceMeetingMinutesView['meeting']['status']) => {
   if (status === 'DONE') return 'Done';

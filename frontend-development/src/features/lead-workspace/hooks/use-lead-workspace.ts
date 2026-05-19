@@ -7,7 +7,7 @@ export const useLeadWorkspace = (leadId?: string) => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const fetchWorkspace = useCallback(async () => {
+  const fetchWorkspace = useCallback(async (options?: { silent?: boolean }) => {
     if (!leadId) {
       setWorkspace(undefined);
       setLoadError(null);
@@ -15,7 +15,9 @@ export const useLeadWorkspace = (leadId?: string) => {
       return;
     }
 
-    setIsLoading(true);
+    if (!options?.silent) {
+      setIsLoading(true);
+    }
     setLoadError(null);
     try {
       const data = await leadWorkspaceService.getByLeadId(leadId);
@@ -24,7 +26,9 @@ export const useLeadWorkspace = (leadId?: string) => {
       setWorkspace(undefined);
       setLoadError(e instanceof Error ? e.message : 'Gagal memuat Lead Workspace.');
     } finally {
-      setIsLoading(false);
+      if (!options?.silent) {
+        setIsLoading(false);
+      }
     }
   }, [leadId]);
 

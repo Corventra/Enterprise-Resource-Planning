@@ -82,6 +82,12 @@ export interface FormBuilderDocument {
   updatedAt: string;
 }
 
+export interface FormBuilderMetadataErrors {
+  title?: string;
+  description?: string;
+  successMessage?: string;
+}
+
 /** Link distribusi form (Phase B) — mirror response GET /forms/:id/links */
 export interface FormDistributionLink {
   distributionLinkId: number;

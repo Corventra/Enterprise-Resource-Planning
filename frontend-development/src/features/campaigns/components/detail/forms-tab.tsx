@@ -1,4 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Toast } from '../../../../components/ui/toast';
+import { FORM_TOAST } from '../../../forms/constants/form-toast';
+import { useToast } from '../../../../hooks/use-toast';
 import {
   Archive,
   ExternalLink,
@@ -27,6 +30,7 @@ import {
 import type { FormBackendStatus, FormDistributionLink } from '../../../forms/types/form-builder.types';
 import { buildPublicQrDownloadFilename, downloadPublicQrImage } from '../../../forms/utils/form-qr';
 import { getFormDisplayBadge } from '../../../forms/utils/form-display-status';
+import { FormEmptyState } from './form-empty-state';
 
 interface FormsTabProps {
   campaignId: string;
@@ -100,7 +104,8 @@ const FormCard = ({
   highlightFormId,
   onHighlightConsumed,
   onRefetchForms,
-  onViewSubmissions
+  onViewSubmissions,
+  onShowToast
 }: {
   form: Form;
   campaignId: string;
@@ -109,6 +114,7 @@ const FormCard = ({
   onHighlightConsumed: () => void;
   onRefetchForms: () => void;
   onViewSubmissions: (formId: string) => void;
+  onShowToast: (message: string) => void;
 }) => {
   const navigate = useNavigate();
   const articleRef = useRef<HTMLElement>(null);
@@ -116,7 +122,6 @@ const FormCard = ({
   const [linksLoading, setLinksLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [actionErr, setActionErr] = useState<string | null>(null);
-  const [copyToast, setCopyToast] = useState<string | null>(null);
   const [deactivateOpen, setDeactivateOpen] = useState(false);
   const [deactivateBusy, setDeactivateBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -148,12 +153,6 @@ const FormCard = ({
     onHighlightConsumed();
   }, [highlightFormId, form.id, onHighlightConsumed]);
 
-  useEffect(() => {
-    if (!copyToast) return;
-    const t = window.setTimeout(() => setCopyToast(null), 3000);
-    return () => window.clearTimeout(t);
-  }, [copyToast]);
-
   const primary = links.find((l) => l.linkType === 'PRIMARY');
   const channelLinks =
     formCategory === 'LEAD_CAPTURE' ? links.filter((l) => l.linkType === 'CHANNEL') : [];
@@ -167,13 +166,18 @@ const FormCard = ({
           ? 'bg-amber-100 text-amber-950 ring-1 ring-amber-200'
           : 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200/80';
 
-  const runAction = async (fn: () => Promise<unknown>) => {
+  const runAction = async (fn: () => Promise<unknown>, successMessage?: string) => {
     setActionErr(null);
     setBusy(true);
     try {
       await fn();
-      const fresh = await getFormLinks(form.id);
-      setLinks(fresh);
+      if (successMessage) onShowToast(successMessage);
+      try {
+        const fresh = await getFormLinks(form.id);
+        setLinks(fresh);
+      } catch {
+        /* link refresh opsional setelah lifecycle action */
+      }
       onRefetchForms();
     } catch (e) {
       setActionErr(e instanceof Error ? e.message : 'Aksi gagal');
@@ -185,9 +189,9 @@ const FormCard = ({
   const copyText = async (label: string, text: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      setCopyToast(`${label} disalin.`);
+      onShowToast(FORM_TOAST.linkCopied(label));
     } catch {
-      setCopyToast('Gagal menyalin ke clipboard.');
+      onShowToast(FORM_TOAST.linkCopyFailed);
     }
   };
 
@@ -196,9 +200,9 @@ const FormCard = ({
   const handleDownloadQr = async (publicUrl: string, filename: string) => {
     try {
       await downloadPublicQrImage(publicUrl, filename);
-      setCopyToast('QR code terunduh.');
+      onShowToast(FORM_TOAST.qrDownloaded);
     } catch (e) {
-      setCopyToast(e instanceof Error ? e.message : 'Gagal mengunduh QR code.');
+      onShowToast(e instanceof Error ? e.message : FORM_TOAST.qrDownloadFailed);
     }
   };
 
@@ -218,9 +222,9 @@ const FormCard = ({
       const fresh = await getFormLinks(formId);
       setLinks(fresh);
       onRefetchForms();
-      setDeactivateOpen(false);
     } catch (e) {
       setActionErr(e instanceof Error ? e.message : 'Gagal menonaktifkan form');
+      throw e;
     } finally {
       setDeactivateBusy(false);
     }
@@ -312,9 +316,6 @@ const FormCard = ({
         )}
       </div>
 
-      {copyToast ? (
-        <p className="mt-2 text-xs font-medium text-emerald-700">{copyToast}</p>
-      ) : null}
       {actionErr ? <p className="mt-2 text-xs text-red-600">{actionErr}</p> : null}
 
       <div className="mt-4 flex flex-wrap gap-2">
@@ -350,7 +351,7 @@ const FormCard = ({
             onClick={() =>
               void runAction(async () => {
                 await publishForm(form.id);
-              })
+              }, FORM_TOAST.published)
             }
             className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-900 hover:bg-emerald-100 disabled:opacity-50 sm:text-sm"
           >
@@ -377,7 +378,7 @@ const FormCard = ({
             onClick={() =>
               void runAction(async () => {
                 await pauseFormResponses(form.id);
-              })
+              }, FORM_TOAST.paused)
             }
             className="inline-flex items-center gap-2 rounded-lg border border-[#c3c6d5] bg-white px-3 py-2 text-xs font-semibold text-[#434653] hover:bg-[#f7f9fb] disabled:opacity-50 sm:text-sm"
           >
@@ -393,7 +394,7 @@ const FormCard = ({
             onClick={() =>
               void runAction(async () => {
                 await resumeFormResponses(form.id);
-              })
+              }, FORM_TOAST.resumed)
             }
             className="inline-flex items-center gap-2 rounded-lg border border-[#c3c6d5] bg-white px-3 py-2 text-xs font-semibold text-[#434653] hover:bg-[#f7f9fb] disabled:opacity-50 sm:text-sm"
           >
@@ -432,6 +433,8 @@ const FormCard = ({
           setActionErr(null);
           try {
             await deleteDraftForm(formId);
+            setDeleteOpen(false);
+            onShowToast(FORM_TOAST.deleted);
             onRefetchForms();
           } catch (e) {
             setActionErr(e instanceof Error ? e.message : 'Gagal menghapus form');
@@ -456,6 +459,9 @@ export const FormsTab = ({
   onCreateForm,
   onViewSubmissions
 }: FormsTabProps) => {
+  const { message: toastMessage, dismiss: dismissToast, show: showToast } = useToast();
+  const handleShowToast = useCallback((message: string) => showToast(message), [showToast]);
+
   return (
     <section className="pt-4">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -473,9 +479,7 @@ export const FormsTab = ({
       </div>
 
       {forms.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-[#c3c6d5] bg-[#f7f9fb]/50 py-10 text-center text-sm text-[#737784]">
-          Belum ada form untuk campaign ini.
-        </div>
+        <FormEmptyState onCreate={canManageCampaignForms ? onCreateForm : undefined} />
       ) : (
         <div>
           {forms.map((form) => (
@@ -488,10 +492,14 @@ export const FormsTab = ({
               onHighlightConsumed={onHighlightConsumed}
               onRefetchForms={onRefetchForms}
               onViewSubmissions={onViewSubmissions}
+              onShowToast={handleShowToast}
             />
           ))}
         </div>
       )}
+
+
+      <Toast open={toastMessage != null} message={toastMessage ?? ''} onClose={dismissToast} />
     </section>
   );
 };

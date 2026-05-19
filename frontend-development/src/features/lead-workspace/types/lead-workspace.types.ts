@@ -35,7 +35,7 @@ export type LeadWorkspaceOutletContext = {
   workspace: LeadWorkspace;
   leadId: string;
   processedByUserId: number | null;
-  refetchWorkspace: () => Promise<void>;
+  refetchWorkspace: (options?: { silent?: boolean }) => Promise<void>;
 };
 
 export interface LeadWorkspaceMeetingItem {

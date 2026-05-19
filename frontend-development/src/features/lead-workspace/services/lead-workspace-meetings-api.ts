@@ -108,6 +108,14 @@ export const patchCompleteLeadMeeting = async (leadId: string, meetingId: string
   return res.data.meeting;
 };
 
+export const patchCancelLeadMeeting = async (leadId: string, meetingId: string): Promise<ApiLeadMeetingRow> => {
+  const res = await apiPatch<ApiMeetingMutationResponse>(
+    `/lead-workspace/${leadId}/meetings/${meetingId}/cancel`,
+    {}
+  );
+  return res.data.meeting;
+};
+
 export const patchLeadMeeting = async (
   leadId: string,
   meetingId: string,

@@ -25,7 +25,7 @@ export const useLeadWorkspaceEngagements = (leadId: string | undefined) => {
     setProposalWithoutEngagement(data.proposal_without_engagement);
   }, []);
 
-  const fetchBundle = useCallback(async () => {
+  const fetchBundle = useCallback(async (options?: { silent?: boolean }) => {
     if (!leadId || leadId.trim() === '') {
       setItems([]);
       setProposalWithoutEngagement(null);
@@ -33,7 +33,9 @@ export const useLeadWorkspaceEngagements = (leadId: string | undefined) => {
       setError(null);
       return;
     }
-    setLoading(true);
+    if (!options?.silent) {
+      setLoading(true);
+    }
     setError(null);
     try {
       const data = await getLeadWorkspaceEngagementLetterBundle(leadId);
@@ -43,7 +45,9 @@ export const useLeadWorkspaceEngagements = (leadId: string | undefined) => {
       setProposalWithoutEngagement(null);
       setError(e instanceof Error ? e.message : 'Gagal memuat engagement letter.');
     } finally {
-      setLoading(false);
+      if (!options?.silent) {
+        setLoading(false);
+      }
     }
   }, [leadId, applyBundleData]);
 

@@ -1,7 +1,8 @@
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router';
 import { useAuth } from '../../../app/store/auth-store';
+import { Toast } from '../../../components/ui/toast';
 import { useCampaignPermissions } from '../hooks/use-campaign-permissions';
 import { CampaignEmptyState } from '../components/list/campaign-empty-state';
 import { CampaignFiltersSection } from '../components/list/campaign-filters';
@@ -10,6 +11,7 @@ import { CampaignsTable } from '../components/list/campaigns-table';
 import { CreateCampaignModal } from '../components/modals/create-campaign-modal';
 import { DeleteCampaignConfirmDialog } from '../components/modals/delete-campaign-confirm-dialog';
 import { EditCampaignModal } from '../components/modals/edit-campaign-modal';
+import { CAMPAIGN_TOAST, useCampaignActionToast } from '../hooks/use-campaign-action-toast';
 import { useCampaignFilters } from '../hooks/use-campaign-filters';
 import { useCampaignsList } from '../hooks/use-campaigns-list';
 import { getCampaignTopics, getCampaignTypes } from '../services/campaigns-api';
@@ -28,6 +30,7 @@ export const CampaignsPage = () => {
     totalPages,
     pageSize,
     typeFilterOptions,
+    createdByFilterOptions,
     setCurrentPage,
     updateFilter,
     resetFilters
@@ -53,9 +56,39 @@ export const CampaignsPage = () => {
     };
   }, [canViewCampaignArea]);
 
+  const { message: successToastMessage, dismiss: dismissSuccessToast, show: showSuccessToast } =
+    useCampaignActionToast();
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | undefined>();
   const [archivingCampaign, setArchivingCampaign] = useState<Campaign | undefined>();
+
+  const handleCreateCampaignSuccess = useCallback(
+    async (input: Parameters<typeof createCampaign>[0]) => {
+      await createCampaign(input);
+      setShowCreateModal(false);
+      showSuccessToast(CAMPAIGN_TOAST.created);
+    },
+    [createCampaign, showSuccessToast]
+  );
+
+  const handleUpdateCampaignSuccess = useCallback(
+    async (campaignId: string, input: Parameters<typeof updateCampaign>[1]) => {
+      await updateCampaign(campaignId, input);
+      setEditingCampaign(undefined);
+      showSuccessToast(CAMPAIGN_TOAST.updated);
+    },
+    [updateCampaign, showSuccessToast]
+  );
+
+  const handleArchiveCampaignConfirm = useCallback(
+    async (campaignId: string) => {
+      await archiveCampaign(campaignId);
+      setArchivingCampaign(undefined);
+      showSuccessToast(CAMPAIGN_TOAST.archived);
+    },
+    [archiveCampaign, showSuccessToast]
+  );
 
   const pageNumbers = useMemo(() => Array.from({ length: totalPages }, (_, index) => index + 1), [totalPages]);
 
@@ -142,9 +175,11 @@ export const CampaignsPage = () => {
       <CampaignFiltersSection
         filters={filters}
         typeFilterOptions={typeFilterOptions}
+        createdByFilterOptions={createdByFilterOptions}
         onSearchChange={(value) => updateFilter('search', value)}
         onTypeChange={(value) => updateFilter('type', value)}
         onStatusChange={(value) => updateFilter('status', value)}
+        onCreatedByChange={(value) => updateFilter('createdBy', value)}
         onReset={resetFilters}
       />
 
@@ -170,9 +205,7 @@ export const CampaignsPage = () => {
         typeOptions={lookups.types}
         topicOptions={lookups.topics}
         onClose={() => setShowCreateModal(false)}
-        onSuccess={async (input) => {
-          await createCampaign(input);
-        }}
+        onSuccess={handleCreateCampaignSuccess}
       />
 
       <EditCampaignModal
@@ -182,19 +215,23 @@ export const CampaignsPage = () => {
         typeOptions={lookups.types}
         topicOptions={lookups.topics}
         onClose={() => setEditingCampaign(undefined)}
-        onSuccess={async (campaignId, input) => {
-          await updateCampaign(campaignId, input);
-        }}
+        onSuccess={handleUpdateCampaignSuccess}
       />
 
       <DeleteCampaignConfirmDialog
         open={Boolean(archivingCampaign)}
         campaign={archivingCampaign}
         onClose={() => setArchivingCampaign(undefined)}
-        onConfirm={async (campaignId) => {
-          await archiveCampaign(campaignId);
-        }}
+        onConfirm={handleArchiveCampaignConfirm}
+      />
+
+      <Toast
+        open={successToastMessage != null}
+        message={successToastMessage ?? ''}
+        onClose={dismissSuccessToast}
       />
     </div>
   );
 };
+
+

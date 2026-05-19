@@ -3,6 +3,9 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { PERMISSIONS } from '../../../app/permissions';
 import { useAuth } from '../../../app/store/auth-store';
+import { Toast } from '../../../components/ui/toast';
+import { useToast } from '../../../hooks/use-toast';
+import { LEAD_TOAST } from '../constants/lead-tracker-toast';
 import { AddManualLeadDialog } from '../components/modals/add-manual-lead-dialog';
 import { MarkLeadLostDialog } from '../components/modals/mark-lead-lost-dialog';
 import { LeadTrackerEmptyState } from '../components/list/lead-tracker-empty-state';
@@ -21,6 +24,7 @@ export const LeadTrackerPage = () => {
   const [addManualOpen, setAddManualOpen] = useState(false);
   const [lostTarget, setLostTarget] = useState<LeadTrackerItem | undefined>();
   const [mutationBusy, setMutationBusy] = useState(false);
+  const { message: toastMessage, variant: toastVariant, dismiss: dismissToast, show: showToast } = useToast();
   const {
     filters,
     filteredItems,
@@ -28,6 +32,7 @@ export const LeadTrackerPage = () => {
     currentPage,
     totalPages,
     pageSize,
+    processedByFilterOptions,
     setCurrentPage,
     updateFilter,
     resetFilters
@@ -42,6 +47,7 @@ export const LeadTrackerPage = () => {
     try {
       await createManualLead(payload);
       setAddManualOpen(false);
+      showToast(LEAD_TOAST.created);
     } finally {
       setMutationBusy(false);
     }
@@ -52,6 +58,7 @@ export const LeadTrackerPage = () => {
     try {
       await markLeadLost(item.id, payload);
       setLostTarget(undefined);
+      showToast(LEAD_TOAST.markedLost);
     } finally {
       setMutationBusy(false);
     }
@@ -129,9 +136,11 @@ export const LeadTrackerPage = () => {
 
       <LeadTrackerFiltersSection
         filters={filters}
+        processedByFilterOptions={processedByFilterOptions}
         onSearchChange={(value) => updateFilter('search', value)}
         onStageChange={(value) => updateFilter('stage', value)}
         onStatusChange={(value) => updateFilter('status', value)}
+        onProcessedByChange={(value) => updateFilter('processedBy', value)}
         onReset={resetFilters}
       />
 
@@ -159,6 +168,13 @@ export const LeadTrackerPage = () => {
         busy={mutationBusy}
         onClose={() => setAddManualOpen(false)}
         onSubmit={runCreateManualLead}
+      />
+
+      <Toast
+        open={toastMessage != null}
+        message={toastMessage ?? ''}
+        variant={toastVariant}
+        onClose={dismissToast}
       />
 
       <MarkLeadLostDialog

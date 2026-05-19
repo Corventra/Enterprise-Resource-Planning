@@ -205,6 +205,38 @@ const createMeeting = async (req, res) => {
   }
 };
 
+const cancelMeeting = async (req, res) => {
+  try {
+    const userId = getUserIdFromRequest(req, res);
+    if (userId == null) return undefined;
+    const leadId = requireLeadIdParam(req, res);
+    if (leadId == null) return undefined;
+    const meetingId = requireMeetingIdParam(req, res);
+    if (meetingId == null) return undefined;
+    if (!(await ensureLeadWorkspaceOperator(leadId, userId, res))) return undefined;
+    const result = await leadMeetingsRepo.cancelMeeting(leadId, meetingId, userId);
+    if (!result.ok) {
+      if (result.reason === 'ALREADY_CANCELLED') {
+        return res.status(409).json({ success: false, message: 'Meeting sudah dibatalkan.' });
+      }
+      if (result.reason === 'ALREADY_DONE') {
+        return res.status(409).json({ success: false, message: 'Meeting yang sudah selesai tidak dapat dibatalkan.' });
+      }
+      if (result.reason === 'NOT_SCHEDULED') {
+        return res.status(409).json({ success: false, message: 'Meeting tidak dapat dibatalkan.' });
+      }
+      return res.status(404).json({ success: false, message: 'Meeting tidak ditemukan.' });
+    }
+    return res.json({
+      success: true,
+      message: 'Meeting berhasil dibatalkan.',
+      data: { meeting: result.meeting }
+    });
+  } catch (e) {
+    return sendError(res, e);
+  }
+};
+
 const completeMeeting = async (req, res) => {
   try {
     const userId = getUserIdFromRequest(req, res);
@@ -334,6 +366,7 @@ const updateMeeting = async (req, res) => {
 module.exports = {
   listMeetings,
   createMeeting,
+  cancelMeeting,
   completeMeeting,
   updateMeeting,
   getMinutes,

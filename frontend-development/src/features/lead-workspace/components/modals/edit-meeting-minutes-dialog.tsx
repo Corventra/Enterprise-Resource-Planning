@@ -6,8 +6,20 @@ import {
   SidePanelDialogHeader
 } from '../../../../components/ui/side-panel-dialog';
 import { ApiError } from '../../../../services/api-client';
+import {
+  LeadCoreFieldError,
+  LeadCoreFieldLabel,
+  leadCoreInputClassName,
+  leadCoreTextareaClassName
+} from '../../../lead-tracker/components/forms/lead-core-form-field';
 import type { SaveMeetingMinutesPayload } from '../../types/lead-meetings.types';
 import { buildEmptyMinutesDetail, buildMinutesPayloadFromDetail } from '../../utils/lead-meetings-mappers';
+import {
+  hasMeetingMinutesFormErrors,
+  normalizeMeetingMinutesPayload,
+  validateMeetingMinutesPayload,
+  type MeetingMinutesFormErrors
+} from '../../utils/meeting-minutes-validation';
 
 interface EditMeetingMinutesDialogProps {
   open: boolean;
@@ -17,12 +29,6 @@ interface EditMeetingMinutesDialogProps {
   onClose: () => void;
   onSubmit: (payload: SaveMeetingMinutesPayload) => Promise<void> | void;
 }
-
-const inputClassName =
-  'h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none';
-const textareaClassName =
-  'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none';
-const labelClassName = 'mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500';
 
 const buildDraft = (initialDetail?: SaveMeetingMinutesPayload | null): SaveMeetingMinutesPayload => {
   if (initialDetail) {
@@ -41,14 +47,25 @@ export const EditMeetingMinutesDialog = ({
   onSubmit
 }: EditMeetingMinutesDialogProps) => {
   const [draft, setDraft] = useState<SaveMeetingMinutesPayload>(buildDraft(initialDetail));
+  const [errors, setErrors] = useState<MeetingMinutesFormErrors>({});
   const [localError, setLocalError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
       setDraft(buildDraft(initialDetail));
+      setErrors({});
       setLocalError(null);
     }
   }, [open, initialDetail]);
+
+  const clearScalarError = (key: keyof MeetingMinutesFormErrors) => {
+    setErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  };
 
   if (!open) {
     return null;
@@ -61,6 +78,7 @@ export const EditMeetingMinutesDialog = ({
   };
 
   const updateListItem = (key: 'internalParticipants' | 'clientParticipants', index: number, value: string) => {
+    clearScalarError(key);
     setDraft((prev) => {
       const next = [...prev[key]];
       next[index] = value;
@@ -77,6 +95,19 @@ export const EditMeetingMinutesDialog = ({
   };
 
   const updateAgreement = (index: number, field: 'item' | 'details', value: string) => {
+    if (field === 'item') {
+      setErrors((prev) => {
+        if (!prev.agreements && !prev.agreementItems?.[index]) return prev;
+        const next = { ...prev };
+        delete next.agreements;
+        if (next.agreementItems) {
+          const items = { ...next.agreementItems };
+          delete items[index];
+          next.agreementItems = Object.keys(items).length > 0 ? items : undefined;
+        }
+        return next;
+      });
+    }
     setDraft((prev) => {
       const next = [...prev.agreements];
       next[index] = { ...next[index], [field]: value };
@@ -95,8 +126,16 @@ export const EditMeetingMinutesDialog = ({
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLocalError(null);
+
+    const validationErrors = validateMeetingMinutesPayload(draft);
+    if (hasMeetingMinutesFormErrors(validationErrors)) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    setErrors({});
     try {
-      await onSubmit(draft);
+      await onSubmit(normalizeMeetingMinutesPayload(draft));
     } catch (e) {
       const message = e instanceof ApiError ? e.message : 'Gagal menyimpan notulensi.';
       setLocalError(message);
@@ -109,7 +148,7 @@ export const EditMeetingMinutesDialog = ({
         title={mode === 'create' ? 'Create Notulensi' : 'Edit Notulensi'}
         description="Lengkapi notulensi meeting tanpa mengubah layout workspace."
       />
-      <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+      <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col" noValidate>
         <SidePanelDialogBody>
           {localError ? (
             <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{localError}</p>
@@ -119,14 +158,14 @@ export const EditMeetingMinutesDialog = ({
             <section className="space-y-3">
               <h4 className="text-sm font-bold text-[#191c1e]">Participants</h4>
               <div>
-                <label className={labelClassName}>Internal Participants</label>
+                <LeadCoreFieldLabel required>Internal Participants</LeadCoreFieldLabel>
                 <div className="space-y-2">
                   {draft.internalParticipants.map((value, index) => (
                     <div key={`internal-${index}`} className="flex gap-2">
                       <input
                         value={value}
                         onChange={(event) => updateListItem('internalParticipants', index, event.target.value)}
-                        className={inputClassName}
+                        className={leadCoreInputClassName}
                         placeholder="e.g. Budi Santoso"
                       />
                       <button
@@ -146,16 +185,17 @@ export const EditMeetingMinutesDialog = ({
                     + Tambah internal
                   </button>
                 </div>
+                <LeadCoreFieldError message={errors.internalParticipants} />
               </div>
               <div>
-                <label className={labelClassName}>Client Participants</label>
+                <LeadCoreFieldLabel required>Client Participants</LeadCoreFieldLabel>
                 <div className="space-y-2">
                   {draft.clientParticipants.map((value, index) => (
                     <div key={`client-${index}`} className="flex gap-2">
                       <input
                         value={value}
                         onChange={(event) => updateListItem('clientParticipants', index, event.target.value)}
-                        className={inputClassName}
+                        className={leadCoreInputClassName}
                         placeholder="e.g. Andi Wijaya"
                       />
                       <button
@@ -175,91 +215,117 @@ export const EditMeetingMinutesDialog = ({
                     + Tambah klien
                   </button>
                 </div>
+                <LeadCoreFieldError message={errors.clientParticipants} />
               </div>
             </section>
 
             <div>
-              <label className={labelClassName}>Meeting Objectives</label>
+              <LeadCoreFieldLabel required>Meeting Objectives</LeadCoreFieldLabel>
               <textarea
                 value={draft.meetingObjectives ?? ''}
-                onChange={(event) => setDraft((prev) => ({ ...prev, meetingObjectives: event.target.value }))}
+                onChange={(event) => {
+                  clearScalarError('meetingObjectives');
+                  setDraft((prev) => ({ ...prev, meetingObjectives: event.target.value }));
+                }}
                 rows={3}
                 placeholder="e.g. Memahami kebutuhan layanan dan ekspektasi klien"
-                className={`${textareaClassName} resize-y`}
+                className={leadCoreTextareaClassName}
               />
+              <LeadCoreFieldError message={errors.meetingObjectives} />
             </div>
 
             <div>
-              <label className={labelClassName}>Background Summary</label>
+              <LeadCoreFieldLabel required>Background Summary</LeadCoreFieldLabel>
               <textarea
                 value={draft.backgroundSummary ?? ''}
-                onChange={(event) => setDraft((prev) => ({ ...prev, backgroundSummary: event.target.value }))}
+                onChange={(event) => {
+                  clearScalarError('backgroundSummary');
+                  setDraft((prev) => ({ ...prev, backgroundSummary: event.target.value }));
+                }}
                 rows={3}
                 placeholder="e.g. Ringkasan latar belakang klien dan konteks meeting"
-                className={`${textareaClassName} resize-y`}
+                className={leadCoreTextareaClassName}
               />
+              <LeadCoreFieldError message={errors.backgroundSummary} />
             </div>
 
             <div>
-              <label className={labelClassName}>Issues Discussed</label>
+              <LeadCoreFieldLabel required>Issues Discussed</LeadCoreFieldLabel>
               <textarea
                 value={draft.issuesDiscussed ?? ''}
-                onChange={(event) => setDraft((prev) => ({ ...prev, issuesDiscussed: event.target.value }))}
+                onChange={(event) => {
+                  clearScalarError('issuesDiscussed');
+                  setDraft((prev) => ({ ...prev, issuesDiscussed: event.target.value }));
+                }}
                 rows={3}
                 placeholder="e.g. Isu utama yang dibahas selama meeting"
-                className={`${textareaClassName} resize-y`}
+                className={leadCoreTextareaClassName}
               />
+              <LeadCoreFieldError message={errors.issuesDiscussed} />
             </div>
 
             <div>
-              <label className={labelClassName}>Information from Client</label>
+              <LeadCoreFieldLabel required>Information from Client</LeadCoreFieldLabel>
               <textarea
                 value={draft.infoClient ?? ''}
-                onChange={(event) => setDraft((prev) => ({ ...prev, infoClient: event.target.value }))}
+                onChange={(event) => {
+                  clearScalarError('infoClient');
+                  setDraft((prev) => ({ ...prev, infoClient: event.target.value }));
+                }}
                 rows={3}
                 placeholder="e.g. Informasi penting yang disampaikan pihak klien"
-                className={`${textareaClassName} resize-y`}
+                className={leadCoreTextareaClassName}
               />
+              <LeadCoreFieldError message={errors.infoClient} />
             </div>
 
             <div>
-              <label className={labelClassName}>Information from Our Firm</label>
+              <LeadCoreFieldLabel required>Information from Our Firm</LeadCoreFieldLabel>
               <textarea
                 value={draft.infoFirm ?? ''}
-                onChange={(event) => setDraft((prev) => ({ ...prev, infoFirm: event.target.value }))}
+                onChange={(event) => {
+                  clearScalarError('infoFirm');
+                  setDraft((prev) => ({ ...prev, infoFirm: event.target.value }));
+                }}
                 rows={3}
                 placeholder="e.g. Informasi penting yang disampaikan tim kita"
-                className={`${textareaClassName} resize-y`}
+                className={leadCoreTextareaClassName}
               />
+              <LeadCoreFieldError message={errors.infoFirm} />
             </div>
 
             <div>
-              <label className={labelClassName}>Risks / Concerns</label>
+              <LeadCoreFieldLabel required>Risks / Concerns</LeadCoreFieldLabel>
               <textarea
                 value={draft.riskConcerns ?? ''}
-                onChange={(event) => setDraft((prev) => ({ ...prev, riskConcerns: event.target.value }))}
+                onChange={(event) => {
+                  clearScalarError('riskConcerns');
+                  setDraft((prev) => ({ ...prev, riskConcerns: event.target.value }));
+                }}
                 rows={3}
                 placeholder="e.g. Risiko atau hal yang perlu diperhatikan"
-                className={`${textareaClassName} resize-y`}
+                className={leadCoreTextareaClassName}
               />
+              <LeadCoreFieldError message={errors.riskConcerns} />
             </div>
 
             <section className="space-y-3">
-              <h4 className="text-sm font-bold text-[#191c1e]">Agreements</h4>
+              <LeadCoreFieldLabel required>Agreements</LeadCoreFieldLabel>
               {draft.agreements.map((agreement, index) => (
                 <div key={`agreement-${index}`} className="space-y-2 rounded-lg border border-[#eceef0] p-3">
                   <input
                     value={agreement.item}
                     onChange={(event) => updateAgreement(index, 'item', event.target.value)}
-                    className={inputClassName}
+                    className={leadCoreInputClassName}
                     placeholder="e.g. Scope layanan disepakati"
                   />
+                  <LeadCoreFieldError message={errors.agreementItems?.[index]} />
                   <textarea
                     value={agreement.details ?? ''}
                     onChange={(event) => updateAgreement(index, 'details', event.target.value)}
                     rows={2}
-                    className={`${textareaClassName} resize-y`}
-                    placeholder="e.g. Detail kesepakatan atau catatan tambahan"
+                    className={leadCoreTextareaClassName}
+                    placeholder="e.g. Detail kesepakatan atau catatan tambahan (opsional)"
                   />
                   <button
                     type="button"
@@ -273,27 +339,32 @@ export const EditMeetingMinutesDialog = ({
               <button type="button" onClick={addAgreement} className="text-xs font-semibold text-[#003c90]">
                 + Tambah agreement
               </button>
+              <LeadCoreFieldError message={errors.agreements} />
             </section>
 
             <div>
-              <label className={labelClassName}>Next Steps</label>
+              <LeadCoreFieldLabel required>Next Steps</LeadCoreFieldLabel>
               <textarea
                 value={draft.nextSteps ?? ''}
-                onChange={(event) => setDraft((prev) => ({ ...prev, nextSteps: event.target.value }))}
+                onChange={(event) => {
+                  clearScalarError('nextSteps');
+                  setDraft((prev) => ({ ...prev, nextSteps: event.target.value }));
+                }}
                 rows={3}
                 placeholder="e.g. Langkah berikutnya setelah meeting"
-                className={`${textareaClassName} resize-y`}
+                className={leadCoreTextareaClassName}
               />
+              <LeadCoreFieldError message={errors.nextSteps} />
             </div>
 
             <div>
-              <label className={labelClassName}>Notes & Follow-Up</label>
+              <LeadCoreFieldLabel>Notes & Follow-Up</LeadCoreFieldLabel>
               <textarea
                 value={draft.notesFollowUp ?? ''}
                 onChange={(event) => setDraft((prev) => ({ ...prev, notesFollowUp: event.target.value }))}
                 rows={3}
                 placeholder="e.g. Catatan tambahan dan follow-up yang perlu dilakukan"
-                className={`${textareaClassName} resize-y`}
+                className={leadCoreTextareaClassName}
               />
             </div>
           </div>

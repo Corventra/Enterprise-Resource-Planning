@@ -1,5 +1,5 @@
 import { Image as ImageIcon, Upload, X } from 'lucide-react';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import type {
   CampaignFormErrors,
   CampaignFormValues,
@@ -23,6 +23,19 @@ interface CampaignFormProps {
 const inputClassName =
   'h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-800 focus:border-blue-500 focus:outline-none';
 const labelClassName = 'mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500';
+
+const RequiredMark = () => (
+  <span className="ml-0.5 text-red-600" aria-hidden="true">
+    *
+  </span>
+);
+
+const FieldLabel = ({ children, required }: { children: ReactNode; required?: boolean }) => (
+  <label className={labelClassName}>
+    {children}
+    {required ? <RequiredMark /> : null}
+  </label>
+);
 
 const ACCEPTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']);
 
@@ -78,7 +91,7 @@ export const CampaignForm = ({
   return (
     <div className="space-y-4">
       <div>
-        <label className={labelClassName}>Campaign Name</label>
+        <FieldLabel required>Campaign Name</FieldLabel>
         <input
           value={value.name}
           onChange={(event) => onChange('name', event.target.value)}
@@ -90,7 +103,7 @@ export const CampaignForm = ({
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <div>
-          <label className={labelClassName}>Campaign Type</label>
+          <FieldLabel required>Campaign Type</FieldLabel>
           <select
             value={value.campaignTypeId === '' ? '' : String(value.campaignTypeId)}
             onChange={(event) => {
@@ -110,7 +123,7 @@ export const CampaignForm = ({
         </div>
 
         <div>
-          <label className={labelClassName}>Topic</label>
+          <FieldLabel required>Topic</FieldLabel>
           <select
             value={value.topicId === '' ? '' : String(value.topicId)}
             onChange={(event) => {
@@ -132,7 +145,7 @@ export const CampaignForm = ({
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <div>
-          <label className={labelClassName}>Start Date</label>
+          <FieldLabel required>Start Date</FieldLabel>
           <input
             type="date"
             value={value.startDate}
@@ -142,7 +155,7 @@ export const CampaignForm = ({
           {errors.startDate && <p className="mt-1 text-xs text-red-600">{errors.startDate}</p>}
         </div>
         <div>
-          <label className={labelClassName}>End Date</label>
+          <FieldLabel required={!noEndDate}>End Date</FieldLabel>
           <input
             type="date"
             value={value.endDate}

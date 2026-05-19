@@ -1,5 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useOutletContext } from 'react-router';
+import { Toast } from '../../../components/ui/toast';
+import { useToast } from '../../../hooks/use-toast';
+import { APPROVAL_ENGAGEMENT_LETTER_TOAST } from '../constants/approval-engagement-letter-toast';
 import { ApprovalEngagementLetterDetailSection } from '../components/approval-engagement-letter-detail-section';
 import { ApprovalEngagementLetterQueueSection } from '../components/approval-engagement-letter-queue-section';
 import { ApprovalEmptyState } from '../components/approval-empty-state';
@@ -22,11 +25,10 @@ export const ApprovalEngagementLetterPage = () => {
     refreshQueue
   } = useOutletContext<ApprovalOutletContext>();
 
+  const { message: toastMessage, variant: toastVariant, dismiss: dismissToast, show: showToast } = useToast();
   const [approveOpen, setApproveOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
@@ -86,106 +88,81 @@ export const ApprovalEngagementLetterPage = () => {
   const handleApprove = useCallback(async () => {
     if (!selectedApprovalItem) return;
     setActionBusy(true);
-    setActionError(null);
-    setActionSuccess(null);
     try {
       await approve(selectedApprovalItem);
-      await refreshQueue();
       setApproveOpen(false);
-      setActionSuccess('Engagement letter berhasil disetujui.');
+      showToast(APPROVAL_ENGAGEMENT_LETTER_TOAST.approved);
+      await refreshQueue({ silent: true });
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : 'Gagal menyetujui engagement letter.');
+      const message = e instanceof Error ? e.message : 'Gagal menyetujui engagement letter.';
+      showToast(message, { variant: 'error' });
     } finally {
       setActionBusy(false);
     }
-  }, [approve, refreshQueue, selectedApprovalItem]);
+  }, [approve, refreshQueue, selectedApprovalItem, showToast]);
 
   const handleRequestRevision = useCallback(
     async (note: string) => {
       if (!selectedApprovalItem) return;
       setActionBusy(true);
-      setActionError(null);
-      setActionSuccess(null);
       try {
         await requestRevision(selectedApprovalItem, note);
-        await refreshQueue();
         setRejectOpen(false);
-        setActionSuccess('Permintaan revisi engagement letter telah dikirim.');
+        showToast(APPROVAL_ENGAGEMENT_LETTER_TOAST.rejected);
+        await refreshQueue({ silent: true });
       } catch (e) {
-        setActionError(e instanceof Error ? e.message : 'Gagal mengirim permintaan revisi.');
+        const message = e instanceof Error ? e.message : 'Gagal mengirim permintaan revisi.';
+        showToast(message, { variant: 'error' });
       } finally {
         setActionBusy(false);
       }
     },
-    [refreshQueue, requestRevision, selectedApprovalItem]
+    [refreshQueue, requestRevision, selectedApprovalItem, showToast]
   );
 
+  let body: ReactNode;
+
   if (queueLoading) {
-    return (
+    body = (
       <div className="rounded-xl border border-[#eceef0] bg-white p-4 text-sm text-[#737784] shadow-sm">
         Loading approval queue...
       </div>
     );
-  }
-
-  if (pendingItems.length === 0) {
-    return (
+  } else if (pendingItems.length === 0) {
+    body = <ApprovalEmptyState />;
+  } else {
+    body = (
       <>
-        {actionSuccess ? (
-          <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-            {actionSuccess}
-          </p>
+        {detailError ? (
+          <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{detailError}</p>
         ) : null}
-        {actionError ? (
-          <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{actionError}</p>
-        ) : null}
-        <ApprovalEmptyState />
-        <ApproveEngagementLetterDialog
-          open={approveOpen}
-          busy={actionBusy}
-          onClose={() => setApproveOpen(false)}
-          onConfirm={handleApprove}
-        />
-        <RejectEngagementLetterDialog
-          open={rejectOpen}
-          busy={actionBusy}
-          onClose={() => setRejectOpen(false)}
-          onConfirm={handleRequestRevision}
-        />
+
+        <section className="grid grid-cols-12 gap-6">
+          <ApprovalEngagementLetterQueueSection
+            items={pendingItems}
+            queueMetaByApprovalId={queueMetaByApprovalId}
+            selectedApprovalId={selectedPendingId ?? undefined}
+            onSelectApproval={setSelectedPendingId}
+          />
+          <ApprovalEngagementLetterDetailSection
+            key={selectedPendingId ?? 'none'}
+            leadSummary={leadSummary}
+            leadSummaryLoading={detailLoading}
+            engagementLines={engagementLines}
+            detailError={detailError}
+            isReadOnly={isReadOnly}
+            actionsDisabled={actionBusy}
+            onApprove={!isReadOnly ? () => setApproveOpen(true) : undefined}
+            onRequestRevision={!isReadOnly ? () => setRejectOpen(true) : undefined}
+          />
+        </section>
       </>
     );
   }
 
   return (
     <>
-      {actionSuccess ? (
-        <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-          {actionSuccess}
-        </p>
-      ) : null}
-      {actionError ? (
-        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{actionError}</p>
-      ) : null}
-
-      <section className="grid grid-cols-12 gap-6">
-        <ApprovalEngagementLetterQueueSection
-          items={pendingItems}
-          queueMetaByApprovalId={queueMetaByApprovalId}
-          selectedApprovalId={selectedPendingId ?? undefined}
-          onSelectApproval={setSelectedPendingId}
-        />
-        <ApprovalEngagementLetterDetailSection
-          key={selectedPendingId ?? 'none'}
-          leadSummary={leadSummary}
-          leadSummaryLoading={detailLoading}
-          engagementLines={engagementLines}
-          detailError={detailError}
-          isReadOnly={isReadOnly}
-          actionsDisabled={actionBusy}
-          onApprove={!isReadOnly ? () => { setActionSuccess(null); setActionError(null); setApproveOpen(true); } : undefined}
-          onRequestRevision={!isReadOnly ? () => { setActionSuccess(null); setActionError(null); setRejectOpen(true); } : undefined}
-        />
-      </section>
+      {body}
 
       <ApproveEngagementLetterDialog
         open={approveOpen}
@@ -198,6 +175,13 @@ export const ApprovalEngagementLetterPage = () => {
         busy={actionBusy}
         onClose={() => setRejectOpen(false)}
         onConfirm={handleRequestRevision}
+      />
+
+      <Toast
+        open={toastMessage != null}
+        message={toastMessage ?? ''}
+        variant={toastVariant}
+        onClose={dismissToast}
       />
     </>
   );

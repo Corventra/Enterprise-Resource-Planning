@@ -19,7 +19,6 @@ export interface Campaign {
   endDate: string | null;
   notes?: string | null;
   imagePath: string | null;
-  /** Placeholder sampai integrasi submissions */
   totalSubmissions: number;
   createdAt: string;
   updatedAt: string;
@@ -61,6 +60,8 @@ export interface CampaignFilters {
   /** Nama tipe campaign dari API atau `All` */
   type: string;
   status: CampaignApiStatus | 'All';
+  /** Nama pembuat campaign dari API atau `All` */
+  createdBy: string;
 }
 
 /** Payload submit dari modal ke hook/service */

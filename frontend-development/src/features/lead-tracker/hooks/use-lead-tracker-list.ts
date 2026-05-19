@@ -7,8 +7,10 @@ export const useLeadTrackerList = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const fetchItems = useCallback(async () => {
-    setIsLoading(true);
+  const fetchItems = useCallback(async (options?: { silent?: boolean }) => {
+    if (!options?.silent) {
+      setIsLoading(true);
+    }
     setLoadError(null);
     try {
       const data = await leadTrackerService.getAll();
@@ -17,7 +19,9 @@ export const useLeadTrackerList = () => {
       setItems([]);
       setLoadError(e instanceof Error ? e.message : 'Gagal memuat Lead Tracker.');
     } finally {
-      setIsLoading(false);
+      if (!options?.silent) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
@@ -27,12 +31,12 @@ export const useLeadTrackerList = () => {
 
   const createManualLead = async (payload: CreateManualLeadPayload) => {
     await leadTrackerService.createManual(payload);
-    await fetchItems();
+    await fetchItems({ silent: true });
   };
 
   const markLeadLost = async (leadId: string, payload: MarkLeadLostPayload) => {
     await leadTrackerService.markLost(leadId, payload);
-    await fetchItems();
+    await fetchItems({ silent: true });
   };
 
   const summary = useMemo(() => {

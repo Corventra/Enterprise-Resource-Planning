@@ -7,6 +7,16 @@ import {
 } from '../../../../components/ui/side-panel-dialog';
 import { ApiError } from '../../../../services/api-client';
 import type { CreateManualLeadPayload } from '../../types/lead-tracker.types';
+import {
+  LeadCoreFieldError,
+  LeadCoreFieldLabel,
+  leadCoreInputClassName
+} from '../forms/lead-core-form-field';
+import {
+  hasLeadCoreFormErrors,
+  validateLeadCoreFormValues,
+  type LeadCoreFormErrors
+} from '../../utils/lead-core-form-validation';
 
 interface AddManualLeadDialogProps {
   open: boolean;
@@ -24,20 +34,29 @@ const initialDraft: CreateManualLeadPayload = {
   desiredServices: ''
 };
 
-const inputClassName =
-  'h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none';
-const labelClassName = 'mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500';
-
-export const AddManualLeadDialog = ({ open, busy = false, onClose, onSubmit }: AddManualLeadDialogProps) => {
+export const AddManualLeadDialog = ({
+  open,
+  busy = false,
+  onClose,
+  onSubmit
+}: AddManualLeadDialogProps) => {
   const [draft, setDraft] = useState<CreateManualLeadPayload>(initialDraft);
+  const [errors, setErrors] = useState<LeadCoreFormErrors>({});
   const [localError, setLocalError] = useState<string | null>(null);
 
   const updateField = <K extends keyof CreateManualLeadPayload>(key: K, value: CreateManualLeadPayload[K]) => {
     setDraft((prev) => ({ ...prev, [key]: value }));
+    if (key !== 'desiredServices') {
+      setErrors((prev) => {
+        if (!prev[key as keyof LeadCoreFormErrors]) return prev;
+        return { ...prev, [key]: undefined };
+      });
+    }
   };
 
   const resetForm = () => {
     setDraft(initialDraft);
+    setErrors({});
     setLocalError(null);
   };
 
@@ -50,9 +69,22 @@ export const AddManualLeadDialog = ({ open, busy = false, onClose, onSubmit }: A
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLocalError(null);
+
+    const validationErrors = validateLeadCoreFormValues(draft);
+    if (hasLeadCoreFormErrors(validationErrors)) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    setErrors({});
     try {
       await onSubmit({
         ...draft,
+        companyName: draft.companyName.trim(),
+        companyAddress: draft.companyAddress.trim(),
+        picName: draft.picName.trim(),
+        email: draft.email.trim(),
+        phoneNumber: draft.phoneNumber.trim(),
         desiredServices: draft.desiredServices?.trim() || undefined
       });
       resetForm();
@@ -65,7 +97,7 @@ export const AddManualLeadDialog = ({ open, busy = false, onClose, onSubmit }: A
   return (
     <SidePanelDialog open={open} onOpenChange={(nextOpen) => !nextOpen && handleClose()}>
       <SidePanelDialogHeader title="Add Lead" description="Lead baru akan langsung masuk ke Lead Tracker." />
-      <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+      <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col" noValidate>
         <SidePanelDialogBody>
           {localError ? (
             <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{localError}</p>
@@ -73,63 +105,63 @@ export const AddManualLeadDialog = ({ open, busy = false, onClose, onSubmit }: A
 
           <div className="space-y-4">
             <div>
-              <label className={labelClassName}>Company Name</label>
+              <LeadCoreFieldLabel required>Company Name</LeadCoreFieldLabel>
               <input
-                required
                 value={draft.companyName}
                 onChange={(event) => updateField('companyName', event.target.value)}
                 placeholder="e.g. PT Contoh Maju"
-                className={inputClassName}
+                className={leadCoreInputClassName}
               />
+              <LeadCoreFieldError message={errors.companyName} />
             </div>
             <div>
-              <label className={labelClassName}>Company Address</label>
+              <LeadCoreFieldLabel required>Company Address</LeadCoreFieldLabel>
               <input
-                required
                 value={draft.companyAddress}
                 onChange={(event) => updateField('companyAddress', event.target.value)}
                 placeholder="e.g. Jl. Sudirman No. 1, Jakarta"
-                className={inputClassName}
+                className={leadCoreInputClassName}
               />
+              <LeadCoreFieldError message={errors.companyAddress} />
             </div>
             <div>
-              <label className={labelClassName}>PIC Name</label>
+              <LeadCoreFieldLabel required>PIC Name</LeadCoreFieldLabel>
               <input
-                required
                 value={draft.picName}
                 onChange={(event) => updateField('picName', event.target.value)}
                 placeholder="e.g. Budi Santoso"
-                className={inputClassName}
+                className={leadCoreInputClassName}
               />
+              <LeadCoreFieldError message={errors.picName} />
             </div>
             <div>
-              <label className={labelClassName}>Email</label>
+              <LeadCoreFieldLabel required>Email</LeadCoreFieldLabel>
               <input
-                required
                 type="email"
                 value={draft.email}
                 onChange={(event) => updateField('email', event.target.value)}
                 placeholder="e.g. contact@company.co.id"
-                className={inputClassName}
+                className={leadCoreInputClassName}
               />
+              <LeadCoreFieldError message={errors.email} />
             </div>
             <div>
-              <label className={labelClassName}>Phone Number</label>
+              <LeadCoreFieldLabel required>Phone Number</LeadCoreFieldLabel>
               <input
-                required
                 value={draft.phoneNumber}
                 onChange={(event) => updateField('phoneNumber', event.target.value)}
                 placeholder="e.g. +62 812-3456-7890"
-                className={inputClassName}
+                className={leadCoreInputClassName}
               />
+              <LeadCoreFieldError message={errors.phoneNumber} />
             </div>
             <div>
-              <label className={labelClassName}>Desired Services</label>
+              <LeadCoreFieldLabel>Desired Services</LeadCoreFieldLabel>
               <input
                 value={draft.desiredServices ?? ''}
                 onChange={(event) => updateField('desiredServices', event.target.value)}
                 placeholder="e.g. Consulting, Tax"
-                className={inputClassName}
+                className={leadCoreInputClassName}
               />
             </div>
           </div>
@@ -143,7 +175,7 @@ export const AddManualLeadDialog = ({ open, busy = false, onClose, onSubmit }: A
               disabled={busy}
               className="rounded-lg border border-[#c3c6d5] px-4 py-2 text-sm font-semibold text-[#434653] hover:bg-[#eceef0] disabled:opacity-50"
             >
-              Cancel
+              Batal
             </button>
             <button
               type="submit"

@@ -187,6 +187,7 @@ const engagementBaseSelect = `
       ucb.name AS created_by_name,
       usb.name AS submitted_by_name,
       uab.name AS approved_by_name,
+      p.proposal_code,
       p.proposal_fee,
       p.discount_amount,
       p.proposal_status,

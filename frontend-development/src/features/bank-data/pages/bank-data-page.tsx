@@ -1,7 +1,10 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { PERMISSIONS } from '../../../app/permissions';
 import { useAuth } from '../../../app/store/auth-store';
+import { Toast } from '../../../components/ui/toast';
+import { useToast } from '../../../hooks/use-toast';
+import { BANK_DATA_TOAST } from '../constants/bank-data-toast';
 import { BankDataEmptyState } from '../components/list/bank-data-empty-state';
 import { BankDataFiltersSection } from '../components/list/bank-data-filters';
 import { BankDataSummaryCards } from '../components/list/bank-data-summary-cards';
@@ -21,6 +24,7 @@ export const BankDataPage = () => {
   const [processTarget, setProcessTarget] = useState<BankDataEntry | undefined>();
   const [archiveTarget, setArchiveTarget] = useState<BankDataEntry | undefined>();
   const [mutationBusy, setMutationBusy] = useState(false);
+  const { message: toastMessage, dismiss: dismissToast, show: showToast } = useToast();
   const {
     filters,
     filteredEntries,
@@ -41,27 +45,35 @@ export const BankDataPage = () => {
     setSelectedEntry(entry);
   };
 
-  const runProcess = async (entry: BankDataEntry) => {
-    setMutationBusy(true);
-    try {
-      await processEntry(entry.id);
-      setProcessTarget(undefined);
-      setSelectedEntry(undefined);
-    } finally {
-      setMutationBusy(false);
-    }
-  };
+  const runProcess = useCallback(
+    async (entry: BankDataEntry) => {
+      setMutationBusy(true);
+      try {
+        await processEntry(entry.id);
+        setProcessTarget(undefined);
+        setSelectedEntry(undefined);
+        showToast(BANK_DATA_TOAST.processed);
+      } finally {
+        setMutationBusy(false);
+      }
+    },
+    [processEntry, showToast]
+  );
 
-  const runArchive = async (entry: BankDataEntry) => {
-    setMutationBusy(true);
-    try {
-      await archiveEntry(entry.id);
-      setArchiveTarget(undefined);
-      setSelectedEntry(undefined);
-    } finally {
-      setMutationBusy(false);
-    }
-  };
+  const runArchive = useCallback(
+    async (entry: BankDataEntry) => {
+      setMutationBusy(true);
+      try {
+        await archiveEntry(entry.id);
+        setArchiveTarget(undefined);
+        setSelectedEntry(undefined);
+        showToast(BANK_DATA_TOAST.archived);
+      } finally {
+        setMutationBusy(false);
+      }
+    },
+    [archiveEntry, showToast]
+  );
 
   const paginationFooter =
     totalPages > 0 ? (
@@ -180,6 +192,8 @@ export const BankDataPage = () => {
         onClose={() => !mutationBusy && setArchiveTarget(undefined)}
         onConfirm={runArchive}
       />
+
+      <Toast open={toastMessage != null} message={toastMessage ?? ''} onClose={dismissToast} />
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { Building2, CheckCircle2, Pencil, Plus, Video } from 'lucide-react';
+import { Building2, CheckCircle2, Pencil, Plus, Video, XCircle } from 'lucide-react';
 import { useOutletContext } from 'react-router';
 import { useLeadWorkspacePermissions } from '../hooks/use-lead-workspace-permissions';
 import type { LeadWorkspaceMeetingListItem } from '../types/lead-meetings.types';
@@ -22,7 +22,9 @@ interface MeetingHistorySectionProps {
   onScheduleMeeting?: () => void;
   onEditMeeting?: (meetingId: string) => void;
   onMarkDone?: (meetingId: string) => void;
+  onCancelMeeting?: (meetingId: string) => void;
   markDoneBusyMeetingId?: string | null;
+  cancelBusyMeetingId?: string | null;
 }
 
 const platformIcon = (mode: LeadWorkspaceMeetingListItem['mode']) => {
@@ -44,7 +46,9 @@ export const MeetingHistorySection = ({
   onScheduleMeeting,
   onEditMeeting,
   onMarkDone,
-  markDoneBusyMeetingId = null
+  onCancelMeeting,
+  markDoneBusyMeetingId = null,
+  cancelBusyMeetingId = null
 }: MeetingHistorySectionProps) => {
   const { processedByUserId } = useOutletContext<LeadWorkspaceOutletContext>();
   const { canManageLeadWorkspace } = useLeadWorkspacePermissions({ processedByUserId });
@@ -188,6 +192,15 @@ export const MeetingHistorySection = ({
                               aria-label="Mark meeting done"
                             >
                               <CheckCircle2 className="h-4 w-4" strokeWidth={2} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onCancelMeeting?.(meeting.id)}
+                              disabled={cancelBusyMeetingId === meeting.id}
+                              className={`${actionIconClassName} hover:text-red-600`}
+                              aria-label="Cancel meeting"
+                            >
+                              <XCircle className="h-4 w-4" strokeWidth={2} />
                             </button>
                           </div>
                         ) : (

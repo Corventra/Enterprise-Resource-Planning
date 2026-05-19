@@ -14,11 +14,22 @@ import {
   updateForm as apiUpdateFormMetadata,
   updateOption as apiUpdateOption
 } from '../services/forms-api';
-import type { FormBuilderDocument, FormBuilderField, FormFieldType } from '../types/form-builder.types';
+import { FORM_TOAST } from '../constants/form-toast';
+import type {
+  FormBuilderDocument,
+  FormBuilderField,
+  FormBuilderMetadataErrors,
+  FormFieldType
+} from '../types/form-builder.types';
+import type { FormBuilderNavigationState } from '../types/form-navigation-state';
 import { createFieldByType } from '../utils/field-factory';
 import { fileUploadSettingsToJson } from '../utils/file-upload-rules';
 import { optionValueFromLabel } from '../utils/lead-capture-field-fallbacks';
 import { getInitialFieldsForCategory, isFieldPinnedForDnD } from '../utils/local-draft-fields';
+import {
+  hasFormBuilderMetadataErrors,
+  validateFormBuilderMetadata
+} from '../utils/form-builder-validation';
 
 const emptyDocument = (campaignId: string, campaignName?: string): FormBuilderDocument => ({
   id: '',
@@ -47,6 +58,7 @@ interface UseFormBuilderInput {
   isCreateMode: boolean;
   canManageBuilder: boolean;
   onError: (message: string) => void;
+  onValidationError?: (errors: FormBuilderMetadataErrors) => void;
 }
 
 export const useFormBuilder = ({
@@ -55,7 +67,8 @@ export const useFormBuilder = ({
   initialFormId,
   isCreateMode,
   canManageBuilder,
-  onError
+  onError,
+  onValidationError
 }: UseFormBuilderInput) => {
   const navigate = useNavigate();
   const [form, setForm] = useState<FormBuilderDocument | null>(null);
@@ -64,6 +77,7 @@ export const useFormBuilder = ({
   const [isSaving, setIsSaving] = useState(false);
   const [phaseBBusy, setPhaseBBusy] = useState(false);
   const [headerImageFile, setHeaderImageFile] = useState<File | null>(null);
+  const [metadataErrors, setMetadataErrors] = useState<FormBuilderMetadataErrors>({});
 
   const withCampaignName = useCallback(
     (doc: FormBuilderDocument) => (campaignName ? { ...doc, campaignName } : doc),
@@ -118,6 +132,12 @@ export const useFormBuilder = ({
   );
 
   const setMetadata = <K extends keyof FormBuilderDocument>(key: K, value: FormBuilderDocument[K]) => {
+    if (key === 'title' || key === 'description' || key === 'successMessage') {
+      setMetadataErrors((prev) => {
+        if (!prev[key as keyof FormBuilderMetadataErrors]) return prev;
+        return { ...prev, [key]: undefined };
+      });
+    }
     setForm((prev) => {
       if (!prev) return prev;
       if (key === 'formCategory' && !prev.id) {
@@ -132,6 +152,18 @@ export const useFormBuilder = ({
       return { ...prev, [key]: value };
     });
   };
+
+  const assertMetadataValid = useCallback((): boolean => {
+    if (!form) return false;
+    const errors = validateFormBuilderMetadata(form);
+    if (!hasFormBuilderMetadataErrors(errors)) {
+      setMetadataErrors({});
+      return true;
+    }
+    setMetadataErrors(errors);
+    onValidationError?.(errors);
+    return false;
+  }, [form, onValidationError]);
 
   const persistCustomFieldsAfterCreate = useCallback(
     async (doc: FormBuilderDocument, customLocals: FormBuilderField[]) => {
@@ -206,11 +238,8 @@ export const useFormBuilder = ({
 
   const saveDraft = useCallback(async (): Promise<boolean> => {
     if (!form || !campaignId) return false;
+    if (!assertMetadataValid()) return false;
     const title = form.title.trim();
-    if (!title) {
-      onError('Judul form wajib diisi sebelum menyimpan.');
-      return false;
-    }
     if (form.id && form.backendStatus !== 'DRAFT') {
       return false;
     }
@@ -245,7 +274,16 @@ export const useFormBuilder = ({
     } finally {
       setIsSaving(false);
     }
-  }, [form, campaignId, headerImageFile, navigate, onError, withCampaignName, createFormAndPersistCustomFields]);
+  }, [
+    form,
+    campaignId,
+    headerImageFile,
+    navigate,
+    onError,
+    withCampaignName,
+    createFormAndPersistCustomFields,
+    assertMetadataValid
+  ]);
 
   /**
    * Tanpa id: buat draft + persist kustom + publish + navigasi.
@@ -253,11 +291,8 @@ export const useFormBuilder = ({
    */
   const saveAndPublish = useCallback(async (): Promise<boolean> => {
     if (!form || !campaignId) return false;
+    if (!assertMetadataValid()) return false;
     const title = form.title.trim();
-    if (!title) {
-      onError('Judul form wajib diisi sebelum publish.');
-      return false;
-    }
     setPhaseBBusy(true);
     try {
       if (!form.id) {
@@ -267,7 +302,10 @@ export const useFormBuilder = ({
         setForm(merged);
         setHeaderImageFile(null);
         setSelectedFieldId(merged.fields[0]?.id ?? null);
-        navigate(`/campaigns/${campaignId}?tab=forms&focusForm=${merged.id}`, { replace: true });
+        navigate(`/campaigns/${campaignId}?tab=forms&focusForm=${merged.id}`, {
+          replace: true,
+          state: { formActionToast: FORM_TOAST.published } satisfies FormBuilderNavigationState
+        });
         return true;
       }
       if (form.backendStatus !== 'DRAFT') {
@@ -296,7 +334,16 @@ export const useFormBuilder = ({
     } finally {
       setPhaseBBusy(false);
     }
-  }, [form, campaignId, headerImageFile, navigate, onError, withCampaignName, createFormAndPersistCustomFields]);
+  }, [
+    form,
+    campaignId,
+    headerImageFile,
+    navigate,
+    onError,
+    withCampaignName,
+    createFormAndPersistCustomFields,
+    assertMetadataValid
+  ]);
 
   const clearHeaderImage = useCallback(() => {
     setHeaderImageFile(null);
@@ -591,6 +638,7 @@ export const useFormBuilder = ({
     sortableFieldIds,
     phaseBBusy,
     setSelectedFieldId,
+    metadataErrors,
     setMetadata,
     headerImageFile,
     setHeaderImageFile,

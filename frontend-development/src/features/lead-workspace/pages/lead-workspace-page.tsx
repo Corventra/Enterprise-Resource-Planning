@@ -1,8 +1,11 @@
 import { ArrowLeft } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Navigate, Outlet, useNavigate, useParams } from 'react-router';
 import { PERMISSIONS } from '../../../app/permissions';
 import { useAuth } from '../../../app/store/auth-store';
+import { Toast } from '../../../components/ui/toast';
+import { useToast } from '../../../hooks/use-toast';
+import { LEAD_TOAST } from '../../lead-tracker/constants/lead-tracker-toast';
 import { EditLeadWorkspaceCoreDetailsDialog } from '../components/modals/edit-lead-workspace-core-details-dialog';
 import { LeadWorkspaceCoreDetails } from '../components/lead-workspace-core-details';
 import { LeadWorkspaceActivityLogPanel } from '../components/lead-workspace-activity-log-panel';
@@ -19,7 +22,7 @@ export const LeadWorkspacePage = () => {
   const { workspace, isLoading, loadError, updateDetails, refetch } = useLeadWorkspace(leadId);
   const [editOpen, setEditOpen] = useState(false);
   const [saveBusy, setSaveBusy] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const { message: toastMessage, variant: toastVariant, dismiss: dismissToast, show: showToast } = useToast();
   const workspacePreview = useMemo(
     () => (workspace ? buildLeadWorkspacePreview(workspace) : undefined),
     [workspace]
@@ -27,12 +30,6 @@ export const LeadWorkspacePage = () => {
   const { canViewLeadWorkspace, canManageLeadWorkspace } = useLeadWorkspacePermissions({
     processedByUserId: workspace?.processedByUserId ?? null
   });
-
-  useEffect(() => {
-    if (!successMessage) return;
-    const timer = window.setTimeout(() => setSuccessMessage(null), 3000);
-    return () => window.clearTimeout(timer);
-  }, [successMessage]);
 
   if (!leadId) {
     return <Navigate to="/lead-tracker" replace />;
@@ -87,7 +84,7 @@ export const LeadWorkspacePage = () => {
     try {
       await updateDetails(payload);
       setEditOpen(false);
-      setSuccessMessage('Detail lead berhasil diperbarui.');
+      showToast(LEAD_TOAST.updated);
     } finally {
       setSaveBusy(false);
     }
@@ -95,12 +92,6 @@ export const LeadWorkspacePage = () => {
 
   return (
     <div className="space-y-5">
-      {successMessage ? (
-        <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
-          {successMessage}
-        </p>
-      ) : null}
-
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col items-start">
           <button
@@ -146,6 +137,13 @@ export const LeadWorkspacePage = () => {
         busy={saveBusy}
         onClose={() => setEditOpen(false)}
         onSubmit={runUpdateDetails}
+      />
+
+      <Toast
+        open={toastMessage != null}
+        message={toastMessage ?? ''}
+        variant={toastVariant}
+        onClose={dismissToast}
       />
     </div>
   );

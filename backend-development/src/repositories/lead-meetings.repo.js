@@ -316,6 +316,74 @@ const createMeeting = async (leadId, payload, userId) => {
   }
 };
 
+const cancelMeeting = async (leadId, meetingId, userId) => {
+  const normalizedLeadId = normalizeLeadId(leadId);
+  const normalizedMeetingId = normalizeMeetingId(meetingId);
+  if (normalizedLeadId == null || normalizedMeetingId == null) {
+    return { ok: false, reason: 'NOT_FOUND' };
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const lead = await fetchEligibleLead(conn, normalizedLeadId);
+    if (!lead) {
+      await conn.rollback();
+      return { ok: false, reason: 'NOT_FOUND' };
+    }
+
+    const [meetingRows] = await conn.execute(
+      `SELECT meeting_id, status, title
+         FROM meetings
+        WHERE meeting_id = ?
+          AND lead_id = ?`,
+      [normalizedMeetingId, normalizedLeadId]
+    );
+    if (meetingRows.length === 0) {
+      await conn.rollback();
+      return { ok: false, reason: 'NOT_FOUND' };
+    }
+
+    const meeting = meetingRows[0];
+    if (meeting.status === 'CANCELLED') {
+      await conn.rollback();
+      return { ok: false, reason: 'ALREADY_CANCELLED' };
+    }
+    if (meeting.status === 'DONE') {
+      await conn.rollback();
+      return { ok: false, reason: 'ALREADY_DONE' };
+    }
+    if (meeting.status !== 'SCHEDULED') {
+      await conn.rollback();
+      return { ok: false, reason: 'NOT_SCHEDULED' };
+    }
+
+    await conn.execute(
+      `UPDATE meetings
+          SET status = 'CANCELLED'
+        WHERE meeting_id = ?`,
+      [normalizedMeetingId]
+    );
+
+    await insertActivityLog(conn, {
+      leadId: normalizedLeadId,
+      activityType: LEAD_ACTIVITY_TYPES.MEETING_CANCELLED,
+      title: 'Meeting dibatalkan',
+      description: `Meeting "${meeting.title}" dibatalkan.`,
+      createdBy: userId
+    });
+
+    await conn.commit();
+    const updatedMeeting = await fetchMeetingForLead(conn, normalizedLeadId, normalizedMeetingId);
+    return { ok: true, meeting: updatedMeeting };
+  } catch (e) {
+    await conn.rollback();
+    throw e;
+  } finally {
+    conn.release();
+  }
+};
+
 const completeMeeting = async (leadId, meetingId, userId) => {
   const normalizedLeadId = normalizeLeadId(leadId);
   const normalizedMeetingId = normalizeMeetingId(meetingId);
@@ -659,6 +727,7 @@ const updateMinutes = async (leadId, meetingId, payload, userId) => {
 module.exports = {
   listMeetings,
   createMeeting,
+  cancelMeeting,
   completeMeeting,
   updateMeeting,
   getMeetingMinutes,

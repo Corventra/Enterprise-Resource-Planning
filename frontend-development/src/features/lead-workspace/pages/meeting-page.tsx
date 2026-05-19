@@ -1,17 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router';
+import { Toast } from '../../../components/ui/toast';
+import { useToast } from '../../../hooks/use-toast';
+import { MEETING_TOAST } from '../constants/lead-meeting-toast';
 import { EditMeetingMinutesDialog } from '../components/modals/edit-meeting-minutes-dialog';
+import { CancelMeetingConfirmDialog } from '../components/modals/cancel-meeting-confirm-dialog';
+import { MarkMeetingDoneConfirmDialog } from '../components/modals/mark-meeting-done-confirm-dialog';
 import { ScheduleMeetingDialog } from '../components/modals/schedule-meeting-dialog';
 import { MeetingHistorySection } from '../components/meeting-history-section';
 import { MeetingMinutesSection } from '../components/meeting-minutes-section';
 import { useLeadMeetingMinutes, useLeadMeetings } from '../hooks/use-lead-meetings';
 import type { LeadWorkspaceOutletContext } from '../types/lead-workspace.types';
-import type { SaveMeetingMinutesPayload, ScheduleMeetingPayload } from '../types/lead-meetings.types';
+import type { LeadWorkspaceMeetingListItem, SaveMeetingMinutesPayload, ScheduleMeetingPayload } from '../types/lead-meetings.types';
 import { buildMinutesPayloadFromDetail, mapMeetingToSchedulePayload } from '../utils/lead-meetings-mappers';
 
 export const MeetingPage = () => {
   const { leadId, refetchWorkspace } = useOutletContext<LeadWorkspaceOutletContext>();
-  const { meetings, isLoading, loadError, refetch, scheduleMeeting, completeMeeting, updateMeeting } =
+  const { meetings, isLoading, loadError, refetch, scheduleMeeting, completeMeeting, cancelMeeting, updateMeeting } =
     useLeadMeetings(leadId);
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(meetings[0]?.id ?? null);
   const [scheduleOpen, setScheduleOpen] = useState(false);
@@ -20,7 +25,11 @@ export const MeetingPage = () => {
   const [minutesOpen, setMinutesOpen] = useState(false);
   const [scheduleBusy, setScheduleBusy] = useState(false);
   const [minutesBusy, setMinutesBusy] = useState(false);
-  const [markDoneBusyMeetingId, setMarkDoneBusyMeetingId] = useState<string | null>(null);
+  const [markDoneTarget, setMarkDoneTarget] = useState<LeadWorkspaceMeetingListItem | null>(null);
+  const [markDoneBusy, setMarkDoneBusy] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState<LeadWorkspaceMeetingListItem | null>(null);
+  const [cancelBusy, setCancelBusy] = useState(false);
+  const { message: toastMessage, variant: toastVariant, dismiss: dismissToast, show: showToast } = useToast();
 
   const {
     detail,
@@ -78,44 +87,77 @@ export const MeetingPage = () => {
       if (scheduleMode === 'edit' && editingMeetingId) {
         await updateMeeting(editingMeetingId, normalizedPayload);
         setSelectedMeetingId(editingMeetingId);
-        await refetchMinutes();
+        await refetchMinutes({ silent: true });
       } else {
         const meeting = await scheduleMeeting(normalizedPayload);
         setSelectedMeetingId(meeting.id);
       }
 
+      const wasEdit = scheduleMode === 'edit';
       setScheduleOpen(false);
       setEditingMeetingId(null);
-      await refetchWorkspace();
+      showToast(wasEdit ? MEETING_TOAST.updated : MEETING_TOAST.scheduled);
+      await refetchWorkspace({ silent: true });
     } finally {
       setScheduleBusy(false);
     }
   };
 
-  const handleMarkDone = async (meetingId: string) => {
-    setMarkDoneBusyMeetingId(meetingId);
+  const handleMarkDoneRequest = (meetingId: string) => {
+    const meeting = meetings.find((item) => item.id === meetingId);
+    if (meeting) setMarkDoneTarget(meeting);
+  };
+
+  const handleMarkDoneConfirm = async (meetingId: string) => {
+    setMarkDoneBusy(true);
     try {
       await completeMeeting(meetingId);
       setSelectedMeetingId(meetingId);
-      await refetchMinutes();
-      await refetchWorkspace();
+      setMarkDoneTarget(null);
+      showToast(MEETING_TOAST.markedDone);
+      await refetchMinutes({ silent: true });
+      await refetchWorkspace({ silent: true });
+    } catch {
+      throw new Error('Gagal menandai meeting selesai.');
     } finally {
-      setMarkDoneBusyMeetingId(null);
+      setMarkDoneBusy(false);
+    }
+  };
+
+  const handleCancelRequest = (meetingId: string) => {
+    const meeting = meetings.find((item) => item.id === meetingId);
+    if (meeting) setCancelTarget(meeting);
+  };
+
+  const handleCancelConfirm = async (meetingId: string) => {
+    setCancelBusy(true);
+    try {
+      await cancelMeeting(meetingId);
+      setCancelTarget(null);
+      showToast(MEETING_TOAST.cancelled);
+      await refetchMinutes({ silent: true });
+      await refetchWorkspace({ silent: true });
+    } catch {
+      throw new Error('Gagal membatalkan meeting.');
+    } finally {
+      setCancelBusy(false);
     }
   };
 
   const handleSaveMinutes = async (payload: SaveMeetingMinutesPayload) => {
     if (!selectedMeetingId) return;
+    const wasCreate = minutesMode === 'create';
     setMinutesBusy(true);
     try {
-      if (minutesMode === 'create') {
+      if (wasCreate) {
         await createMinutes(payload);
       } else {
         await updateMinutes(payload);
       }
       setMinutesOpen(false);
-      await refetch();
-      await refetchWorkspace();
+      showToast(wasCreate ? MEETING_TOAST.minutesCreated : MEETING_TOAST.minutesUpdated);
+      await refetch({ silent: true });
+      await refetchWorkspace({ silent: true });
     } finally {
       setMinutesBusy(false);
     }
@@ -166,8 +208,10 @@ export const MeetingPage = () => {
           onSelectMeeting={setSelectedMeetingId}
           onScheduleMeeting={openCreateMeeting}
           onEditMeeting={openEditMeeting}
-          onMarkDone={handleMarkDone}
-          markDoneBusyMeetingId={markDoneBusyMeetingId}
+          onMarkDone={handleMarkDoneRequest}
+          onCancelMeeting={handleCancelRequest}
+          markDoneBusyMeetingId={markDoneBusy ? markDoneTarget?.id ?? null : null}
+          cancelBusyMeetingId={cancelBusy ? cancelTarget?.id ?? null : null}
         />
         <MeetingMinutesSection
           detail={detail}
@@ -178,6 +222,28 @@ export const MeetingPage = () => {
           onScheduleMeeting={openCreateMeeting}
         />
       </section>
+
+      <MarkMeetingDoneConfirmDialog
+        open={Boolean(markDoneTarget)}
+        meeting={markDoneTarget ?? undefined}
+        busy={markDoneBusy}
+        onClose={() => {
+          if (markDoneBusy) return;
+          setMarkDoneTarget(null);
+        }}
+        onConfirm={handleMarkDoneConfirm}
+      />
+
+      <CancelMeetingConfirmDialog
+        open={Boolean(cancelTarget)}
+        meeting={cancelTarget ?? undefined}
+        busy={cancelBusy}
+        onClose={() => {
+          if (cancelBusy) return;
+          setCancelTarget(null);
+        }}
+        onConfirm={handleCancelConfirm}
+      />
 
       <ScheduleMeetingDialog
         open={scheduleOpen}
@@ -198,6 +264,13 @@ export const MeetingPage = () => {
         initialDetail={minutesInitialDetail}
         onClose={() => setMinutesOpen(false)}
         onSubmit={handleSaveMinutes}
+      />
+
+      <Toast
+        open={toastMessage != null}
+        message={toastMessage ?? ''}
+        variant={toastVariant}
+        onClose={dismissToast}
       />
     </>
   );

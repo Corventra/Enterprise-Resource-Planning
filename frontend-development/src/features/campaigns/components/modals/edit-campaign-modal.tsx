@@ -67,7 +67,6 @@ export const EditCampaignModal = ({
       await onSuccess(campaign.id, input);
       resetForm();
       setImageFile(null);
-      onClose();
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : 'Failed to update campaign.';
       setSubmitError(msg);

@@ -6,7 +6,18 @@ import {
   SidePanelDialogHeader
 } from '../../../../components/ui/side-panel-dialog';
 import { ApiError } from '../../../../services/api-client';
+import {
+  LeadCoreFieldError,
+  LeadCoreFieldLabel,
+  leadCoreInputClassName,
+  leadCoreTextareaClassName
+} from '../../../lead-tracker/components/forms/lead-core-form-field';
 import type { ScheduleMeetingPayload } from '../../types/lead-meetings.types';
+import {
+  hasScheduleMeetingFormErrors,
+  validateScheduleMeetingPayload,
+  type ScheduleMeetingFormErrors
+} from '../../utils/schedule-meeting-validation';
 
 interface ScheduleMeetingDialogProps {
   open: boolean;
@@ -16,12 +27,6 @@ interface ScheduleMeetingDialogProps {
   onClose: () => void;
   onSubmit: (payload: ScheduleMeetingPayload) => Promise<void> | void;
 }
-
-const inputClassName =
-  'h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none';
-const textareaClassName =
-  'w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none';
-const labelClassName = 'mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500';
 
 const emptyDraft = (): ScheduleMeetingPayload => ({
   title: '',
@@ -40,11 +45,13 @@ export const ScheduleMeetingDialog = ({
   onSubmit
 }: ScheduleMeetingDialogProps) => {
   const [draft, setDraft] = useState<ScheduleMeetingPayload>(emptyDraft());
+  const [errors, setErrors] = useState<ScheduleMeetingFormErrors>({});
   const [localError, setLocalError] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
       setDraft(mode === 'edit' && initialMeeting ? initialMeeting : emptyDraft());
+      setErrors({});
       setLocalError(null);
     }
   }, [open, mode, initialMeeting]);
@@ -52,6 +59,19 @@ export const ScheduleMeetingDialog = ({
   if (!open) {
     return null;
   }
+
+  const updateField = <K extends keyof ScheduleMeetingPayload>(key: K, value: ScheduleMeetingPayload[K]) => {
+    setDraft((prev) => ({ ...prev, [key]: value }));
+    if (key !== 'notes' && key !== 'meetingMode') {
+      setErrors((prev) => {
+        if (!prev[key as keyof ScheduleMeetingFormErrors]) return prev;
+        return { ...prev, [key]: undefined };
+      });
+    }
+    if (key === 'meetingMode') {
+      setErrors((prev) => (prev.meetingAccess ? { ...prev, meetingAccess: undefined } : prev));
+    }
+  };
 
   const handleClose = () => {
     if (busy) return;
@@ -62,6 +82,14 @@ export const ScheduleMeetingDialog = ({
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLocalError(null);
+
+    const validationErrors = validateScheduleMeetingPayload(draft);
+    if (hasScheduleMeetingFormErrors(validationErrors)) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    setErrors({});
     try {
       await onSubmit({
         ...draft,
@@ -70,18 +98,32 @@ export const ScheduleMeetingDialog = ({
         notes: draft.notes?.trim() || undefined
       });
     } catch (e) {
-      const message = e instanceof ApiError ? e.message : 'Gagal menjadwalkan meeting.';
+      const message =
+        e instanceof ApiError
+          ? e.message
+          : mode === 'edit'
+            ? 'Gagal memperbarui meeting.'
+            : 'Gagal menjadwalkan meeting.';
       setLocalError(message);
     }
   };
+
+  const platformPlaceholder =
+    draft.meetingMode === 'ONLINE'
+      ? 'e.g. https://meet.google.com/abc-defg-hij'
+      : 'e.g. Kantor Klien, Jakarta';
 
   return (
     <SidePanelDialog open={open} onOpenChange={(nextOpen) => !nextOpen && handleClose()}>
       <SidePanelDialogHeader
         title={mode === 'edit' ? 'Edit Meeting' : 'Schedule Meeting'}
-        description={mode === 'edit' ? 'Perbarui jadwal meeting yang masih Scheduled.' : 'Jadwalkan meeting baru untuk lead ini.'}
+        description={
+          mode === 'edit'
+            ? 'Perbarui jadwal meeting yang masih Scheduled.'
+            : 'Jadwalkan meeting baru untuk lead ini.'
+        }
       />
-      <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+      <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col" noValidate>
         <SidePanelDialogBody>
           {localError ? (
             <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{localError}</p>
@@ -89,60 +131,56 @@ export const ScheduleMeetingDialog = ({
 
           <div className="space-y-4">
             <div>
-              <label className={labelClassName}>Meeting Title</label>
+              <LeadCoreFieldLabel required>Meeting Title</LeadCoreFieldLabel>
               <input
-                required
                 value={draft.title}
-                onChange={(event) => setDraft((prev) => ({ ...prev, title: event.target.value }))}
+                onChange={(event) => updateField('title', event.target.value)}
                 placeholder="e.g. Kickoff Meeting"
-                className={inputClassName}
+                className={leadCoreInputClassName}
               />
+              <LeadCoreFieldError message={errors.title} />
             </div>
             <div>
-              <label className={labelClassName}>Date & Time</label>
+              <LeadCoreFieldLabel required>Date & Time</LeadCoreFieldLabel>
               <input
-                required
                 type="datetime-local"
                 value={draft.meetingDatetime}
-                onChange={(event) => setDraft((prev) => ({ ...prev, meetingDatetime: event.target.value }))}
-                className={inputClassName}
+                onChange={(event) => updateField('meetingDatetime', event.target.value)}
+                className={leadCoreInputClassName}
               />
+              <LeadCoreFieldError message={errors.meetingDatetime} />
             </div>
             <div>
-              <label className={labelClassName}>Meeting Mode</label>
+              <LeadCoreFieldLabel required>Meeting Mode</LeadCoreFieldLabel>
               <select
-                required
                 value={draft.meetingMode}
                 onChange={(event) =>
-                  setDraft((prev) => ({
-                    ...prev,
-                    meetingMode: event.target.value as ScheduleMeetingPayload['meetingMode']
-                  }))
+                  updateField('meetingMode', event.target.value as ScheduleMeetingPayload['meetingMode'])
                 }
-                className={inputClassName}
+                className={leadCoreInputClassName}
               >
                 <option value="ONLINE">Online</option>
                 <option value="OFFLINE">Offline</option>
               </select>
             </div>
             <div>
-              <label className={labelClassName}>Platform/Location</label>
+              <LeadCoreFieldLabel required>Platform/Location</LeadCoreFieldLabel>
               <input
-                required
                 value={draft.meetingAccess}
-                onChange={(event) => setDraft((prev) => ({ ...prev, meetingAccess: event.target.value }))}
-                placeholder={draft.meetingMode === 'ONLINE' ? 'e.g. https://meet.google.com/abc-defg-hij' : 'e.g. Kantor Klien, Jakarta'}
-                className={inputClassName}
+                onChange={(event) => updateField('meetingAccess', event.target.value)}
+                placeholder={platformPlaceholder}
+                className={leadCoreInputClassName}
               />
+              <LeadCoreFieldError message={errors.meetingAccess} />
             </div>
             <div>
-              <label className={labelClassName}>Notes</label>
+              <LeadCoreFieldLabel>Notes</LeadCoreFieldLabel>
               <textarea
                 value={draft.notes ?? ''}
-                onChange={(event) => setDraft((prev) => ({ ...prev, notes: event.target.value }))}
+                onChange={(event) => updateField('notes', event.target.value)}
                 rows={4}
                 placeholder="e.g. Agenda singkat, PIC hadir, atau catatan persiapan meeting"
-                className={`${textareaClassName} resize-y`}
+                className={leadCoreTextareaClassName}
               />
             </div>
           </div>

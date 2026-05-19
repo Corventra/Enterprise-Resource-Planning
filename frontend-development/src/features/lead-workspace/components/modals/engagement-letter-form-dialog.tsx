@@ -5,29 +5,34 @@ import {
   SidePanelDialogFooter,
   SidePanelDialogHeader
 } from '../../../../components/ui/side-panel-dialog';
+import {
+  LeadCoreFieldError,
+  LeadCoreFieldLabel,
+  leadCoreInputClassName
+} from '../../../lead-tracker/components/forms/lead-core-form-field';
 import { EngagementLetterDocumentField } from './engagement-letter-document-field';
 import { normalizeDateOnlyString } from '../../../../utils/format-date-only';
+import {
+  hasEngagementLetterFormErrors,
+  validateEngagementLetterForm,
+  type EngagementLetterFormErrors,
+  type TerminEditableRow
+} from '../../utils/engagement-letter-form-validation';
+import { ApiError } from '../../../../services/api-client';
+import { formatRupiahInput, parseRupiahInput } from '../../utils/rupiah-input';
 import type {
   EngagementIssuerCompany,
   EngagementPaymentMethod,
   LeadWorkspaceEngagementLetterItem
 } from '../../types/lead-engagement-letters.types';
 
-const toDateOnlyField = (value: string | null | undefined) => normalizeDateOnlyString(value) ?? '';
+export type { TerminEditableRow };
 
-const inputClassName =
-  'h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none';
-const labelClassName = 'mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500';
+const toDateOnlyField = (value: string | null | undefined) => normalizeDateOnlyString(value) ?? '';
 
 export type EngagementLetterFormMode = 'create' | 'edit';
 
-/** Satu baris termin (tanpa term_type / sort_order — diatur server). */
-export interface TerminEditableRow {
-  term_name: string;
-  percentage: string;
-  description: string;
-  billing_schedule_date: string;
-}
+const labelClassName = 'mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500';
 
 interface EngagementLetterFormDialogProps {
   open: boolean;
@@ -144,68 +149,10 @@ const buildTerminsOrderedPayload = (
   ];
 };
 
-const validateForm = (
-  mode: EngagementLetterFormMode,
-  issuer: string,
-  agreedFee: string,
-  paymentMethod: EngagementPaymentMethod,
-  dp: TerminEditableRow,
-  installments: TerminEditableRow[],
-  final: TerminEditableRow,
-  ret: ReturnType<typeof defaultRetainer>,
-  file: File | null,
-  intent: 'draft' | 'submit',
-  hasExistingDocument: boolean
-): string | null => {
-  if (issuer !== 'DSK' && issuer !== 'DTAX') {
-    return 'Pilih issuer company.';
-  }
-  const fee = Number(String(agreedFee).replace(/\s/g, '').replace(',', '.'));
-  if (!Number.isFinite(fee) || fee <= 0) {
-    return 'Agreed fee wajib lebih besar dari 0.';
-  }
-  if (mode === 'create' && !file) {
-    return 'Unggah dokumen engagement letter (PDF).';
-  }
-  if (intent === 'submit' && mode === 'edit' && !file && !hasExistingDocument) {
-    return 'Dokumen engagement letter wajib ada sebelum submit.';
-  }
-  if (paymentMethod === 'TERMIN') {
-    const rows = [dp, ...installments, final];
-    let sum = 0;
-    for (const t of rows) {
-      const p = Number(String(t.percentage).replace(',', '.'));
-      if (!Number.isFinite(p) || p <= 0) {
-        return 'Setiap termin wajib percentage > 0.';
-      }
-      sum += p;
-      if (!String(t.term_name).trim()) {
-        return 'Nama termin wajib diisi.';
-      }
-    }
-    if (Math.abs(sum - 100) > 0.02) {
-      return 'Total percentage termin harus 100%.';
-    }
-  } else {
-    const start = ret.contract_start_date.trim();
-    const end = ret.contract_end_date.trim();
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end)) {
-      return 'Tanggal kontrak retainer wajib diisi (format YYYY-MM-DD).';
-    }
-    if (start > end) {
-      return 'Tanggal akhir kontrak tidak boleh lebih kecil dari tanggal mulai.';
-    }
-    if (ret.billing_timing !== 'BEGINNING_OF_MONTH' && ret.billing_timing !== 'END_OF_MONTH') {
-      return 'Pilih billing timing retainer.';
-    }
-  }
-  return null;
-};
-
 const buildFormData = (
   action: 'draft' | 'submit',
   issuer: EngagementIssuerCompany,
-  agreedFee: string,
+  agreedFee: number,
   paymentMethod: EngagementPaymentMethod,
   dp: TerminEditableRow,
   installments: TerminEditableRow[],
@@ -216,7 +163,7 @@ const buildFormData = (
   const fd = new FormData();
   fd.append('action', action);
   fd.append('issuer_company', issuer);
-  fd.append('agreed_fee', String(agreedFee).replace(/\s/g, '').replace(',', '.'));
+  fd.append('agreed_fee', String(agreedFee));
   fd.append('payment_method', paymentMethod);
   if (paymentMethod === 'TERMIN') {
     fd.append('termins_json', JSON.stringify(buildTerminsOrderedPayload(paymentMethod, dp, installments, final)));
@@ -247,13 +194,14 @@ export const EngagementLetterFormDialog = ({
   onRequestSubmitConfirm
 }: EngagementLetterFormDialogProps) => {
   const [issuer, setIssuer] = useState<EngagementIssuerCompany>('DSK');
-  const [agreedFee, setAgreedFee] = useState('');
+  const [agreedFee, setAgreedFee] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<EngagementPaymentMethod>('TERMIN');
   const [dpRow, setDpRow] = useState<TerminEditableRow>(() => defaultDp());
   const [finalRow, setFinalRow] = useState<TerminEditableRow>(() => defaultFinal());
   const [installments, setInstallments] = useState<TerminEditableRow[]>([]);
   const [retainerState, setRetainerState] = useState(() => defaultRetainer());
   const [file, setFile] = useState<File | null>(null);
+  const [errors, setErrors] = useState<EngagementLetterFormErrors>({});
   const [localError, setLocalError] = useState<string | null>(null);
   const hasExistingDocument = Boolean(
     mode === 'edit' && initialEngagement?.document?.filePath && String(initialEngagement.document.filePath).trim() !== ''
@@ -264,13 +212,14 @@ export const EngagementLetterFormDialog = ({
       return;
     }
     setLocalError(null);
+    setErrors({});
     setFile(null);
     if (mode === 'edit' && initialEngagement) {
       setIssuer(initialEngagement.issuerCompany);
       setAgreedFee(
         initialEngagement.agreedFeeAmount != null && Number.isFinite(initialEngagement.agreedFeeAmount)
-          ? String(initialEngagement.agreedFeeAmount)
-          : ''
+          ? initialEngagement.agreedFeeAmount
+          : 0
       );
       setPaymentMethod(initialEngagement.paymentMethod);
       if (initialEngagement.paymentMethod === 'TERMIN') {
@@ -286,7 +235,7 @@ export const EngagementLetterFormDialog = ({
       setRetainerState(mapItemToRetainer(initialEngagement));
     } else {
       setIssuer('DSK');
-      setAgreedFee('');
+      setAgreedFee(0);
       setPaymentMethod('TERMIN');
       setDpRow(defaultDp());
       setFinalRow(defaultFinal());
@@ -307,27 +256,48 @@ export const EngagementLetterFormDialog = ({
     setInstallments((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const runSubmit = async (intent: 'draft' | 'submit') => {
-    const err = validateForm(
+  const clearFieldError = (key: keyof EngagementLetterFormErrors) => {
+    setErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  };
+
+  const validateAndBuild = (intent: 'draft' | 'submit') => {
+    const validationErrors = validateEngagementLetterForm({
       mode,
       issuer,
       agreedFee,
       paymentMethod,
-      dpRow,
+      dp: dpRow,
       installments,
-      finalRow,
-      retainerState,
+      final: finalRow,
+      retainer: retainerState,
       file,
       intent,
       hasExistingDocument
-    );
-    if (err) {
-      setLocalError(err);
-      return;
+    });
+    if (hasEngagementLetterFormErrors(validationErrors)) {
+      setErrors(validationErrors);
+      return null;
     }
+    setErrors({});
+    return buildFormData(intent, issuer, agreedFee, paymentMethod, dpRow, installments, finalRow, retainerState, file);
+  };
+
+  const runSubmit = async (intent: 'draft' | 'submit') => {
+    const fd = validateAndBuild(intent);
+    if (!fd) return;
     setLocalError(null);
-    const fd = buildFormData(intent, issuer, agreedFee, paymentMethod, dpRow, installments, finalRow, retainerState, file);
-    await onSubmit(fd, intent);
+    try {
+      await onSubmit(fd, intent);
+    } catch (e) {
+      const message =
+        e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Gagal memproses engagement letter.';
+      setLocalError(message);
+    }
   };
 
   const handleSaveDraft = async () => {
@@ -341,35 +311,9 @@ export const EngagementLetterFormDialog = ({
   };
 
   const tryOpenSubmitConfirm = () => {
-    const err = validateForm(
-      mode,
-      issuer,
-      agreedFee,
-      paymentMethod,
-      dpRow,
-      installments,
-      finalRow,
-      retainerState,
-      file,
-      'submit',
-      hasExistingDocument
-    );
-    if (err) {
-      setLocalError(err);
-      return;
-    }
+    const fd = validateAndBuild('submit');
+    if (!fd) return;
     setLocalError(null);
-    const fd = buildFormData(
-      'submit',
-      issuer,
-      agreedFee,
-      paymentMethod,
-      dpRow,
-      installments,
-      finalRow,
-      retainerState,
-      file
-    );
     if (onRequestSubmitConfirm) {
       onRequestSubmitConfirm(fd);
       return;
@@ -390,52 +334,57 @@ export const EngagementLetterFormDialog = ({
         />
         <div className="flex min-h-0 flex-1 flex-col">
           <SidePanelDialogBody>
-            {localError ? (
-              <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{localError}</p>
-            ) : null}
+            {localError ? <p className="mb-3 text-sm text-red-600">{localError}</p> : null}
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className={labelClassName} htmlFor="el-issuer">
-                  Issuer company
-                </label>
+                <LeadCoreFieldLabel required>Issuer company</LeadCoreFieldLabel>
                 <select
                   id="el-issuer"
                   value={issuer}
-                  onChange={(e) => setIssuer(e.target.value as EngagementIssuerCompany)}
-                  className={inputClassName}
+                  onChange={(e) => {
+                    clearFieldError('issuerCompany');
+                    setIssuer(e.target.value as EngagementIssuerCompany);
+                  }}
+                  className={leadCoreInputClassName}
                   disabled={busy}
                 >
                   <option value="DSK">DSK</option>
                   <option value="DTAX">DTAX</option>
                 </select>
+                <LeadCoreFieldError message={errors.issuerCompany} />
               </div>
               <div>
-                <label className={labelClassName} htmlFor="el-fee">
-                  Agreed fee (IDR)
-                </label>
-                <input
-                  id="el-fee"
-                  type="number"
-                  min={1}
-                  step={1}
-                  value={agreedFee}
-                  onChange={(e) => setAgreedFee(e.target.value)}
-                  className={inputClassName}
-                  disabled={busy}
-                  placeholder="contoh: 150000000"
-                />
+                <LeadCoreFieldLabel required>Agreed fee (Rp)</LeadCoreFieldLabel>
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">
+                    Rp
+                  </span>
+                  <input
+                    id="el-fee"
+                    type="text"
+                    inputMode="numeric"
+                    value={formatRupiahInput(agreedFee)}
+                    onChange={(e) => {
+                      clearFieldError('agreedFee');
+                      setAgreedFee(parseRupiahInput(e.target.value));
+                    }}
+                    className={`${leadCoreInputClassName} pl-10`}
+                    disabled={busy}
+                    placeholder="contoh: 100.000.000"
+                  />
+                </div>
+                <LeadCoreFieldError message={errors.agreedFee} />
               </div>
               <div className="sm:col-span-2">
-                <label className={labelClassName} htmlFor="el-payment">
-                  Payment method
-                </label>
+                <LeadCoreFieldLabel required>Payment method</LeadCoreFieldLabel>
                 <select
                   id="el-payment"
                   value={paymentMethod}
                   onChange={(e) => {
                     const v = e.target.value as EngagementPaymentMethod;
                     setPaymentMethod(v);
+                    setErrors({});
                     if (v === 'TERMIN') {
                       setDpRow(defaultDp());
                       setFinalRow(defaultFinal());
@@ -444,7 +393,7 @@ export const EngagementLetterFormDialog = ({
                       setRetainerState(defaultRetainer());
                     }
                   }}
-                  className={inputClassName}
+                  className={leadCoreInputClassName}
                   disabled={busy}
                 >
                   <option value="TERMIN">Termin</option>
@@ -469,6 +418,7 @@ export const EngagementLetterFormDialog = ({
                 <p className="text-xs text-slate-500">
                   Down Payment selalu di atas, Pelunasan selalu di bawah. Baris tambahan = cicilan di tengah.
                 </p>
+                <LeadCoreFieldError message={errors.terminsTotal} />
 
                 <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-3">
                   <p className="mb-2 text-[11px] font-bold uppercase text-slate-500">Down Payment</p>
@@ -477,11 +427,15 @@ export const EngagementLetterFormDialog = ({
                       <label className={labelClassName}>Nama termin</label>
                       <input
                         value={dpRow.term_name}
-                        onChange={(e) => setDpRow((r) => ({ ...r, term_name: e.target.value }))}
-                        className={inputClassName}
+                        onChange={(e) => {
+                          clearFieldError('dpTermName');
+                          setDpRow((r) => ({ ...r, term_name: e.target.value }));
+                        }}
+                        className={leadCoreInputClassName}
                         disabled={busy}
                         placeholder="Down Payment"
                       />
+                      <LeadCoreFieldError message={errors.dpTermName} />
                     </div>
                     <div>
                       <label className={labelClassName}>Percentage (%)</label>
@@ -490,29 +444,38 @@ export const EngagementLetterFormDialog = ({
                         min={0.01}
                         step={0.01}
                         value={dpRow.percentage}
-                        onChange={(e) => setDpRow((r) => ({ ...r, percentage: e.target.value }))}
-                        className={inputClassName}
+                        onChange={(e) => {
+                          clearFieldError('dpPercentage');
+                          clearFieldError('terminsTotal');
+                          setDpRow((r) => ({ ...r, percentage: e.target.value }));
+                        }}
+                        className={leadCoreInputClassName}
                         disabled={busy}
                         placeholder="contoh: 30"
                       />
+                      <LeadCoreFieldError message={errors.dpPercentage} />
                     </div>
                     <div>
-                      <label className={labelClassName}>Billing schedule (opsional)</label>
+                      <LeadCoreFieldLabel required>Billing schedule</LeadCoreFieldLabel>
                       <input
                         type="date"
                         value={dpRow.billing_schedule_date}
-                        onChange={(e) => setDpRow((r) => ({ ...r, billing_schedule_date: e.target.value }))}
-                        className={inputClassName}
+                        onChange={(e) => {
+                          clearFieldError('dpBillingSchedule');
+                          setDpRow((r) => ({ ...r, billing_schedule_date: e.target.value }));
+                        }}
+                        className={leadCoreInputClassName}
                         disabled={busy}
                         title="Jadwal penagihan"
                       />
+                      <LeadCoreFieldError message={errors.dpBillingSchedule} />
                     </div>
                     <div className="sm:col-span-2">
                       <label className={labelClassName}>Deskripsi (opsional)</label>
                       <input
                         value={dpRow.description}
                         onChange={(e) => setDpRow((r) => ({ ...r, description: e.target.value }))}
-                        className={inputClassName}
+                        className={leadCoreInputClassName}
                         disabled={busy}
                         placeholder="Keterangan (opsional)"
                       />
@@ -538,11 +501,20 @@ export const EngagementLetterFormDialog = ({
                         <label className={labelClassName}>Nama termin</label>
                         <input
                           value={row.term_name}
-                          onChange={(e) => updateInstallment(idx, { term_name: e.target.value })}
-                          className={inputClassName}
+                          onChange={(e) => {
+                            setErrors((prev) => {
+                              if (!prev.installmentItems?.[idx]) return prev;
+                              const items = { ...prev.installmentItems };
+                              delete items[idx];
+                              return { ...prev, installmentItems: Object.keys(items).length ? items : undefined };
+                            });
+                            updateInstallment(idx, { term_name: e.target.value });
+                          }}
+                          className={leadCoreInputClassName}
                           disabled={busy}
                           placeholder="Installment"
                         />
+                        <LeadCoreFieldError message={errors.installmentItems?.[idx]} />
                       </div>
                       <div>
                         <label className={labelClassName}>Percentage (%)</label>
@@ -552,27 +524,40 @@ export const EngagementLetterFormDialog = ({
                           step={0.01}
                           value={row.percentage}
                           onChange={(e) => updateInstallment(idx, { percentage: e.target.value })}
-                          className={inputClassName}
+                          className={leadCoreInputClassName}
                           disabled={busy}
                         />
                       </div>
                       <div>
-                        <label className={labelClassName}>Billing schedule (opsional)</label>
+                        <LeadCoreFieldLabel required>Billing schedule</LeadCoreFieldLabel>
                         <input
                           type="date"
                           value={row.billing_schedule_date}
-                          onChange={(e) => updateInstallment(idx, { billing_schedule_date: e.target.value })}
-                          className={inputClassName}
+                          onChange={(e) => {
+                            setErrors((prev) => {
+                              if (!prev.installmentBillingItems?.[idx]) return prev;
+                              const items = { ...prev.installmentBillingItems };
+                              delete items[idx];
+                              return {
+                                ...prev,
+                                installmentBillingItems: Object.keys(items).length ? items : undefined
+                              };
+                            });
+                            updateInstallment(idx, { billing_schedule_date: e.target.value });
+                          }}
+                          className={leadCoreInputClassName}
                           disabled={busy}
                         />
+                        <LeadCoreFieldError message={errors.installmentBillingItems?.[idx]} />
                       </div>
                       <div className="sm:col-span-2">
                         <label className={labelClassName}>Deskripsi (opsional)</label>
                         <input
                           value={row.description}
                           onChange={(e) => updateInstallment(idx, { description: e.target.value })}
-                          className={inputClassName}
+                          className={leadCoreInputClassName}
                           disabled={busy}
+                          placeholder="Keterangan (opsional)"
                         />
                       </div>
                     </div>
@@ -586,11 +571,15 @@ export const EngagementLetterFormDialog = ({
                       <label className={labelClassName}>Nama termin</label>
                       <input
                         value={finalRow.term_name}
-                        onChange={(e) => setFinalRow((r) => ({ ...r, term_name: e.target.value }))}
-                        className={inputClassName}
+                        onChange={(e) => {
+                          clearFieldError('finalTermName');
+                          setFinalRow((r) => ({ ...r, term_name: e.target.value }));
+                        }}
+                        className={leadCoreInputClassName}
                         disabled={busy}
                         placeholder="Pelunasan"
                       />
+                      <LeadCoreFieldError message={errors.finalTermName} />
                     </div>
                     <div>
                       <label className={labelClassName}>Percentage (%)</label>
@@ -599,29 +588,39 @@ export const EngagementLetterFormDialog = ({
                         min={0.01}
                         step={0.01}
                         value={finalRow.percentage}
-                        onChange={(e) => setFinalRow((r) => ({ ...r, percentage: e.target.value }))}
-                        className={inputClassName}
+                        onChange={(e) => {
+                          clearFieldError('finalPercentage');
+                          clearFieldError('terminsTotal');
+                          setFinalRow((r) => ({ ...r, percentage: e.target.value }));
+                        }}
+                        className={leadCoreInputClassName}
                         disabled={busy}
                         placeholder="contoh: 50"
                       />
+                      <LeadCoreFieldError message={errors.finalPercentage} />
                     </div>
                     <div>
-                      <label className={labelClassName}>Billing schedule (opsional)</label>
+                      <LeadCoreFieldLabel required>Billing schedule</LeadCoreFieldLabel>
                       <input
                         type="date"
                         value={finalRow.billing_schedule_date}
-                        onChange={(e) => setFinalRow((r) => ({ ...r, billing_schedule_date: e.target.value }))}
-                        className={inputClassName}
+                        onChange={(e) => {
+                          clearFieldError('finalBillingSchedule');
+                          setFinalRow((r) => ({ ...r, billing_schedule_date: e.target.value }));
+                        }}
+                        className={leadCoreInputClassName}
                         disabled={busy}
                       />
+                      <LeadCoreFieldError message={errors.finalBillingSchedule} />
                     </div>
                     <div className="sm:col-span-2">
                       <label className={labelClassName}>Deskripsi (opsional)</label>
                       <input
                         value={finalRow.description}
                         onChange={(e) => setFinalRow((r) => ({ ...r, description: e.target.value }))}
-                        className={inputClassName}
+                        className={leadCoreInputClassName}
                         disabled={busy}
+                        placeholder="Keterangan (opsional)"
                       />
                     </div>
                   </div>
@@ -630,52 +629,59 @@ export const EngagementLetterFormDialog = ({
             ) : (
               <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="sm:col-span-2">
-                  <label className={labelClassName}>Contract start</label>
+                  <LeadCoreFieldLabel required>Contract start</LeadCoreFieldLabel>
                   <input
                     type="date"
                     value={retainerState.contract_start_date}
-                    onChange={(e) => setRetainerState((r) => ({ ...r, contract_start_date: e.target.value }))}
-                    className={inputClassName}
+                    onChange={(e) => {
+                      clearFieldError('retainerContractStart');
+                      setRetainerState((r) => ({ ...r, contract_start_date: e.target.value }));
+                    }}
+                    className={leadCoreInputClassName}
                     disabled={busy}
                     title="Tanggal mulai kontrak retainer"
                   />
+                  <LeadCoreFieldError message={errors.retainerContractStart} />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className={labelClassName}>Contract end</label>
+                  <LeadCoreFieldLabel required>Contract end</LeadCoreFieldLabel>
                   <input
                     type="date"
                     value={retainerState.contract_end_date}
-                    onChange={(e) => setRetainerState((r) => ({ ...r, contract_end_date: e.target.value }))}
-                    className={inputClassName}
+                    onChange={(e) => {
+                      clearFieldError('retainerContractEnd');
+                      setRetainerState((r) => ({ ...r, contract_end_date: e.target.value }));
+                    }}
+                    className={leadCoreInputClassName}
                     disabled={busy}
                     title="Tanggal berakhir kontrak retainer"
                   />
+                  <LeadCoreFieldError message={errors.retainerContractEnd} />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className={labelClassName}>Billing timing</label>
+                  <LeadCoreFieldLabel required>Billing timing</LeadCoreFieldLabel>
                   <select
                     value={retainerState.billing_timing}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      clearFieldError('retainerBillingTiming');
                       setRetainerState((r) => ({
                         ...r,
                         billing_timing: e.target.value as 'BEGINNING_OF_MONTH' | 'END_OF_MONTH'
-                      }))
-                    }
-                    className={inputClassName}
+                      }));
+                    }}
+                    className={leadCoreInputClassName}
                     disabled={busy}
                   >
                     <option value="BEGINNING_OF_MONTH">Awal bulan</option>
                     <option value="END_OF_MONTH">Akhir bulan</option>
                   </select>
+                  <LeadCoreFieldError message={errors.retainerBillingTiming} />
                 </div>
               </div>
             )}
 
             <div className="mt-5">
-              <label className={labelClassName}>
-                Upload engagement letter document (PDF)
-                {mode === 'create' ? <span className="text-red-600"> *</span> : null}
-              </label>
+              <LeadCoreFieldLabel required={mode === 'create'}>Upload engagement letter document (PDF)</LeadCoreFieldLabel>
               <div className="mt-2">
                 <EngagementLetterDocumentField
                   pendingFile={file}
@@ -683,10 +689,14 @@ export const EngagementLetterFormDialog = ({
                     mode === 'edit' ? (initialEngagement?.document?.uploadedFileName ?? null) : null
                   }
                   disabled={busy}
-                  onSelectFile={setFile}
+                  onSelectFile={(nextFile) => {
+                    clearFieldError('engagementDocument');
+                    setFile(nextFile);
+                  }}
                   onClearPending={() => setFile(null)}
                 />
               </div>
+              <LeadCoreFieldError message={errors.engagementDocument} />
             </div>
           </SidePanelDialogBody>
 

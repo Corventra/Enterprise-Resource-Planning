@@ -26,6 +26,7 @@ type ApiCampaignRow = {
   topic_code: string;
   created_by: number;
   created_by_name: string;
+  total_submissions?: number;
 };
 
 export const mapApiRowToCampaign = (row: ApiCampaignRow): Campaign => {
@@ -47,7 +48,7 @@ export const mapApiRowToCampaign = (row: ApiCampaignRow): Campaign => {
     endDate: normalizeDateOnlyString(row.end_date),
     notes: row.notes,
     imagePath: row.image_path,
-    totalSubmissions: 0,
+    totalSubmissions: Number(row.total_submissions ?? 0),
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };

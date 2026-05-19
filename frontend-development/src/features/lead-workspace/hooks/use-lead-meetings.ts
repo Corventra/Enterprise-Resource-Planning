@@ -12,7 +12,7 @@ export const useLeadMeetings = (leadId?: string) => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const fetchMeetings = useCallback(async () => {
+  const fetchMeetings = useCallback(async (options?: { silent?: boolean }) => {
     if (!leadId) {
       setMeetings([]);
       setLoadError(null);
@@ -20,7 +20,9 @@ export const useLeadMeetings = (leadId?: string) => {
       return;
     }
 
-    setIsLoading(true);
+    if (!options?.silent) {
+      setIsLoading(true);
+    }
     setLoadError(null);
     try {
       const items = await leadMeetingsService.list(leadId);
@@ -29,7 +31,9 @@ export const useLeadMeetings = (leadId?: string) => {
       setMeetings([]);
       setLoadError(e instanceof Error ? e.message : 'Gagal memuat daftar meeting.');
     } finally {
-      setIsLoading(false);
+      if (!options?.silent) {
+        setIsLoading(false);
+      }
     }
   }, [leadId]);
 
@@ -42,7 +46,7 @@ export const useLeadMeetings = (leadId?: string) => {
       throw new Error('Lead ID tidak tersedia.');
     }
     const meeting = await leadMeetingsService.schedule(leadId, payload);
-    await fetchMeetings();
+    await fetchMeetings({ silent: true });
     return meeting;
   };
 
@@ -51,7 +55,16 @@ export const useLeadMeetings = (leadId?: string) => {
       throw new Error('Lead ID tidak tersedia.');
     }
     const meeting = await leadMeetingsService.complete(leadId, meetingId);
-    await fetchMeetings();
+    await fetchMeetings({ silent: true });
+    return meeting;
+  };
+
+  const cancelMeeting = async (meetingId: string) => {
+    if (!leadId) {
+      throw new Error('Lead ID tidak tersedia.');
+    }
+    const meeting = await leadMeetingsService.cancel(leadId, meetingId);
+    await fetchMeetings({ silent: true });
     return meeting;
   };
 
@@ -60,7 +73,7 @@ export const useLeadMeetings = (leadId?: string) => {
       throw new Error('Lead ID tidak tersedia.');
     }
     const meeting = await leadMeetingsService.update(leadId, meetingId, payload);
-    await fetchMeetings();
+    await fetchMeetings({ silent: true });
     return meeting;
   };
 
@@ -71,6 +84,7 @@ export const useLeadMeetings = (leadId?: string) => {
     refetch: fetchMeetings,
     scheduleMeeting,
     completeMeeting,
+    cancelMeeting,
     updateMeeting
   };
 };
@@ -80,7 +94,7 @@ export const useLeadMeetingMinutes = (leadId?: string, meetingId?: string | null
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const fetchMinutes = useCallback(async () => {
+  const fetchMinutes = useCallback(async (options?: { silent?: boolean }) => {
     if (!leadId || !meetingId) {
       setDetail(null);
       setLoadError(null);
@@ -88,7 +102,9 @@ export const useLeadMeetingMinutes = (leadId?: string, meetingId?: string | null
       return;
     }
 
-    setIsLoading(true);
+    if (!options?.silent) {
+      setIsLoading(true);
+    }
     setLoadError(null);
     try {
       const entry = await leadMeetingsService.getMinutes(leadId, meetingId);
@@ -97,7 +113,9 @@ export const useLeadMeetingMinutes = (leadId?: string, meetingId?: string | null
       setDetail(null);
       setLoadError(e instanceof Error ? e.message : 'Gagal memuat notulensi meeting.');
     } finally {
-      setIsLoading(false);
+      if (!options?.silent) {
+        setIsLoading(false);
+      }
     }
   }, [leadId, meetingId]);
 

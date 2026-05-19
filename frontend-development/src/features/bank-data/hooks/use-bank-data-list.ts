@@ -7,8 +7,10 @@ export const useBankDataList = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const fetchEntries = useCallback(async () => {
-    setIsLoading(true);
+  const fetchEntries = useCallback(async (options?: { silent?: boolean }) => {
+    if (!options?.silent) {
+      setIsLoading(true);
+    }
     setLoadError(null);
     try {
       const data = await bankDataService.getAll();
@@ -17,7 +19,9 @@ export const useBankDataList = () => {
       setEntries([]);
       setLoadError(e instanceof Error ? e.message : 'Gagal memuat Bank Data.');
     } finally {
-      setIsLoading(false);
+      if (!options?.silent) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
@@ -27,12 +31,12 @@ export const useBankDataList = () => {
 
   const processEntry = async (entryId: string) => {
     await bankDataService.process(entryId);
-    await fetchEntries();
+    await fetchEntries({ silent: true });
   };
 
   const archiveEntry = async (entryId: string) => {
     await bankDataService.archive(entryId);
-    await fetchEntries();
+    await fetchEntries({ silent: true });
   };
 
   const summary = useMemo(() => {
@@ -54,7 +58,7 @@ export const useBankDataList = () => {
     isLoading,
     loadError,
     summary,
-    refetch: fetchEntries,
+    refetch: () => fetchEntries({ silent: true }),
     processEntry,
     archiveEntry
   };

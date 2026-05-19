@@ -31,7 +31,8 @@ const mapCampaignRow = (row) => ({
   topic_name: row.topic_name,
   topic_code: row.topic_code,
   created_by: row.created_by,
-  created_by_name: row.created_by_name
+  created_by_name: row.created_by_name,
+  total_submissions: Number(row.total_submissions ?? 0)
 });
 
 const listActiveTypes = async () => {
@@ -73,7 +74,13 @@ const baseSelect = `
     t.name AS topic_name,
     t.code AS topic_code,
     c.created_by,
-    u.name AS created_by_name
+    u.name AS created_by_name,
+    (
+      SELECT COUNT(*)
+        FROM form_submissions fs
+        INNER JOIN forms f ON f.form_id = fs.form_id
+       WHERE f.campaign_id = c.campaign_id
+    ) AS total_submissions
   FROM campaigns c
   INNER JOIN campaign_types ct ON ct.campaign_type_id = c.campaign_type_id
   INNER JOIN topics t ON t.topic_id = c.topic_id

@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
-import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router';
+import { useCallback, useEffect, useState } from 'react';
+import { Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { useAuth } from '../../../app/store/auth-store';
+import { Toast } from '../../../components/ui/toast';
 import { useCampaignPermissions } from '../hooks/use-campaign-permissions';
 import { CampaignDetailHeader } from '../components/detail/campaign-detail-header';
 import { CampaignDetailSpecifications } from '../components/detail/campaign-detail-specifications';
@@ -12,12 +13,16 @@ import { SubmissionsTab } from '../components/detail/submissions-tab';
 import { DeleteCampaignConfirmDialog } from '../components/modals/delete-campaign-confirm-dialog';
 import { EditCampaignModal } from '../components/modals/edit-campaign-modal';
 import { SubmissionDetailModal } from '../components/modals/submission-detail-modal';
+import type { FormBuilderNavigationState } from '../../forms/types/form-navigation-state';
+import { CAMPAIGN_TOAST, useCampaignActionToast } from '../hooks/use-campaign-action-toast';
 import { useCampaignDetail } from '../hooks/use-campaign-detail';
+import type { CampaignSubmitInput } from '../types/campaign.types';
 import { getCampaignTopics, getCampaignTypes } from '../services/campaigns-api';
 import type { CampaignLookupTopic, CampaignLookupType } from '../types/campaign.types';
 
 export const CampaignDetailPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { campaignId } = useParams();
   const { user } = useAuth();
   const { canViewCampaignArea, canManageCampaigns, canViewForms, canManageForms } = useCampaignPermissions();
@@ -79,8 +84,37 @@ export const CampaignDetailPage = () => {
   }, [searchParams, canViewForms, refetch, setSearchParams]);
   const [selectedFormIdForSubmissions, setSelectedFormIdForSubmissions] = useState<string | null>(null);
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<string | null>(null);
+  const { message: successToastMessage, dismiss: dismissSuccessToast, show: showSuccessToast } =
+    useCampaignActionToast();
+
   const [showEditCampaign, setShowEditCampaign] = useState(false);
   const [showArchiveCampaign, setShowArchiveCampaign] = useState(false);
+
+  useEffect(() => {
+    const pendingToast = (location.state as FormBuilderNavigationState | null)?.formActionToast;
+    if (!pendingToast) return;
+    showSuccessToast(pendingToast);
+    navigate({ pathname: location.pathname, search: location.search }, { replace: true, state: null });
+  }, [location.pathname, location.search, location.state, navigate, showSuccessToast]);
+
+  const handleUpdateCampaignSuccess = useCallback(
+    async (_campaignId: string, input: CampaignSubmitInput) => {
+      await updateCampaign(input);
+      setShowEditCampaign(false);
+      showSuccessToast(CAMPAIGN_TOAST.updated);
+    },
+    [updateCampaign, showSuccessToast]
+  );
+
+  const handleArchiveCampaignConfirm = useCallback(
+    async (_campaignId: string) => {
+      void _campaignId;
+      await archiveCampaign();
+      setShowArchiveCampaign(false);
+      showSuccessToast(CAMPAIGN_TOAST.archived);
+    },
+    [archiveCampaign, showSuccessToast]
+  );
 
   useEffect(() => {
     if (!canViewForms && activeTab === 'forms') {
@@ -146,7 +180,6 @@ export const CampaignDetailPage = () => {
           <CampaignDetailSummaryCards
             formsCount={forms.length}
             submissionsCount={submissionsCount}
-            qualifiedSubmissions={0}
           />
         </div>
         <div className="flex min-h-0 lg:col-span-4">
@@ -202,20 +235,20 @@ export const CampaignDetailPage = () => {
         typeOptions={lookups.types}
         topicOptions={lookups.topics}
         onClose={() => setShowEditCampaign(false)}
-        onSuccess={async (_id, input) => {
-          await updateCampaign(input);
-          setShowEditCampaign(false);
-        }}
+        onSuccess={handleUpdateCampaignSuccess}
       />
 
       <DeleteCampaignConfirmDialog
         open={showArchiveCampaign}
         campaign={campaign}
         onClose={() => setShowArchiveCampaign(false)}
-        onConfirm={async (id) => {
-          void id;
-          await archiveCampaign();
-        }}
+        onConfirm={handleArchiveCampaignConfirm}
+      />
+
+      <Toast
+        open={successToastMessage != null}
+        message={successToastMessage ?? ''}
+        onClose={dismissSuccessToast}
       />
 
       <SubmissionDetailModal

@@ -1,6 +1,7 @@
 import {
   getLeadMeetingMinutes,
   getLeadMeetings,
+  patchCancelLeadMeeting,
   patchCompleteLeadMeeting,
   patchLeadMeeting,
   patchLeadMeetingMinutes,
@@ -33,6 +34,11 @@ export const leadMeetingsService = {
 
   async complete(leadId: string, meetingId: string): Promise<LeadWorkspaceMeetingListItem> {
     const row = await patchCompleteLeadMeeting(leadId, meetingId);
+    return mapLeadMeetingRow(row);
+  },
+
+  async cancel(leadId: string, meetingId: string): Promise<LeadWorkspaceMeetingListItem> {
+    const row = await patchCancelLeadMeeting(leadId, meetingId);
     return mapLeadMeetingRow(row);
   },
 

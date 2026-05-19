@@ -6,8 +6,18 @@ import {
   SidePanelDialogHeader
 } from '../../../../components/ui/side-panel-dialog';
 import { ApiError } from '../../../../services/api-client';
+import {
+  LeadCoreFieldError,
+  LeadCoreFieldLabel,
+  leadCoreInputClassName
+} from '../../../lead-tracker/components/forms/lead-core-form-field';
 import { useProposalMasters } from '../../hooks/use-proposal-masters';
 import { formatRupiahInput, parseRupiahInput } from '../../utils/rupiah-input';
+import {
+  hasProposalFormErrors,
+  validateProposalForm,
+  type ProposalFormErrors
+} from '../../utils/proposal-form-validation';
 import { ProposalDocumentField } from './proposal-document-field';
 import type {
   LeadWorkspaceProposalView,
@@ -27,11 +37,6 @@ interface CreateEditProposalDialogProps {
   onSaveDraft: (payload: SaveProposalDraftPayload) => Promise<void> | void;
   onSubmitProposal: (payload: SaveProposalDraftPayload) => Promise<void> | void;
 }
-
-const inputClassName =
-  'h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none';
-const labelClassName = 'mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500';
-const requiredMark = <span className="text-red-600">*</span>;
 
 type ProposalFormDraft = Omit<SaveProposalDraftPayload, 'issuerCompany'> & {
   issuerCompany: ProposalIssuerCompany | '';
@@ -63,6 +68,7 @@ export const CreateEditProposalDialog = ({
   const { serviceClasses, services, isLoading, loadError } = useProposalMasters();
   const [draft, setDraft] = useState<ProposalFormDraft>(emptyDraft());
   const [selectedServiceClassId, setSelectedServiceClassId] = useState('');
+  const [errors, setErrors] = useState<ProposalFormErrors>({});
   const [localError, setLocalError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -86,6 +92,7 @@ export const CreateEditProposalDialog = ({
       setDraft(emptyDraft());
       setSelectedServiceClassId('');
     }
+    setErrors({});
     setLocalError(null);
   }, [open, mode, initialProposal]);
 
@@ -104,54 +111,29 @@ export const CreateEditProposalDialog = ({
     onClose();
   };
 
+  const clearFieldError = (key: keyof ProposalFormErrors) => {
+    setErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  };
+
   const buildPayload = (): SaveProposalDraftPayload | null => {
-    if (!selectedServiceClassId) {
-      setLocalError('Service Class wajib dipilih.');
+    const validationErrors = validateProposalForm(draft, selectedServiceClassId, {
+      hasExistingDocument: mode === 'edit' && Boolean(initialProposal?.document)
+    });
+
+    if (hasProposalFormErrors(validationErrors)) {
+      setErrors(validationErrors);
       return null;
     }
 
-    if (!draft.serviceId) {
-      setLocalError('Service wajib dipilih.');
-      return null;
-    }
-
-    if (!draft.issuerCompany) {
-      setLocalError('Issuer Company wajib dipilih.');
-      return null;
-    }
-
-    if (draft.proposalFee <= 0) {
-      setLocalError('Proposal Fee wajib diisi dan harus lebih besar dari 0.');
-      return null;
-    }
-
-    if (draft.discountAmount < 0 || draft.discountAmount > draft.proposalFee) {
-      setLocalError('Discount tidak valid.');
-      return null;
-    }
-
-    if (draft.isSubContract) {
-      if (!draft.partnerName?.trim()) {
-        setLocalError('Partner Name wajib diisi untuk sub contract.');
-        return null;
-      }
-      if (!draft.payerParty) {
-        setLocalError('Payer Party wajib dipilih untuk sub contract.');
-        return null;
-      }
-    }
-
-    const hasProposalDocument =
-      Boolean(draft.proposalDocument) || (mode === 'edit' && Boolean(initialProposal?.document));
-
-    if (!hasProposalDocument) {
-      setLocalError('Dokumen proposal wajib diunggah.');
-      return null;
-    }
-
+    setErrors({});
     return {
       serviceId: draft.serviceId,
-      issuerCompany: draft.issuerCompany,
+      issuerCompany: draft.issuerCompany as ProposalIssuerCompany,
       isSubContract: draft.isSubContract,
       partnerName: draft.isSubContract ? draft.partnerName?.trim() : undefined,
       payerParty: draft.isSubContract ? draft.payerParty : undefined,
@@ -200,26 +182,23 @@ export const CreateEditProposalDialog = ({
           {loadError ? (
             <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{loadError}</p>
           ) : null}
-          {localError ? (
-            <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{localError}</p>
-          ) : null}
+          {localError ? <p className="mb-3 text-sm text-red-600">{localError}</p> : null}
 
           <div className="space-y-4">
             <div>
-              <label className={labelClassName} htmlFor="proposal-service-class">
-                Service Class {requiredMark}
-              </label>
+              <LeadCoreFieldLabel required>Service Class</LeadCoreFieldLabel>
               <select
                 id="proposal-service-class"
-                required
                 value={selectedServiceClassId}
                 disabled={isLoading || busy}
                 onChange={(event) => {
                   const nextServiceClassId = event.target.value;
                   setSelectedServiceClassId(nextServiceClassId);
+                  clearFieldError('serviceClassId');
+                  clearFieldError('serviceId');
                   setDraft((prev) => ({ ...prev, serviceId: '' }));
                 }}
-                className={inputClassName}
+                className={leadCoreInputClassName}
               >
                 <option value="">Pilih service class</option>
                 {serviceClasses.map((serviceClass) => (
@@ -229,19 +208,20 @@ export const CreateEditProposalDialog = ({
                   </option>
                 ))}
               </select>
+              <LeadCoreFieldError message={errors.serviceClassId} />
             </div>
 
             <div>
-              <label className={labelClassName} htmlFor="proposal-service">
-                Service {requiredMark}
-              </label>
+              <LeadCoreFieldLabel required>Service</LeadCoreFieldLabel>
               <select
                 id="proposal-service"
-                required
                 value={draft.serviceId}
                 disabled={isLoading || busy || !selectedServiceClassId}
-                onChange={(event) => setDraft((prev) => ({ ...prev, serviceId: event.target.value }))}
-                className={inputClassName}
+                onChange={(event) => {
+                  clearFieldError('serviceId');
+                  setDraft((prev) => ({ ...prev, serviceId: event.target.value }));
+                }}
+                className={leadCoreInputClassName}
               >
                 <option value="">Pilih service</option>
                 {filteredServices.map((service) => (
@@ -251,10 +231,11 @@ export const CreateEditProposalDialog = ({
                   </option>
                 ))}
               </select>
+              <LeadCoreFieldError message={errors.serviceId} />
             </div>
 
             <fieldset>
-              <legend className={labelClassName}>Issuer Company {requiredMark}</legend>
+              <LeadCoreFieldLabel required>Issuer Company</LeadCoreFieldLabel>
               <div className="mt-2 flex flex-wrap gap-6" role="radiogroup" aria-label="Issuer Company">
                 {issuerCompanyOptions.map((option) => (
                   <label key={option} className="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
@@ -264,13 +245,17 @@ export const CreateEditProposalDialog = ({
                       value={option}
                       checked={draft.issuerCompany === option}
                       disabled={busy}
-                      onChange={() => setDraft((prev) => ({ ...prev, issuerCompany: option }))}
+                      onChange={() => {
+                        clearFieldError('issuerCompany');
+                        setDraft((prev) => ({ ...prev, issuerCompany: option }));
+                      }}
                       className="h-4 w-4 border-slate-300 text-[#003c90] focus:ring-[#003c90] disabled:cursor-not-allowed disabled:opacity-60"
                     />
                     {option}
                   </label>
                 ))}
               </div>
+              <LeadCoreFieldError message={errors.issuerCompany} />
             </fieldset>
 
             <label className="flex items-center gap-2 text-sm text-slate-700">
@@ -280,6 +265,10 @@ export const CreateEditProposalDialog = ({
                 disabled={busy}
                 onChange={(event) => {
                   const checked = event.target.checked;
+                  if (!checked) {
+                    clearFieldError('partnerName');
+                    clearFieldError('payerParty');
+                  }
                   setDraft((prev) => ({
                     ...prev,
                     isSubContract: checked,
@@ -294,65 +283,67 @@ export const CreateEditProposalDialog = ({
             {draft.isSubContract ? (
               <>
                 <div>
-                  <label className={labelClassName}>Partner Name {requiredMark}</label>
+                  <LeadCoreFieldLabel required>Partner Name</LeadCoreFieldLabel>
                   <input
-                    required
                     value={draft.partnerName ?? ''}
                     disabled={busy}
-                    onChange={(event) => setDraft((prev) => ({ ...prev, partnerName: event.target.value }))}
+                    onChange={(event) => {
+                      clearFieldError('partnerName');
+                      setDraft((prev) => ({ ...prev, partnerName: event.target.value }));
+                    }}
                     placeholder="contoh: Klik Indonesia"
-                    className={inputClassName}
+                    className={leadCoreInputClassName}
                   />
+                  <LeadCoreFieldError message={errors.partnerName} />
                 </div>
                 <div>
-                  <label className={labelClassName} htmlFor="proposal-payer-party">
-                    Payer Party {requiredMark}
-                  </label>
+                  <LeadCoreFieldLabel required>Payer Party</LeadCoreFieldLabel>
                   <select
                     id="proposal-payer-party"
-                    required
                     value={draft.payerParty ?? ''}
                     disabled={busy}
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      clearFieldError('payerParty');
                       setDraft((prev) => ({
                         ...prev,
                         payerParty: event.target.value ? (event.target.value as ProposalPayerParty) : undefined
-                      }))
-                    }
-                    className={inputClassName}
+                      }));
+                    }}
+                    className={leadCoreInputClassName}
                   >
                     <option value="">Pilih payer party</option>
                     <option value="PARTNER">Partner</option>
                     <option value="CLIENT">Client</option>
                   </select>
+                  <LeadCoreFieldError message={errors.payerParty} />
                 </div>
               </>
             ) : null}
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className={labelClassName} htmlFor="proposal-fee">
-                  Proposal Fee (Rp) {requiredMark}
-                </label>
+                <LeadCoreFieldLabel required>Proposal Fee (Rp)</LeadCoreFieldLabel>
                 <div className="relative">
                   <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">Rp</span>
                   <input
                     id="proposal-fee"
-                    required
                     type="text"
                     inputMode="numeric"
                     value={formatRupiahInput(draft.proposalFee)}
                     disabled={busy}
-                    onChange={(event) =>
-                      setDraft((prev) => ({ ...prev, proposalFee: parseRupiahInput(event.target.value) }))
-                    }
+                    onChange={(event) => {
+                      clearFieldError('proposalFee');
+                      clearFieldError('discountAmount');
+                      setDraft((prev) => ({ ...prev, proposalFee: parseRupiahInput(event.target.value) }));
+                    }}
                     placeholder="contoh: 50.000.000"
-                    className={`${inputClassName} pl-10`}
+                    className={`${leadCoreInputClassName} pl-10`}
                   />
                 </div>
+                <LeadCoreFieldError message={errors.proposalFee} />
               </div>
               <div>
-                <label className={labelClassName}>Discount Amount (Rp)</label>
+                <LeadCoreFieldLabel>Discount Amount (Rp)</LeadCoreFieldLabel>
                 <div className="relative">
                   <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">Rp</span>
                   <input
@@ -360,27 +351,31 @@ export const CreateEditProposalDialog = ({
                     inputMode="numeric"
                     value={formatRupiahInput(draft.discountAmount)}
                     disabled={busy}
-                    onChange={(event) =>
-                      setDraft((prev) => ({ ...prev, discountAmount: parseRupiahInput(event.target.value) }))
-                    }
+                    onChange={(event) => {
+                      clearFieldError('discountAmount');
+                      setDraft((prev) => ({ ...prev, discountAmount: parseRupiahInput(event.target.value) }));
+                    }}
                     placeholder="contoh: 0"
-                    className={`${inputClassName} pl-10`}
+                    className={`${leadCoreInputClassName} pl-10`}
                   />
                 </div>
+                <LeadCoreFieldError message={errors.discountAmount} />
               </div>
             </div>
 
             <div>
-              <label className={labelClassName}>
-                Upload Proposal Document {requiredMark}
-              </label>
+              <LeadCoreFieldLabel required>Upload Proposal Document</LeadCoreFieldLabel>
               <ProposalDocumentField
                 pendingFile={draft.proposalDocument ?? null}
                 existingDocumentName={mode === 'edit' ? initialProposal?.document?.documentName : null}
                 disabled={busy}
-                onSelectFile={(file) => setDraft((prev) => ({ ...prev, proposalDocument: file }))}
+                onSelectFile={(file) => {
+                  clearFieldError('proposalDocument');
+                  setDraft((prev) => ({ ...prev, proposalDocument: file }));
+                }}
                 onClearPending={() => setDraft((prev) => ({ ...prev, proposalDocument: null }))}
               />
+              <LeadCoreFieldError message={errors.proposalDocument} />
             </div>
           </div>
         </SidePanelDialogBody>

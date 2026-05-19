@@ -2,6 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { PERMISSIONS } from '../../../app/permissions';
 import { useAuth } from '../../../app/store/auth-store';
+import { Toast } from '../../../components/ui/toast';
+import { FORM_TOAST } from '../constants/form-toast';
+import type { FormBuilderMetadataErrors } from '../types/form-builder.types';
+import { firstFormBuilderMetadataError } from '../utils/form-builder-validation';
+import { useToast } from '../../../hooks/use-toast';
 import { getCampaignById } from '../../campaigns/services/campaigns-api';
 import { FormBuilderCanvas } from '../components/builder/form-builder-canvas';
 import { FormBuilderSettingsPanel } from '../components/builder/form-builder-settings-panel';
@@ -23,7 +28,7 @@ export const FormBuilderPage = () => {
   const [resolvedCampaignId, setResolvedCampaignId] = useState<string>(campaignIdParam ?? '');
   const [resolvedCampaignName, setResolvedCampaignName] = useState<string | undefined>(undefined);
   const [bannerError, setBannerError] = useState<string | null>(null);
-  const [bannerSuccess, setBannerSuccess] = useState<string | null>(null);
+  const { message: toastMessage, variant: toastVariant, dismiss: dismissToast, show: showToast } = useToast();
 
   const { can } = useAuth();
   const canViewForms = can(PERMISSIONS.FORM_VIEW) || can(PERMISSIONS.FORM_MANAGE);
@@ -104,8 +109,15 @@ export const FormBuilderPage = () => {
 
   const onError = useCallback((message: string) => {
     setBannerError(message);
-    setBannerSuccess(null);
   }, []);
+
+  const onValidationError = useCallback(
+    (errors: FormBuilderMetadataErrors) => {
+      const message = firstFormBuilderMetadataError(errors);
+      if (message) showToast(message, { variant: 'error' });
+    },
+    [showToast]
+  );
 
   const initialFormId = isCreateMode ? undefined : pathFormId;
 
@@ -131,14 +143,16 @@ export const FormBuilderPage = () => {
     applyFieldSettings,
     addOption,
     updateOptionRow,
-    removeOption
+    removeOption,
+    metadataErrors
   } = useFormBuilder({
     campaignId: resolvedCampaignId,
     campaignName: campaignNameDisplay,
     initialFormId,
     isCreateMode,
     canManageBuilder,
-    onError
+    onError,
+    onValidationError
   });
 
   const readOnly = !canManageBuilder;
@@ -174,12 +188,6 @@ export const FormBuilderPage = () => {
   const canManagePhaseB = canManageBuilder && (!form?.id || form.backendStatus === 'DRAFT');
 
   const publishButtonLabel = formPersisted ? 'Publish' : 'Save & Publish';
-
-  useEffect(() => {
-    if (!bannerSuccess) return;
-    const t = window.setTimeout(() => setBannerSuccess(null), 4000);
-    return () => window.clearTimeout(t);
-  }, [bannerSuccess]);
 
   if (!canViewForms) {
     return <Navigate to="/dashboard" replace />;
@@ -219,12 +227,6 @@ export const FormBuilderPage = () => {
           </button>
         </div>
       ) : null}
-      {bannerSuccess ? (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-900">
-          {bannerSuccess}
-        </div>
-      ) : null}
-
       <FormBuilderTopBar
         title={form.title}
         campaignName={form.campaignName ?? campaignNameDisplay}
@@ -242,12 +244,12 @@ export const FormBuilderPage = () => {
         }}
         onSaveDraft={() =>
           void saveDraft().then((ok) => {
-            if (ok) setBannerSuccess('Draft disimpan.');
+            if (ok) showToast(FORM_TOAST.draftSaved);
           })
         }
         onPublish={() =>
           void saveAndPublish().then((ok) => {
-            if (ok) setBannerSuccess('Form berhasil dipublish.');
+            if (ok) showToast(FORM_TOAST.published);
           })
         }
       />
@@ -256,6 +258,7 @@ export const FormBuilderPage = () => {
         <div className="space-y-4">
           <FormBuilderCanvas
             form={form}
+            metadataErrors={metadataErrors}
             readOnly={readOnly}
             canvasLocked={builderContentLocked}
             isCreateMode={isCreateMode}
@@ -288,6 +291,13 @@ export const FormBuilderPage = () => {
           onRemoveOption={(fieldId, optionId) => void removeOption(fieldId, optionId)}
         />
       </div>
+
+      <Toast
+        open={toastMessage != null}
+        message={toastMessage ?? ''}
+        variant={toastVariant}
+        onClose={dismissToast}
+      />
     </div>
   );
 };

@@ -22,8 +22,9 @@ interface EngagementLetterDetailSectionProps {
   onCreateEngagementLetter?: () => void;
   canCreateEngagementLetter?: boolean;
   mutationBusy?: boolean;
+  deleteBusy?: boolean;
   onEditDraft?: () => void;
-  onDeleteDraft?: () => void | Promise<void>;
+  onDeleteDraft?: () => void;
   /** Operator lead + APPROVED: buka modal tandai terkirim */
   onOpenSentToClient?: () => void;
   /** Operator lead + SENT: buka modal tandai signed */
@@ -51,6 +52,7 @@ export const EngagementLetterDetailSection = ({
   onCreateEngagementLetter,
   canCreateEngagementLetter = false,
   mutationBusy = false,
+  deleteBusy = false,
   onEditDraft,
   onDeleteDraft,
   onOpenSentToClient,
@@ -106,6 +108,11 @@ export const EngagementLetterDetailSection = ({
         ? engagementLetter.document.filePath
         : null;
 
+  const isDraft = engagementLetter.engagementStatus === 'DRAFT';
+  const isNeedRevision = engagementLetter.engagementStatus === 'NEED_REVISION';
+  const showManageActions = canManageLeadWorkspace && (isDraft || isNeedRevision);
+  const editLabel = isNeedRevision ? 'Edit & kirim ulang' : 'Edit Engagement Letter';
+
   const proposalStatus = ps.proposalStatus;
   const proposalBadge =
     proposalStatus && proposalStatusLabelForEl[proposalStatus] ? (
@@ -121,30 +128,8 @@ export const EngagementLetterDetailSection = ({
       <h2 className="text-xl font-bold tracking-tight text-[#191c1e]">Engagement detail</h2>
 
       <div className="flex max-h-[min(70vh,720px)] flex-1 flex-col overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-[#eceef0]">
-        {(engagementLetter.engagementStatus === 'DRAFT' || engagementLetter.engagementStatus === 'NEED_REVISION') &&
-        canManageLeadWorkspace ? (
-          <div className="flex flex-wrap items-center gap-2 border-b border-[#eceef0] bg-[#fafbfc] px-4 py-3">
-            <button
-              type="button"
-              disabled={mutationBusy}
-              onClick={onEditDraft}
-              className="rounded-lg border border-[#c3c6d5] bg-white px-3 py-1.5 text-xs font-bold text-[#003c90] hover:bg-[#f2f4f6] disabled:opacity-50"
-            >
-              {engagementLetter.engagementStatus === 'NEED_REVISION' ? 'Edit & kirim ulang' : 'Edit Engagement Letter'}
-            </button>
-            {engagementLetter.engagementStatus === 'DRAFT' ? (
-              <button
-                type="button"
-                disabled={mutationBusy}
-                onClick={() => void onDeleteDraft?.()}
-                className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-bold text-red-800 hover:bg-red-50 disabled:opacity-50"
-              >
-                Delete Draft
-              </button>
-            ) : null}
-          </div>
-        ) : null}
-        <div className="flex-1 space-y-0 overflow-y-auto">
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex-1 space-y-0 overflow-y-auto">
           {/* 1. Header summary */}
           <section className="border-b border-[#eceef0] p-5">
             <div className="mb-3 flex items-start justify-between gap-3">
@@ -195,7 +180,13 @@ export const EngagementLetterDetailSection = ({
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <p className="text-[10px] font-bold uppercase text-[#737784]">Proposal code</p>
-                <p className="mt-0.5 font-mono text-sm font-semibold text-[#191c1e]">{dash(ps.proposalCode)}</p>
+                <p className="mt-0.5 font-mono text-sm font-semibold text-[#191c1e]">
+                  {ps.proposalCode?.trim()
+                    ? ps.proposalCode
+                    : ps.proposalId
+                      ? `— (legacy #${ps.proposalId})`
+                      : '-'}
+                </p>
               </div>
               <div>
                 <p className="text-[10px] font-bold uppercase text-[#737784]">Service class</p>
@@ -368,16 +359,41 @@ export const EngagementLetterDetailSection = ({
               </p>
             </section>
           ) : null}
-        </div>
+          </div>
 
-        {engagementLetter.engagementStatus === 'APPROVED' && canManageLeadWorkspace && onOpenSentToClient ? (
-          <div className="border-t border-[#eceef0] bg-[#fafbfc] px-4 py-3">
+          {showManageActions ? (
+            <div className="border-t border-[#eceef0] px-5 py-4">
+              <div className="flex flex-wrap justify-end gap-2">
+                {isDraft ? (
+                  <button
+                    type="button"
+                    onClick={onDeleteDraft}
+                    disabled={deleteBusy || mutationBusy}
+                    className="rounded-lg border border-red-200 px-4 py-2 text-xs font-bold text-red-700 hover:bg-red-50 disabled:opacity-60 sm:text-sm"
+                  >
+                    Delete Draft
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={onEditDraft}
+                  disabled={mutationBusy}
+                  className="rounded-lg bg-[#003c90] px-4 py-2 text-xs font-bold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-60 sm:text-sm"
+                >
+                  {editLabel}
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+            {engagementLetter.engagementStatus === 'APPROVED' && canManageLeadWorkspace && onOpenSentToClient ? (
+          <div className="border-t border-[#eceef0] px-5 py-4">
             <div className="flex flex-wrap items-center justify-end gap-2">
               <button
                 type="button"
                 disabled={mutationBusy}
                 onClick={onOpenSentToClient}
-                className="rounded-lg bg-[#003c90] px-4 py-2 text-xs font-bold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50 sm:text-sm"
+                className="rounded-lg bg-[#003c90] px-4 py-2 text-xs font-bold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-60 sm:text-sm"
               >
                 Sent to Client
               </button>
@@ -385,14 +401,14 @@ export const EngagementLetterDetailSection = ({
           </div>
         ) : null}
 
-        {engagementLetter.engagementStatus === 'SENT' && canManageLeadWorkspace && onOpenMarkSigned ? (
-          <div className="border-t border-[#eceef0] bg-[#fafbfc] px-4 py-3">
+          {engagementLetter.engagementStatus === 'SENT' && canManageLeadWorkspace && onOpenMarkSigned ? (
+          <div className="border-t border-[#eceef0] px-5 py-4">
             <div className="flex flex-wrap items-center justify-end gap-2">
               <button
                 type="button"
                 disabled={mutationBusy}
                 onClick={onOpenMarkSigned}
-                className="rounded-lg bg-[#006544] px-4 py-2 text-xs font-bold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-50 sm:text-sm"
+                className="rounded-lg bg-[#003c90] px-4 py-2 text-xs font-bold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-60 sm:text-sm"
               >
                 Mark as Signed
               </button>
@@ -400,8 +416,8 @@ export const EngagementLetterDetailSection = ({
           </div>
         ) : null}
 
-        {engagementLetter.engagementStatus === 'WAITING_CEO_APPROVAL' && canApproveEngagementLetter ? (
-          <div className="border-t border-[#eceef0] bg-[#fafbfc] p-4">
+          {engagementLetter.engagementStatus === 'WAITING_CEO_APPROVAL' && canApproveEngagementLetter ? (
+          <div className="border-t border-[#eceef0] px-5 py-4">
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-100 bg-amber-50/90 px-4 py-3">
               <p className="text-sm font-medium text-amber-950">Engagement letter menunggu persetujuan CEO.</p>
               <button
@@ -416,6 +432,7 @@ export const EngagementLetterDetailSection = ({
             </div>
           </div>
         ) : null}
+        </div>
       </div>
     </aside>
   );

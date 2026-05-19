@@ -5,6 +5,7 @@ const { getDetail, updateDetails } = require('../controllers/lead-workspace.cont
 const {
   listMeetings,
   createMeeting,
+  cancelMeeting,
   completeMeeting,
   updateMeeting,
   getMinutes,
@@ -53,6 +54,7 @@ router.post('/:leadId/proposal/:proposalId/responded', ...manageStack, markPropo
 
 router.get('/:leadId/meetings', ...viewStack, listMeetings);
 router.post('/:leadId/meetings', ...manageStack, createMeeting);
+router.patch('/:leadId/meetings/:meetingId/cancel', ...manageStack, cancelMeeting);
 router.patch('/:leadId/meetings/:meetingId/complete', ...manageStack, completeMeeting);
 router.patch('/:leadId/meetings/:meetingId', ...manageStack, updateMeeting);
 router.get('/:leadId/meetings/:meetingId/minutes', ...viewStack, getMinutes);

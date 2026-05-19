@@ -9,9 +9,11 @@ import {
 
 interface LeadTrackerFiltersProps {
   filters: LeadTrackerFilters;
+  processedByFilterOptions: string[];
   onSearchChange: (value: string) => void;
   onStageChange: (value: LeadStage | 'All') => void;
   onStatusChange: (value: LeadPipelineStatus | 'All') => void;
+  onProcessedByChange: (value: string) => void;
   onReset: () => void;
 }
 
@@ -20,9 +22,11 @@ const selectClassName = `rounded-lg border-none bg-white py-2 pl-3 pr-8 text-xs 
 
 export const LeadTrackerFiltersSection = ({
   filters,
+  processedByFilterOptions,
   onSearchChange,
   onStageChange,
   onStatusChange,
+  onProcessedByChange,
   onReset
 }: LeadTrackerFiltersProps) => {
   return (
@@ -62,6 +66,19 @@ export const LeadTrackerFiltersSection = ({
           <option value="ACTIVE">{leadStatusLabelMap.ACTIVE}</option>
           <option value="LOST">{leadStatusLabelMap.LOST}</option>
           <option value="WON">{leadStatusLabelMap.WON}</option>
+        </select>
+
+        <select
+          value={filters.processedBy}
+          onChange={(event) => onProcessedByChange(event.target.value)}
+          className={selectClassName}
+          aria-label="Filter by processed by"
+        >
+          {processedByFilterOptions.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt === 'All' ? 'All processors' : opt}
+            </option>
+          ))}
         </select>
       </div>
 

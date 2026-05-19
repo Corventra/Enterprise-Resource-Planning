@@ -7,7 +7,7 @@ export const useLeadProposal = (leadId?: string) => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const fetchProposal = useCallback(async () => {
+  const fetchProposal = useCallback(async (options?: { silent?: boolean }) => {
     if (!leadId) {
       setProposal(null);
       setLoadError(null);
@@ -15,7 +15,9 @@ export const useLeadProposal = (leadId?: string) => {
       return;
     }
 
-    setIsLoading(true);
+    if (!options?.silent) {
+      setIsLoading(true);
+    }
     setLoadError(null);
     try {
       const nextProposal = await leadProposalsService.get(leadId);
@@ -24,7 +26,9 @@ export const useLeadProposal = (leadId?: string) => {
       setProposal(null);
       setLoadError(e instanceof Error ? e.message : 'Gagal memuat proposal.');
     } finally {
-      setIsLoading(false);
+      if (!options?.silent) {
+        setIsLoading(false);
+      }
     }
   }, [leadId]);
 

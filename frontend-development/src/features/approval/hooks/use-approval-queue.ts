@@ -8,15 +8,19 @@ export const useApprovalQueue = () => {
   const [items, setItems] = useState<ApprovalItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchItems = useCallback(async () => {
-    setIsLoading(true);
+  const fetchItems = useCallback(async (options?: { silent?: boolean }) => {
+    if (!options?.silent) {
+      setIsLoading(true);
+    }
     try {
       const data = await approvalService.getAll();
       setItems(data);
     } catch {
       setItems([]);
     } finally {
-      setIsLoading(false);
+      if (!options?.silent) {
+        setIsLoading(false);
+      }
     }
   }, []);
 

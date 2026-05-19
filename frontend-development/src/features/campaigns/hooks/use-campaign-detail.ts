@@ -17,13 +17,15 @@ export const useCampaignDetail = (campaignId?: string) => {
   });
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchDetail = useCallback(async () => {
+  const fetchDetail = useCallback(async (options?: { silent?: boolean }) => {
     if (!campaignId) {
       setIsLoading(false);
       return;
     }
 
-    setIsLoading(true);
+    if (!options?.silent) {
+      setIsLoading(true);
+    }
     try {
       const [campaign, forms, submissionsCount] = await Promise.all([
         campaignsService.getById(campaignId),
@@ -43,7 +45,9 @@ export const useCampaignDetail = (campaignId?: string) => {
         submissionsCount: 0
       });
     } finally {
-      setIsLoading(false);
+      if (!options?.silent) {
+        setIsLoading(false);
+      }
     }
   }, [campaignId]);
 
@@ -84,7 +88,7 @@ export const useCampaignDetail = (campaignId?: string) => {
   return {
     ...state,
     isLoading,
-    refetch: fetchDetail,
+    refetch: () => fetchDetail({ silent: true }),
     deleteForm,
     updateForm,
     updateCampaign,

@@ -1,22 +1,49 @@
 import { useMemo, useState } from 'react';
 import type { LeadTrackerFilters, LeadTrackerItem } from '../types/lead-tracker.types';
 
+const PROCESSED_BY_UNASSIGNED = 'Unassigned';
+
 const defaultFilters: LeadTrackerFilters = {
   search: '',
   stage: 'All',
-  status: 'All'
+  status: 'All',
+  processedBy: 'All'
 };
 
-/** WON leads always appear last; other rows keep API order among themselves. */
-const compareLeadTrackerRows = (a: LeadTrackerItem, b: LeadTrackerItem) => {
-  if (a.leadStatus === 'WON' && b.leadStatus !== 'WON') return 1;
-  if (b.leadStatus === 'WON' && a.leadStatus !== 'WON') return -1;
-  return 0;
+/** ACTIVE first, then WON, then LOST at the bottom; same-status rows keep API order. */
+const leadStatusSortRank = (status: LeadTrackerItem['leadStatus']) => {
+  switch (status) {
+    case 'ACTIVE':
+      return 0;
+    case 'WON':
+      return 1;
+    case 'LOST':
+      return 2;
+    default:
+      return 0;
+  }
 };
+
+const compareLeadTrackerRows = (a: LeadTrackerItem, b: LeadTrackerItem) =>
+  leadStatusSortRank(a.leadStatus) - leadStatusSortRank(b.leadStatus);
 
 export const useLeadTrackerFilters = (items: LeadTrackerItem[], pageSize = 6) => {
   const [filters, setFilters] = useState<LeadTrackerFilters>(defaultFilters);
   const [currentPage, setCurrentPage] = useState(1);
+
+  const processedByFilterOptions = useMemo(() => {
+    const names = new Set<string>();
+    let hasUnassigned = false;
+    for (const item of items) {
+      const name = item.processedBy?.trim();
+      if (name) names.add(name);
+      else hasUnassigned = true;
+    }
+    const sorted = Array.from(names).sort((a, b) => a.localeCompare(b, 'id'));
+    const options = ['All', ...sorted];
+    if (hasUnassigned) options.push(PROCESSED_BY_UNASSIGNED);
+    return options;
+  }, [items]);
 
   const filteredItems = useMemo(() => {
     const filtered = items.filter((item) => {
@@ -29,7 +56,12 @@ export const useLeadTrackerFilters = (items: LeadTrackerItem[], pageSize = 6) =>
         item.email.toLowerCase().includes(q);
       const matchStage = filters.stage === 'All' || item.currentStage === filters.stage;
       const matchStatus = filters.status === 'All' || item.leadStatus === filters.status;
-      return matchSearch && matchStage && matchStatus;
+      const matchProcessedBy =
+        filters.processedBy === 'All' ||
+        (filters.processedBy === PROCESSED_BY_UNASSIGNED && !item.processedBy?.trim()) ||
+        item.processedBy === filters.processedBy;
+
+      return matchSearch && matchStage && matchStatus && matchProcessedBy;
     });
     return [...filtered].sort(compareLeadTrackerRows);
   }, [items, filters]);
@@ -59,6 +91,7 @@ export const useLeadTrackerFilters = (items: LeadTrackerItem[], pageSize = 6) =>
     currentPage: normalizedPage,
     totalPages,
     pageSize,
+    processedByFilterOptions,
     setCurrentPage,
     updateFilter,
     resetFilters

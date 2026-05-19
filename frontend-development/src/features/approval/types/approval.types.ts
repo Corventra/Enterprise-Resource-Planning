@@ -78,5 +78,5 @@ export interface ApprovalOutletContext extends LeadWorkspaceOutletContext {
   isReadOnly: boolean;
   approve: (item: ApprovalItem, note?: string) => Promise<void>;
   requestRevision: (item: ApprovalItem, note?: string) => Promise<void>;
-  refreshQueue: () => Promise<void>;
+  refreshQueue: (options?: { silent?: boolean }) => Promise<void>;
 }
