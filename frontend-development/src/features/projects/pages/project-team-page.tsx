@@ -1,4 +1,4 @@
-import { UserPlus, UserSquare2, Users } from 'lucide-react';
+import { AlertTriangle, UserPlus, UserSquare2, Users } from 'lucide-react';
 import { useState } from 'react';
 import { useOutletContext } from 'react-router';
 import { ROLES } from '../../../app/permissions';
@@ -33,20 +33,30 @@ export const ProjectTeamPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
 
-  const isAssigningPm = role === ROLES.PM && user?.email === project.pm?.id;
+  // PM check pakai numeric user.id (backend mengembalikan pm.id sebagai string
+  // numeric, mis. "5"), bukan email — fix dari bug Phase 3.
+  const isAssigningPm =
+    role === ROLES.PM && user?.id != null && String(user.id) === project.pm?.id;
+  // Cross-module rule (PRD Integrasi Invoice ↔ Project, Rule A): block assign
+  // consultant selama DP belum dibayar. Backend juga enforce (409 DP_UNPAID).
+  const isDpPaid = project.dpPaymentStatus === 'PAID';
   const canAssignConsultant =
-    isAssigningPm && (project.status === 'Awaiting Consultant' || project.status === 'In Progress');
+    isAssigningPm &&
+    isDpPaid &&
+    (project.status === 'Awaiting Consultant' || project.status === 'In Progress');
 
   const handleAssign = async (consultants: ProjectConsultant[], note?: string) => {
     if (!user || !role) return;
     setIsSubmitting(true);
     setErrorMessage(undefined);
     try {
-      await projectService.assignConsultants(project.id, consultants, { name: user.name, role }, note);
+      // Pakai setConsultants (PUT) — replace semantics. Backend hitung diff
+      // (add/update-level/remove) supaya PM bisa edit roster dengan satu submit.
+      await projectService.setConsultants(project.id, consultants, { name: user.name, role }, note);
       await refresh();
       setIsDialogOpen(false);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : 'Gagal assign consultant. Coba lagi.');
+      setErrorMessage(error instanceof Error ? error.message : 'Gagal menyimpan roster. Coba lagi.');
     } finally {
       setIsSubmitting(false);
     }
@@ -84,10 +94,23 @@ export const ProjectTeamPage = () => {
               className="inline-flex items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-4 py-2 text-xs font-bold text-white shadow-md shadow-[#003c90]/20 transition-opacity hover:opacity-90 sm:text-sm"
             >
               <UserPlus className="h-4 w-4" />
-              Assign Consultant
+              {project.consultants.length > 0 ? 'Edit Roster' : 'Assign Consultant'}
             </button>
           )}
         </div>
+
+        {isAssigningPm && !isDpPaid && (
+          <div className="mb-4 flex items-start gap-3 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-[#c2410c]">
+            <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0" />
+            <div>
+              <p className="font-bold">DP belum dibayar</p>
+              <p className="mt-0.5 text-xs">
+                Assign consultant baru tersedia setelah pembayaran DP dikonfirmasi oleh
+                admin invoice. Sumber: handover.dp_payment_status.
+              </p>
+            </div>
+          </div>
+        )}
 
         {project.consultants.length === 0 ? (
           <div className="flex items-center gap-3 rounded-xl border border-dashed border-amber-300 bg-amber-50 px-4 py-3 text-sm text-[#a16207]">
@@ -123,6 +146,8 @@ export const ProjectTeamPage = () => {
         projectCode={project.projectCode}
         client={project.client}
         alreadyAssigned={project.consultants}
+        departmentId={project.departmentId}
+        departmentName={project.departmentName}
         isSubmitting={isSubmitting}
         errorMessage={errorMessage}
         onClose={() => {

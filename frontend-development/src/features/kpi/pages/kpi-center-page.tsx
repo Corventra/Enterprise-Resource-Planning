@@ -22,12 +22,15 @@ export const KpiCenterPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const period = currentPeriodIso();
 
+  // Backend pakai numeric user id (string-encoded). Convert sekali.
+  const userIdStr = user?.id != null ? String(user.id) : null;
+
   // Auto-redirect Consultant ke detail mereka sendiri.
   useEffect(() => {
-    if (role === ROLES.CONSULTANT && user?.email) {
-      navigate(`/kpi/consultant/${encodeURIComponent(user.email)}`, { replace: true });
+    if (role === ROLES.CONSULTANT && userIdStr) {
+      navigate(`/kpi/consultant/${encodeURIComponent(userIdStr)}`, { replace: true });
     }
-  }, [role, user?.email, navigate]);
+  }, [role, userIdStr, navigate]);
 
   useEffect(() => {
     if (role === ROLES.CONSULTANT) return;
@@ -38,11 +41,11 @@ export const KpiCenterPage = () => {
 
       // Scope per role: PM lihat hanya consultant di project-nya
       let visible: ProjectAssignee[] = allConsultants;
-      if (role === ROLES.PM && user?.email) {
+      if (role === ROLES.PM && userIdStr) {
         const projects = await projectService.getAll();
         const myConsultantIds = new Set(
           projects
-            .filter((p) => p.pm?.id === user.email)
+            .filter((p) => p.pm?.id === userIdStr)
             .flatMap((p) => p.consultants.map((c) => c.id))
         );
         visible = allConsultants.filter((c) => myConsultantIds.has(c.id));
@@ -65,7 +68,7 @@ export const KpiCenterPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [role, user?.email, period]);
+  }, [role, userIdStr, period]);
 
   const summary = useMemo(() => {
     const consultantCount = snapshots.length;

@@ -1,0 +1,232 @@
+import { apiGet, apiPatch, apiPost, apiPut } from '../../../services/api-client';
+
+/**
+ * Thin API client untuk projects backend. Caller (project-service.ts) bertugas
+ * mapping payload backend ke shape frontend lewat `map-api-project.ts`.
+ *
+ * Phase 1: hanya 2 endpoint read-only (list + detail). Endpoint mutasi
+ * (createFromHandover, assignConsultants, milestone update) ditambah di
+ * phase berikutnya.
+ */
+
+export interface ApiProjectListRow {
+  project_id: number;
+  project_code: string;
+  handover_id: number;
+  client: string;
+  project_name: string;
+  service_line: string;
+  status: string;
+  pm_user_id: number | null;
+  pm_name: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  created_at: string;
+  department_id: number | null;
+  department_code: string | null;
+  department_name: string | null;
+  // Cross-module dari handover (modul Invoice — Izhhar).
+  dp_payment_status: 'UNPAID' | 'PAID' | null;
+  dp_paid_at: string | null;
+  engagement_id: number | null;
+  lead_id: number | null;
+}
+
+export interface ApiProjectMilestoneUpdate {
+  update_id: number;
+  milestone_id: number;
+  by_user_id: number | null;
+  by_name: string | null;
+  from_status: string;
+  to_status: string;
+  note: string | null;
+  at: string;
+}
+
+export interface ApiProjectMilestone {
+  milestone_id: number;
+  title: string;
+  notes: string | null;
+  target_date: string;
+  status: string;
+  owner_user_id: number | null;
+  owner_name: string | null;
+  weight: number;
+  phase: string | null;
+  sequence_no: number;
+  completed_at: string | null;
+  quality_rating: number | null;
+  revision_count: number | null;
+  updates: ApiProjectMilestoneUpdate[];
+}
+
+export interface ApiProjectConsultant {
+  consultant_user_id: number;
+  consultant_name: string | null;
+  level: string;
+  assigned_at: string;
+}
+
+export interface ApiProjectDetail extends ApiProjectListRow {
+  consultants: ApiProjectConsultant[];
+  milestones: ApiProjectMilestone[];
+}
+
+interface ListResponse {
+  success: boolean;
+  data: { items: ApiProjectListRow[] };
+}
+
+interface DetailResponse {
+  success: boolean;
+  data: { project: ApiProjectDetail };
+}
+
+export interface ApiLookupUser {
+  id: number;
+  name: string;
+  email: string;
+  role_code: string;
+}
+
+interface UsersLookupResponse {
+  users: ApiLookupUser[];
+}
+
+export interface CreateFromHandoverPayload {
+  pmUserId: number;
+  note?: string;
+}
+
+export interface AssignConsultantPayload {
+  consultants: Array<{ userId: number; level: 'Lead' | 'Senior' | 'Junior' }>;
+  note?: string;
+}
+
+export interface UpdateMilestoneStatusPayload {
+  status: 'Pending' | 'In Progress' | 'Done' | 'Blocked';
+  note?: string;
+}
+
+export interface RateMilestonePayload {
+  rating: 1 | 2 | 3 | 4 | 5;
+  revisionCount: number;
+  note?: string;
+}
+
+export interface CompleteProjectPayload {
+  note?: string;
+}
+
+export interface CompleteProjectResult {
+  project: ApiProjectDetail;
+  /** Jumlah invoice term FINAL yang ke-trigger ke READY_TO_ISSUE. 0 berarti
+   * invoice belum di-link (project_id NULL) — admin invoice perlu cek. */
+  triggeredInvoiceTerms: number;
+}
+
+export const projectsApi = {
+  list: async (): Promise<ApiProjectListRow[]> => {
+    const res = await apiGet<ListResponse>('/projects');
+    return res.data.items;
+  },
+  getById: async (projectId: string | number): Promise<ApiProjectDetail | null> => {
+    try {
+      const res = await apiGet<DetailResponse>(`/projects/${projectId}`);
+      return res.data.project;
+    } catch (e) {
+      // 404 dari backend → return null supaya caller (service) gampang treat.
+      // Error lain biarkan throw.
+      const status = (e as { status?: number })?.status;
+      if (status === 404) return null;
+      throw e;
+    }
+  },
+  createFromHandover: async (
+    handoverId: string | number,
+    payload: CreateFromHandoverPayload
+  ): Promise<ApiProjectDetail> => {
+    const res = await apiPost<DetailResponse>(
+      `/projects/from-handover/${handoverId}`,
+      payload
+    );
+    return res.data.project;
+  },
+  assignConsultants: async (
+    projectId: string | number,
+    payload: AssignConsultantPayload
+  ): Promise<ApiProjectDetail> => {
+    const res = await apiPost<DetailResponse>(
+      `/projects/${projectId}/consultants`,
+      payload
+    );
+    return res.data.project;
+  },
+  /**
+   * REPLACE seluruh consultant list project. Backend hitung diff dan apply
+   * (add/update-level/remove). Dipakai untuk dialog edit mode.
+   */
+  setConsultants: async (
+    projectId: string | number,
+    payload: AssignConsultantPayload
+  ): Promise<ApiProjectDetail> => {
+    const res = await apiPut<DetailResponse>(
+      `/projects/${projectId}/consultants`,
+      payload
+    );
+    return res.data.project;
+  },
+  /**
+   * Consultant/PM action: update milestone status. Backend audit log otomatis.
+   */
+  updateMilestoneStatus: async (
+    projectId: string | number,
+    milestoneId: string | number,
+    payload: UpdateMilestoneStatusPayload
+  ): Promise<ApiProjectDetail> => {
+    const res = await apiPatch<DetailResponse>(
+      `/projects/${projectId}/milestones/${milestoneId}/status`,
+      payload
+    );
+    return res.data.project;
+  },
+  /**
+   * PM action: rate milestone yang sudah Done. Feed KPI Output Quality.
+   */
+  rateMilestone: async (
+    projectId: string | number,
+    milestoneId: string | number,
+    payload: RateMilestonePayload
+  ): Promise<ApiProjectDetail> => {
+    const res = await apiPatch<DetailResponse>(
+      `/projects/${projectId}/milestones/${milestoneId}/rate`,
+      payload
+    );
+    return res.data.project;
+  },
+  /**
+   * PM action: mark project Completed + trigger final invoice ke READY_TO_ISSUE
+   * (cross-module integration dengan modul Invoice).
+   */
+  completeProject: async (
+    projectId: string | number,
+    payload: CompleteProjectPayload = {}
+  ): Promise<CompleteProjectResult> => {
+    const res = await apiPost<{ success: boolean; data: CompleteProjectResult }>(
+      `/projects/${projectId}/complete`,
+      payload
+    );
+    return res.data;
+  },
+  listUsersByRole: async (
+    roleCode: string,
+    opts: { departmentId?: number | string } = {}
+  ): Promise<ApiLookupUser[]> => {
+    const params = new URLSearchParams({ role: roleCode });
+    if (opts.departmentId !== undefined && opts.departmentId !== null && opts.departmentId !== '') {
+      params.set('departmentId', String(opts.departmentId));
+    }
+    const res = await apiGet<UsersLookupResponse>(`/lookup/users?${params.toString()}`);
+    return res.users;
+  }
+};

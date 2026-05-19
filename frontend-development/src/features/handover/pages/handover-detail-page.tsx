@@ -17,11 +17,14 @@ import { HandoverSubmitDialog } from '../components/detail/handover-submit-dialo
 import { shouldShowCeoRevisionNote } from '../utils/handover-editable';
 import { useHandoverDetail } from '../hooks/use-handover-detail';
 import { handoverService } from '../services/handover-service';
+import { AssignPMDialog } from '../../projects/components/modals/assign-pm-dialog';
+import { projectService } from '../../projects/services/project-service';
+import type { ProjectAssignee } from '../../projects/types/project.types';
 
 export const HandoverDetailPage = () => {
   const navigate = useNavigate();
   const { handoverId } = useParams();
-  const { user, can } = useAuth();
+  const { user, can, role } = useAuth();
   const { detail, error, isLoading, refetch } = useHandoverDetail(handoverId);
   const [submitOpen, setSubmitOpen] = useState(false);
   const [submitBusy, setSubmitBusy] = useState(false);
@@ -30,6 +33,9 @@ export const HandoverDetailPage = () => {
   const [approvalBusy, setApprovalBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [assignPmOpen, setAssignPmOpen] = useState(false);
+  const [assignPmBusy, setAssignPmBusy] = useState(false);
+  const [assignPmError, setAssignPmError] = useState<string | undefined>(undefined);
 
   const isOperator = useMemo(() => {
     if (!detail?.processedBy || !user?.id) return false;
@@ -93,6 +99,34 @@ export const HandoverDetailPage = () => {
     [handoverId, refetch]
   );
 
+  const canAssignPM = can(PERMISSIONS.PROJECT_ASSIGN_PM);
+
+  const handleAssignPm = useCallback(
+    async (pm: ProjectAssignee, note?: string) => {
+      if (!handoverId || !role) return;
+      setAssignPmBusy(true);
+      setAssignPmError(undefined);
+      setActionError(null);
+      setActionSuccess(null);
+      try {
+        await projectService.createFromHandover(
+          handoverId,
+          pm,
+          { name: user?.name || '', role },
+          note
+        );
+        setAssignPmOpen(false);
+        await refetch();
+        setActionSuccess(`Project berhasil dibuat dan di-assign ke ${pm.name}.`);
+      } catch (e) {
+        setAssignPmError(e instanceof Error ? e.message : 'Gagal assign PM.');
+      } finally {
+        setAssignPmBusy(false);
+      }
+    },
+    [handoverId, role, user?.name, refetch]
+  );
+
   if (isLoading) {
     return (
       <div className="rounded-xl border border-[#eceef0] bg-white p-4 text-sm text-[#737784] shadow-sm">
@@ -134,6 +168,7 @@ export const HandoverDetailPage = () => {
         isOperator={isOperator}
         onEdit={() => navigate(`/handover/${detail.id}/edit`)}
         onSubmit={() => setSubmitOpen(true)}
+        onAssignPM={canAssignPM ? () => setAssignPmOpen(true) : undefined}
       />
 
       {shouldShowCeoRevisionNote(detail.dbStatus) ? (
@@ -198,6 +233,18 @@ export const HandoverDetailPage = () => {
         busy={approvalBusy}
         onClose={() => setRejectOpen(false)}
         onConfirm={handleReject}
+      />
+      <AssignPMDialog
+        open={assignPmOpen}
+        handoverDocCode={detail.docCode}
+        client={detail.projectInformation.find((info) => info.label === 'Client Name')?.value ?? detail.docCode}
+        isSubmitting={assignPmBusy}
+        errorMessage={assignPmError}
+        onClose={() => {
+          setAssignPmOpen(false);
+          setAssignPmError(undefined);
+        }}
+        onAssign={handleAssignPm}
       />
     </div>
   );

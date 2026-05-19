@@ -75,6 +75,14 @@ export interface TaskTemplate {
   tasks: TaskTemplateTask[];
 }
 
+/**
+ * DP payment status — dibaca dari `handovers.dp_payment_status` yang di-maintain
+ * modul Invoice (Izhhar). Cross-module integration rule (PRD Rule A): project
+ * tidak boleh "mulai" sebelum DP PAID — frontend pakai field ini untuk disable
+ * action button + show banner di team page.
+ */
+export type DpPaymentStatus = 'UNPAID' | 'PAID';
+
 export interface Project {
   id: string;
   projectCode: string;
@@ -89,6 +97,19 @@ export interface Project {
   endDate: string;
   milestones: ProjectMilestone[];
   createdAt: string;
+  /** Department asal project (inherit dari handover). Dipakai untuk filter
+   * consultant picker — hanya consultant yang termasuk department ini boleh
+   * di-assign. Optional untuk kompat data lama tanpa department. */
+  departmentId?: string;
+  departmentCode?: string;
+  departmentName?: string;
+  /** DP payment status dari handover (source of truth: modul Invoice).
+   * Null kalau handover belum punya invoice term DP (data legacy). */
+  dpPaymentStatus?: DpPaymentStatus;
+  dpPaidAt?: string;
+  /** Linkage IDs untuk modul invoice (optional, untuk audit/debug). */
+  engagementId?: string;
+  leadId?: string;
 }
 
 export interface ProjectFilters {

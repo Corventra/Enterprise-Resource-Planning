@@ -99,9 +99,12 @@ const request = async <T>(method: string, path: string, opts: RequestOptions = {
   if (!res.ok) {
     let message = `Request gagal (HTTP ${res.status})`;
     if (payload && typeof payload === 'object') {
-      const p = payload as { error?: unknown; message?: unknown };
-      if (typeof p.error === 'string') message = p.error;
-      else if (typeof p.message === 'string') message = p.message;
+      const p = payload as { error?: unknown; message?: unknown; detail?: unknown };
+      const errStr = typeof p.error === 'string' ? p.error : null;
+      const msgStr = typeof p.message === 'string' ? p.message : null;
+      const detailStr = typeof p.detail === 'string' ? p.detail : null;
+      if (msgStr && detailStr) message = `${msgStr} — ${detailStr}`;
+      else message = msgStr || errStr || detailStr || message;
     }
     throw new ApiError(message, res.status, payload);
   }
@@ -145,9 +148,12 @@ const requestFormData = async <T>(method: string, path: string, formData: FormDa
   if (!res.ok) {
     let message = `Request gagal (HTTP ${res.status})`;
     if (payload && typeof payload === 'object') {
-      const p = payload as { error?: unknown; message?: unknown };
-      if (typeof p.error === 'string') message = p.error;
-      else if (typeof p.message === 'string') message = p.message;
+      const p = payload as { error?: unknown; message?: unknown; detail?: unknown };
+      const errStr = typeof p.error === 'string' ? p.error : null;
+      const msgStr = typeof p.message === 'string' ? p.message : null;
+      const detailStr = typeof p.detail === 'string' ? p.detail : null;
+      if (msgStr && detailStr) message = `${msgStr} — ${detailStr}`;
+      else message = msgStr || errStr || detailStr || message;
     }
     throw new ApiError(message, res.status, payload);
   }

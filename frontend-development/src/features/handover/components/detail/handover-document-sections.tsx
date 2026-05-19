@@ -4,6 +4,9 @@ import type { HandoverDetail } from '../../types/handover.types';
 interface HandoverDocumentSectionsProps {
   detail: HandoverDetail;
   ceoApprovalActions?: ReactNode;
+  /** Sembunyikan section "Fee Structure & Payment Terms" — dipakai untuk
+   * tampilan handover di context project untuk role PM & Consultant. */
+  hideFees?: boolean;
 }
 
 const sectionTitleClass = 'mb-4 text-lg font-bold text-[#003c90]';
@@ -13,7 +16,7 @@ const EmptyHint = ({ children }: { children: string }) => (
   <p className="rounded-lg border border-dashed border-[#c3c6d5] bg-[#fafbfc] px-4 py-4 text-sm text-[#737784]">{children}</p>
 );
 
-export const HandoverDocumentSections = ({ detail, ceoApprovalActions }: HandoverDocumentSectionsProps) => {
+export const HandoverDocumentSections = ({ detail, ceoApprovalActions, hideFees = false }: HandoverDocumentSectionsProps) => {
   return (
     <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-[#eceef0]">
       <section className="border-b border-[#f2f4f6] p-6">
@@ -151,44 +154,46 @@ export const HandoverDocumentSections = ({ detail, ceoApprovalActions }: Handove
         </div>
       </section>
 
-      <section id="fees" className="scroll-mt-24 border-t border-[#f2f4f6] px-6 py-7">
-        <h3 className={`${sectionTitleClass} flex items-center gap-2`}>
-          <span className="material-symbols-outlined">payments</span>
-          4. Fee Structure & Payment Terms
-        </h3>
-        <div className="overflow-hidden rounded-xl border border-[#e6e8ea]">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-[#f2f4f6] font-bold text-[#434653]">
-              <tr>
-                <th className="px-4 py-3">Item</th>
-                <th className="px-4 py-3">Amount (IDR)</th>
-                <th className="px-4 py-3">Notes</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#eceef0]">
-              {detail.feeItems.length === 0 ? (
+      {!hideFees && (
+        <section id="fees" className="scroll-mt-24 border-t border-[#f2f4f6] px-6 py-7">
+          <h3 className={`${sectionTitleClass} flex items-center gap-2`}>
+            <span className="material-symbols-outlined">payments</span>
+            4. Fee Structure & Payment Terms
+          </h3>
+          <div className="overflow-hidden rounded-xl border border-[#e6e8ea]">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-[#f2f4f6] font-bold text-[#434653]">
                 <tr>
-                  <td colSpan={3} className="px-4 py-6 text-center text-sm text-[#737784]">
-                    Belum ada struktur fee dari engagement letter.
-                  </td>
+                  <th className="px-4 py-3">Item</th>
+                  <th className="px-4 py-3">Amount (IDR)</th>
+                  <th className="px-4 py-3">Notes</th>
                 </tr>
-              ) : (
-                detail.feeItems.map((item) => (
-                  <tr key={item.item}>
-                    <td className="px-4 py-3 font-semibold text-[#191c1e]">{item.item}</td>
-                    <td className="px-4 py-3 text-[#434653]">{item.amount}</td>
-                    <td className="px-4 py-3 text-[#737784]">{item.notes}</td>
+              </thead>
+              <tbody className="divide-y divide-[#eceef0]">
+                {detail.feeItems.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="px-4 py-6 text-center text-sm text-[#737784]">
+                      Belum ada struktur fee dari engagement letter.
+                    </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-        <div className="mt-4 rounded-xl bg-[#e6e8ea] p-5">
-          <p className={labelClass}>Payment Terms</p>
-          <p className="mt-1 text-sm text-[#191c1e]">{detail.paymentTerms}</p>
-        </div>
-      </section>
+                ) : (
+                  detail.feeItems.map((item) => (
+                    <tr key={item.item}>
+                      <td className="px-4 py-3 font-semibold text-[#191c1e]">{item.item}</td>
+                      <td className="px-4 py-3 text-[#434653]">{item.amount}</td>
+                      <td className="px-4 py-3 text-[#737784]">{item.notes}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-4 rounded-xl bg-[#e6e8ea] p-5">
+            <p className={labelClass}>Payment Terms</p>
+            <p className="mt-1 text-sm text-[#191c1e]">{detail.paymentTerms}</p>
+          </div>
+        </section>
+      )}
 
       <section id="docs" className="scroll-mt-24 border-t border-[#f2f4f6] px-6 py-7">
         <div className="grid grid-cols-1 gap-7 md:grid-cols-2">

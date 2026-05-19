@@ -6,7 +6,7 @@ import {
   SidePanelDialogFooter,
   SidePanelDialogHeader
 } from '../../../../components/ui/side-panel-dialog';
-import { pmPool } from '../../mocks/pms.mock';
+import { projectsApi, type ApiLookupUser } from '../../services/projects-api';
 import type { ProjectAssignee } from '../../types/project.types';
 
 interface AssignPMDialogProps {
@@ -30,19 +30,47 @@ export const AssignPMDialog = ({
 }: AssignPMDialogProps) => {
   const [selectedPmId, setSelectedPmId] = useState<string | null>(null);
   const [note, setNote] = useState('');
+  const [pmList, setPmList] = useState<ApiLookupUser[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isLoadingPMs, setIsLoadingPMs] = useState(false);
 
   useEffect(() => {
     if (!open) {
       setSelectedPmId(null);
       setNote('');
+      setLoadError(null);
+      return;
     }
+    let cancelled = false;
+    setIsLoadingPMs(true);
+    setLoadError(null);
+    projectsApi
+      .listUsersByRole('PM')
+      .then((users) => {
+        if (cancelled) return;
+        setPmList(users);
+        if (users.length === 0) {
+          setLoadError('Tidak ada user dengan role PM yang aktif di database.');
+        }
+      })
+      .catch((e: Error) => {
+        if (cancelled) return;
+        setLoadError(e.message || 'Gagal memuat daftar PM.');
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingPMs(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [open]);
 
-  const selectedPm = pmPool.find((pm) => pm.id === selectedPmId) ?? null;
+  const selectedPm = pmList.find((pm) => String(pm.id) === selectedPmId) ?? null;
 
   const handleSubmit = async () => {
     if (!selectedPm || isSubmitting) return;
-    await onAssign(selectedPm, note.trim() || undefined);
+    const assignee: ProjectAssignee = { id: String(selectedPm.id), name: selectedPm.name };
+    await onAssign(assignee, note.trim() || undefined);
   };
 
   return (
@@ -70,43 +98,55 @@ export const AssignPMDialog = ({
             <p className="mb-2 text-xs font-bold uppercase tracking-wider text-[#737784]">
               Pilih Project Manager
             </p>
-            <ul className="space-y-2">
-              {pmPool.map((pm) => {
-                const isActive = pm.id === selectedPmId;
-                return (
-                  <li key={pm.id}>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedPmId(pm.id)}
-                      className={
-                        isActive
-                          ? 'flex w-full items-center gap-3 rounded-xl border-2 border-[#003c90] bg-[#d5e3fc]/40 p-3 text-left transition-colors'
-                          : 'flex w-full items-center gap-3 rounded-xl border-2 border-[#eceef0] bg-white p-3 text-left transition-colors hover:border-[#003c90]/40 hover:bg-[#f2f4f6]'
-                      }
-                    >
-                      <span
+            {isLoadingPMs ? (
+              <p className="text-sm text-[#737784]">Memuat daftar PM...</p>
+            ) : pmList.length === 0 ? (
+              <p className="text-sm text-[#737784]">Belum ada user dengan role PM aktif.</p>
+            ) : (
+              <ul className="space-y-2">
+                {pmList.map((pm) => {
+                  const pmIdStr = String(pm.id);
+                  const isActive = pmIdStr === selectedPmId;
+                  return (
+                    <li key={pm.id}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedPmId(pmIdStr)}
                         className={
                           isActive
-                            ? 'flex h-9 w-9 items-center justify-center rounded-full bg-[#003c90] text-xs font-bold text-white'
-                            : 'flex h-9 w-9 items-center justify-center rounded-full bg-[#eceef0] text-xs font-bold text-[#737784]'
+                            ? 'flex w-full items-center gap-3 rounded-xl border-2 border-[#003c90] bg-[#d5e3fc]/40 p-3 text-left transition-colors'
+                            : 'flex w-full items-center gap-3 rounded-xl border-2 border-[#eceef0] bg-white p-3 text-left transition-colors hover:border-[#003c90]/40 hover:bg-[#f2f4f6]'
                         }
                       >
-                        {pm.name
-                          .split(/\s+/)
-                          .slice(0, 2)
-                          .map((p) => p[0]?.toUpperCase())
-                          .join('')}
-                      </span>
-                      <div className="flex-1">
-                        <p className="text-sm font-bold text-[#191c1e]">{pm.name}</p>
-                        <p className="text-xs text-[#737784]">{pm.id}</p>
-                      </div>
-                      {isActive && <UserCheck className="h-5 w-5 text-[#003c90]" />}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+                        <span
+                          className={
+                            isActive
+                              ? 'flex h-9 w-9 items-center justify-center rounded-full bg-[#003c90] text-xs font-bold text-white'
+                              : 'flex h-9 w-9 items-center justify-center rounded-full bg-[#eceef0] text-xs font-bold text-[#737784]'
+                          }
+                        >
+                          {pm.name
+                            .split(/\s+/)
+                            .slice(0, 2)
+                            .map((p) => p[0]?.toUpperCase())
+                            .join('')}
+                        </span>
+                        <div className="flex-1">
+                          <p className="text-sm font-bold text-[#191c1e]">{pm.name}</p>
+                          <p className="text-xs text-[#737784]">{pm.email}</p>
+                        </div>
+                        {isActive && <UserCheck className="h-5 w-5 text-[#003c90]" />}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            {loadError && !isLoadingPMs && (
+              <p className="mt-2 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-xs text-[#c2410c]">
+                {loadError}
+              </p>
+            )}
           </div>
 
           <div>
