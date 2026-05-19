@@ -62,9 +62,12 @@ export const ProjectTimelinePage = () => {
   const [ratingError, setRatingError] = useState<string | undefined>();
   const [openLogIds, setOpenLogIds] = useState<Set<string>>(new Set());
 
-  const isProjectPm = role === ROLES.PM && project.pm?.id === user?.email;
+  // Backend mengembalikan pm.id & ownerId sebagai numeric user_id (string).
+  // Bandingkan via String(user.id) — bug fix dari era mock yang pakai email.
+  const userIdStr = user?.id != null ? String(user.id) : null;
+  const isProjectPm = role === ROLES.PM && userIdStr !== null && project.pm?.id === userIdStr;
   const isOwnerOf = (milestone: ProjectMilestone) =>
-    role === ROLES.CONSULTANT && milestone.ownerId === user?.email;
+    role === ROLES.CONSULTANT && userIdStr !== null && milestone.ownerId === userIdStr;
   const canUpdateStatus = (milestone: ProjectMilestone) =>
     isProjectPm || isOwnerOf(milestone);
   const canRate = (milestone: ProjectMilestone) =>
@@ -104,7 +107,7 @@ export const ProjectTimelinePage = () => {
         project.id,
         milestoneId,
         nextStatus,
-        { id: user.email, name: user.name }
+        { id: String(user.id ?? ''), name: user.name }
       );
       await refresh();
     } finally {
@@ -126,7 +129,7 @@ export const ProjectTimelinePage = () => {
         ratingTarget.id,
         rating,
         revisionCount,
-        { id: user.email, name: user.name },
+        { id: String(user.id ?? ''), name: user.name },
         note
       );
       await refresh();

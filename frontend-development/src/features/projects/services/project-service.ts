@@ -1,224 +1,165 @@
 import type { Role } from '../../../app/permissions';
-import { handoverService } from '../../handover/services/handover-service';
-import { projectsMock } from '../mocks/projects.mock';
 import type {
   Project,
   ProjectAssignee,
   ProjectConsultant,
-  ProjectMilestone,
   ProjectMilestoneStatus
 } from '../types/project.types';
-import { taskTemplateService } from './task-template-service';
+import { projectsApi } from './projects-api';
+import {
+  mapApiProjectDetailToProject,
+  mapApiProjectListRowToProject
+} from '../utils/map-api-project';
 
-const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
-
-const projectStore: Project[] = clone(projectsMock);
-
-const generateProjectCode = (): string => {
-  const year = new Date().getFullYear();
-  const seq = (projectStore.length + 1).toString().padStart(4, '0');
-  return `PRJ-${year}-${seq}`;
-};
-
-const addMonths = (base: Date, months: number): Date => {
-  const next = new Date(base);
-  next.setMonth(next.getMonth() + months);
-  return next;
-};
+/**
+ * Project service — full backend integration.
+ *
+ * Read-only (getAll, getById) + mutations (createFromHandover, assignConsultants,
+ * setConsultants, updateMilestoneStatus, rateMilestone) semua hit backend real.
+ */
 
 export const projectService = {
   async getAll(): Promise<Project[]> {
-    return clone(projectStore);
+    const rows = await projectsApi.list();
+    return rows.map(mapApiProjectListRowToProject);
   },
+
   async getById(id: string): Promise<Project | undefined> {
-    const found = projectStore.find((entry) => entry.id === id);
-    return found ? clone(found) : undefined;
+    const detail = await projectsApi.getById(id);
+    if (!detail) return undefined;
+    return mapApiProjectDetailToProject(detail);
   },
-  async getByHandoverId(handoverId: string): Promise<Project | undefined> {
-    const found = projectStore.find((entry) => entry.handoverId === handoverId);
-    return found ? clone(found) : undefined;
-  },
+
   /**
-   * COO action: spawn a Project from an Approved handover and transition the
-   * handover to `Assigned to PM`. Returns the created project.
+   * COO action: spawn project dari handover APPROVED + assign PM. Backend
+   * handle: validasi status, transaksi insert project + milestones, transition
+   * handover ke ASSIGNED_TO_PM. `pm.id` HARUS numeric user id (string-encoded).
    */
   async createFromHandover(
     handoverId: string,
     pm: ProjectAssignee,
-    actor: { name: string; role: Role },
+    _actor: { name: string; role: Role },
     note?: string
   ): Promise<Project> {
-    const handoverItem = await handoverService.getItemById(handoverId);
-    if (!handoverItem) {
-      throw new Error(`Handover ${handoverId} not found`);
+    const pmUserId = Number(pm.id);
+    if (!Number.isInteger(pmUserId) || pmUserId <= 0) {
+      throw new Error('PM user ID tidak valid (harus integer dari backend users).');
     }
-    if (handoverItem.status !== 'Approved') {
-      throw new Error(`Handover ${handoverId} is not in Approved status (current: ${handoverItem.status})`);
-    }
-    const today = new Date();
-    const startIso = today.toISOString().slice(0, 10);
-    const projectIdSuffix = `${Date.now()}`;
-
-    // Spawn milestones dari TaskTemplate per service line. Kalau template tidak
-    // ada (mis. service line baru), fallback ke handover.timelineMilestones biar
-    // tidak gagal — tapi default-nya selalu pakai template (KPI-friendly).
-    const template = await taskTemplateService.getDefaultByServiceLine(
-      handoverItem.serviceLine as import('../types/project.types').ProjectServiceLine
-    );
-    let milestones: ProjectMilestone[];
-    if (template) {
-      milestones = taskTemplateService.cloneAsMilestones(template, startIso, pm, `mil-${projectIdSuffix}`);
-    } else {
-      const handoverDetail = await handoverService.getById(handoverId);
-      milestones = (handoverDetail?.timelineMilestones ?? []).map((m, idx) => ({
-        id: `mil-${projectIdSuffix}-${idx + 1}`,
-        title: m.milestone,
-        weight: 10,
-        targetDate: m.targetDate,
-        status: 'Pending',
-        ownerId: pm.id,
-        ownerName: pm.name,
-        notes: m.notes,
-        updateLog: []
-      }));
-    }
-
-    const newProject: Project = {
-      id: `prj-${projectIdSuffix}`,
-      projectCode: generateProjectCode(),
-      handoverId,
-      client: handoverItem.client,
-      projectName: handoverItem.project,
-      serviceLine: handoverItem.serviceLine as import('../types/project.types').ProjectServiceLine,
-      status: 'Awaiting Consultant',
-      pm,
-      consultants: [],
-      startDate: startIso,
-      endDate: addMonths(today, 6).toISOString().slice(0, 10),
-      milestones,
-      createdAt: today.toISOString()
-    };
-    projectStore.push(newProject);
-
-    const trailNote = note ? `Assigned to ${pm.name}. ${note}` : `Assigned to ${pm.name}`;
-    await handoverService.assignPM(handoverId, actor, trailNote);
-
-    return clone(newProject);
+    const detail = await projectsApi.createFromHandover(handoverId, {
+      pmUserId,
+      note
+    });
+    return mapApiProjectDetailToProject(detail);
   },
+
   /**
-   * PM action: append one or more consultants to a project. If the project was
-   * `Awaiting Consultant`, transitions to `In Progress` and updates the linked
-   * handover trail with `consultantAssigned`.
+   * PM action: tambah consultant ke project. Backend validasi user role &
+   * skip yang sudah ter-assign. `consultant.id` HARUS numeric user id
+   * (string-encoded). Backend auto-transition project status ke 'In Progress'
+   * kalau sebelumnya 'Awaiting Consultant'.
    */
   async assignConsultants(
     projectId: string,
     consultants: ProjectConsultant[],
-    actor: { name: string; role: Role },
+    _actor: { name: string; role: Role },
     note?: string
   ): Promise<Project> {
-    const project = projectStore.find((entry) => entry.id === projectId);
-    if (!project) {
-      throw new Error(`Project ${projectId} not found`);
-    }
     if (consultants.length === 0) {
       throw new Error('Pilih minimal satu consultant.');
     }
-
-    const existingIds = new Set(project.consultants.map((c) => c.id));
-    const fresh = consultants.filter((c) => !existingIds.has(c.id));
-    if (fresh.length === 0) {
-      throw new Error('Consultant yang dipilih sudah ter-assign di project ini.');
-    }
-    project.consultants = [...project.consultants, ...fresh];
-
-    if (project.status === 'Awaiting Consultant') {
-      project.status = 'In Progress';
-      await handoverService.appendTrailEntry(
-        project.handoverId,
-        'projectStarted',
-        actor,
-        `Project ${project.projectCode} dimulai dengan ${fresh.length} consultant.`
-      );
-    }
-
-    const summary = fresh.map((c) => `${c.name} (${c.level})`).join(', ');
-    const trailNote = note ? `${summary}. ${note}` : summary;
-    await handoverService.appendTrailEntry(project.handoverId, 'consultantAssigned', actor, trailNote);
-
-    return clone(project);
+    const payloadItems = consultants.map((c) => {
+      const userId = Number(c.id);
+      if (!Number.isInteger(userId) || userId <= 0) {
+        throw new Error(`Consultant ID tidak valid (harus integer dari backend users): ${c.id}`);
+      }
+      return { userId, level: c.level };
+    });
+    const detail = await projectsApi.assignConsultants(projectId, {
+      consultants: payloadItems,
+      note
+    });
+    return mapApiProjectDetailToProject(detail);
   },
+
   /**
-   * Mutate a milestone's status with audit logging. Auto-sets `completedAt`
-   * when transitioning to 'Done', clears it on transition away from 'Done'.
-   * Always appends to `updateLog`. Used by Consultant (status updates) and PM
-   * (when approving — combine with rate via `rateMilestone`).
+   * PM action: REPLACE seluruh consultant list (edit mode). Backend hitung
+   * diff (add/update-level/remove). Boleh kirim array kosong untuk hapus semua.
+   */
+  async setConsultants(
+    projectId: string,
+    consultants: ProjectConsultant[],
+    _actor: { name: string; role: Role },
+    note?: string
+  ): Promise<Project> {
+    const payloadItems = consultants.map((c) => {
+      const userId = Number(c.id);
+      if (!Number.isInteger(userId) || userId <= 0) {
+        throw new Error(`Consultant ID tidak valid (harus integer dari backend users): ${c.id}`);
+      }
+      return { userId, level: c.level };
+    });
+    const detail = await projectsApi.setConsultants(projectId, {
+      consultants: payloadItems,
+      note
+    });
+    return mapApiProjectDetailToProject(detail);
+  },
+
+  /**
+   * Consultant/PM action: update milestone status. Backend validasi actor
+   * harus owner milestone atau PM project, lalu auto-log ke
+   * project_milestone_updates (feed KPI Update Compliance).
+   * `actor` ignored — backend pakai req.user dari JWT.
    */
   async updateMilestoneStatus(
     projectId: string,
     milestoneId: string,
     nextStatus: ProjectMilestoneStatus,
-    actor: { id: string; name: string },
+    _actor: { id: string; name: string },
     note?: string
   ): Promise<Project> {
-    const project = projectStore.find((entry) => entry.id === projectId);
-    if (!project) throw new Error(`Project ${projectId} not found`);
-    const milestone = project.milestones.find((m) => m.id === milestoneId);
-    if (!milestone) throw new Error(`Milestone ${milestoneId} not found in project ${projectId}`);
-
-    const fromStatus = milestone.status;
-    if (fromStatus === nextStatus) return clone(project);
-
-    milestone.status = nextStatus;
-    if (nextStatus === 'Done') {
-      milestone.completedAt = milestone.completedAt ?? new Date().toISOString();
-    } else if (fromStatus === 'Done') {
-      milestone.completedAt = undefined;
-    }
-    milestone.updateLog = [
-      ...milestone.updateLog,
-      {
-        at: new Date().toISOString(),
-        byId: actor.id,
-        byName: actor.name,
-        fromStatus,
-        toStatus: nextStatus,
-        note
-      }
-    ];
-
-    return clone(project);
+    const detail = await projectsApi.updateMilestoneStatus(projectId, milestoneId, {
+      status: nextStatus,
+      note
+    });
+    return mapApiProjectDetailToProject(detail);
   },
+
   /**
-   * PM action: attach a quality rating + revision count when approving a task.
-   * Typically called together with `updateMilestoneStatus(... 'Done' ...)`.
+   * PM action: rate milestone (1-5 + revision count). Feed KPI Output Quality.
+   * Backend validate actor harus PM project. `pmActor` ignored — backend pakai
+   * req.user dari JWT.
    */
   async rateMilestone(
     projectId: string,
     milestoneId: string,
     rating: 1 | 2 | 3 | 4 | 5,
     revisionCount: number,
-    pmActor: { id: string; name: string },
+    _pmActor: { id: string; name: string },
     note?: string
   ): Promise<Project> {
-    const project = projectStore.find((entry) => entry.id === projectId);
-    if (!project) throw new Error(`Project ${projectId} not found`);
-    const milestone = project.milestones.find((m) => m.id === milestoneId);
-    if (!milestone) throw new Error(`Milestone ${milestoneId} not found in project ${projectId}`);
+    const detail = await projectsApi.rateMilestone(projectId, milestoneId, {
+      rating,
+      revisionCount,
+      note
+    });
+    return mapApiProjectDetailToProject(detail);
+  },
 
-    milestone.qualityRating = rating;
-    milestone.revisionCount = revisionCount;
-    milestone.updateLog = [
-      ...milestone.updateLog,
-      {
-        at: new Date().toISOString(),
-        byId: pmActor.id,
-        byName: pmActor.name,
-        fromStatus: milestone.status,
-        toStatus: milestone.status,
-        note: note ? `Rated ${rating}/5 (revisions: ${revisionCount}). ${note}` : `Rated ${rating}/5 (revisions: ${revisionCount}).`
-      }
-    ];
-
-    return clone(project);
+  /**
+   * PM action: mark project Completed. Backend validate semua milestone Done +
+   * trigger ke modul Invoice (set term FINAL: DRAFT → READY_TO_ISSUE).
+   * Return `triggeredInvoiceTerms` = jumlah term ke-trigger (0 kalau invoice
+   * belum di-link project_id; admin invoice perlu cek).
+   */
+  async completeProject(
+    projectId: string,
+    note?: string
+  ): Promise<{ project: Project; triggeredInvoiceTerms: number }> {
+    const result = await projectsApi.completeProject(projectId, { note });
+    return {
+      project: mapApiProjectDetailToProject(result.project),
+      triggeredInvoiceTerms: result.triggeredInvoiceTerms
+    };
   }
 };

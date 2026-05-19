@@ -6,7 +6,7 @@ import type { Project } from '../types/project.types';
 
 /**
  * Returns projects scoped to the current user's role:
- * - PM: only projects where pm.id matches the user's email.
+ * - PM: only projects where pm.id matches the user's numeric id.
  * - Consultant: only projects where the user is in `consultants`.
  * - Everyone else with PROJECT_VIEW permission (CEO, COO, BD, Staff Admin): all projects.
  */
@@ -28,11 +28,15 @@ export const useProjectList = () => {
 
   const scopedItems = useMemo(() => {
     if (!user || !role) return [];
+    // Backend pakai numeric user id (string-encoded di Project type); user.id
+    // dari auth context juga numeric. Bandingkan via String() supaya konsisten.
+    const userIdStr = user.id != null ? String(user.id) : null;
+    if (!userIdStr) return [];
     if (role === ROLES.PM) {
-      return items.filter((project) => project.pm?.id === user.email);
+      return items.filter((project) => project.pm?.id === userIdStr);
     }
     if (role === ROLES.CONSULTANT) {
-      return items.filter((project) => project.consultants.some((c) => c.id === user.email));
+      return items.filter((project) => project.consultants.some((c) => c.id === userIdStr));
     }
     return items;
   }, [items, role, user]);

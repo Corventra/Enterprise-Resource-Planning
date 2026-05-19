@@ -25,7 +25,9 @@ export const useProjectDetail = (projectId?: string) => {
     const data = await projectService.getById(projectId);
     setProject(data);
     if (data) {
-      const ho = await handoverService.getById(data.handoverId);
+      // Pakai endpoint project-scoped supaya PM/Consultant juga bisa fetch
+      // handover (mereka tidak punya HANDOVER_MANAGE/APPROVE).
+      const ho = await handoverService.getByProjectId(projectId);
       setHandover(ho);
     } else {
       setHandover(undefined);

@@ -80,7 +80,7 @@ export const KpiConfigPage = () => {
     setIsSaving(true);
     setFeedback(null);
     try {
-      const result = await kpiConfigService.update(draft, { id: user.email, name: user.name, role });
+      const result = await kpiConfigService.update(draft, { id: String(user.id ?? ''), name: user.name, role });
       setConfig(result.current);
       setPending(result.pending);
       setDraft(JSON.parse(JSON.stringify(result.current)) as KpiPeriodConfig);
@@ -106,7 +106,7 @@ export const KpiConfigPage = () => {
     setFeedback(null);
     try {
       const updated = await kpiConfigService.approveMajorChange({
-        id: user.email,
+        id: String(user.id ?? ''),
         name: user.name,
         role
       });
@@ -129,7 +129,7 @@ export const KpiConfigPage = () => {
     setIsApproving(true);
     setFeedback(null);
     try {
-      await kpiConfigService.rejectMajorChange({ id: user.email, name: user.name, role });
+      await kpiConfigService.rejectMajorChange({ id: String(user.id ?? ''), name: user.name, role });
       setPending(null);
       setFeedback({ kind: 'success', message: 'Pending major change di-reject. Bobot lama tetap effective.' });
     } catch (error) {

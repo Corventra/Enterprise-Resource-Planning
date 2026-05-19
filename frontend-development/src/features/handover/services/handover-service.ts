@@ -2,8 +2,10 @@ import {
   getHandoverById,
   getHandovers,
   patchHandoverDraft,
-  submitHandover as submitHandoverApi
+  submitHandover as submitHandoverApi,
+  type ApiHandoverDetailPayload
 } from './handover-api';
+import { apiGet } from '../../../services/api-client';
 import { mapApiHandoverDetailToDetail, mapApiHandoverListRowToItem } from '../utils/map-api-handover';
 import type { HandoverPatchExtras } from '../utils/build-handover-patch-payload';
 import { buildHandoverPatchFormData } from '../utils/build-handover-patch-payload';
@@ -19,6 +21,22 @@ export const handoverService = {
     try {
       const data = await getHandoverById(id);
       return mapApiHandoverDetailToDetail(data);
+    } catch {
+      return undefined;
+    }
+  },
+
+  /**
+   * Ambil handover detail via project context (PROJECT_VIEW permission).
+   * Cocok untuk PM/Consultant yang tidak punya HANDOVER_MANAGE/APPROVE tapi
+   * boleh lihat handover karena ter-assign ke project-nya.
+   */
+  async getByProjectId(projectId: string): Promise<HandoverDetail | undefined> {
+    try {
+      const res = await apiGet<{ success: boolean; data: ApiHandoverDetailPayload }>(
+        `/projects/${projectId}/handover`
+      );
+      return mapApiHandoverDetailToDetail(res.data);
     } catch {
       return undefined;
     }

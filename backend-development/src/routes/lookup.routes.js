@@ -1,6 +1,6 @@
 const express = require('express');
 const { authenticate } = require('../middleware/authenticate');
-const { listRoles, listDepartments } = require('../controllers/lookup.controller');
+const { listRoles, listDepartments, listUsersByRole } = require('../controllers/lookup.controller');
 
 const router = express.Router();
 
@@ -9,5 +9,6 @@ router.use(authenticate);
 
 router.get('/roles', listRoles);
 router.get('/departments', listDepartments);
+router.get('/users', listUsersByRole);
 
 module.exports = router;

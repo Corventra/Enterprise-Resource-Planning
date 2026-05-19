@@ -51,7 +51,10 @@ export const KpiConsultantPage = () => {
       setIsLoading(true);
       setAccessDenied(false);
 
-      if (role === ROLES.CONSULTANT && consultantId !== user.email) {
+      // Backend pakai numeric user id (string-encoded di consultant.id).
+      const userIdStr = user.id != null ? String(user.id) : '';
+
+      if (role === ROLES.CONSULTANT && consultantId !== userIdStr) {
         setAccessDenied(true);
         setIsLoading(false);
         return;
@@ -60,10 +63,10 @@ export const KpiConsultantPage = () => {
         const projects = await projectService.getAll();
         const teamIds = new Set(
           projects
-            .filter((p) => p.pm?.id === user.email)
+            .filter((p) => p.pm?.id === userIdStr)
             .flatMap((p) => p.consultants.map((c) => c.id))
         );
-        if (consultantId !== user.email && !teamIds.has(consultantId)) {
+        if (consultantId !== userIdStr && !teamIds.has(consultantId)) {
           setAccessDenied(true);
           setIsLoading(false);
           return;
@@ -73,7 +76,7 @@ export const KpiConsultantPage = () => {
       // Resolve consultant identity dari pool project (untuk dapat name)
       const allConsultants = await kpiEngine.listAllConsultants();
       const found = allConsultants.find((c) => c.id === consultantId)
-        ?? (consultantId === user.email ? { id: user.email, name: user.name } : undefined);
+        ?? (consultantId === userIdStr ? { id: userIdStr, name: user.name } : undefined);
       if (!found) {
         if (!cancelled) {
           setAccessDenied(true);
@@ -164,8 +167,8 @@ export const KpiConsultantPage = () => {
       if (!existing) {
         await kpiSnapshotService.save(snapshot);
       }
-      const finalized = await kpiSnapshotService.finalize(consultant.id, snapshot.period, {
-        id: user.email,
+      const finalized = await kpiSnapshotService.finalize(snapshot, {
+        id: String(user.id ?? ''),
         name: user.name,
         role
       });
