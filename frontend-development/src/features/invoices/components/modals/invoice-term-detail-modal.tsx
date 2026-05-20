@@ -9,7 +9,7 @@ import {
 import type { InvoiceDetail, InvoicePaymentMethodDb } from '../../types/invoice.types';
 import { invoicesService } from '../../services/invoices-service';
 import { InvoicePaymentProofField } from './invoice-payment-proof-field';
-import { formatCurrency, formatDate } from '../detail/invoice-detail-formatters';
+import { formatCurrency, formatDate, shouldShowTermDueDate } from '../detail/invoice-detail-formatters';
 
 interface InvoiceTermDetailModalProps {
   open: boolean;
@@ -59,6 +59,7 @@ const PAYMENT_METHOD_OPTIONS: { value: InvoicePaymentMethodDb; label: string }[]
 ];
 
 const labelClass = 'mb-1 block text-[10px] font-bold uppercase tracking-wide text-slate-500';
+const requiredMark = <span className="text-red-600"> *</span>;
 const inputClass =
   'h-10 w-full rounded-lg border border-slate-200 px-3 text-sm text-slate-800 focus:border-[#003c90] focus:outline-none disabled:bg-slate-50';
 
@@ -124,7 +125,6 @@ export const InvoiceTermDetailModal = ({
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<InvoicePaymentMethodDb>('BANK_TRANSFER');
   const [transactionDate, setTransactionDate] = useState('');
-  const [amountReceived, setAmountReceived] = useState('');
   const [paymentChannel, setPaymentChannel] = useState('');
   const [proofFile, setProofFile] = useState<File | null>(null);
 
@@ -135,11 +135,16 @@ export const InvoiceTermDetailModal = ({
     const now = new Date();
     const ymd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     setTransactionDate(ymd);
-    setAmountReceived(String(term.totalInvoice || ''));
     setPaymentMethod('BANK_TRANSFER');
     setPaymentChannel('');
     setProofFile(null);
-  }, [open, term?.id, term?.totalInvoice]);
+  }, [open, term?.id]);
+
+  const canSubmitPayment =
+    Boolean(paymentMethod) &&
+    Boolean(transactionDate.trim()) &&
+    (term?.totalInvoice ?? 0) > 0 &&
+    proofFile != null;
 
   const handlePanelOpenChange = (nextOpen: boolean) => {
     if (!nextOpen && !busy) onClose();
@@ -183,7 +188,7 @@ export const InvoiceTermDetailModal = ({
     const fd = new FormData();
     fd.append('payment_method', paymentMethod);
     fd.append('transaction_date', transactionDate);
-    fd.append('amount_received_net', amountReceived);
+    fd.append('amount_received_net', String(term?.totalInvoice ?? ''));
     if (paymentChannel.trim()) fd.append('payment_channel', paymentChannel.trim());
     if (proofFile) fd.append('proof_file', proofFile);
     return fd;
@@ -191,20 +196,20 @@ export const InvoiceTermDetailModal = ({
 
   const tryRequestPaymentConfirm = () => {
     if (!term) return;
-    const amount = Number(amountReceived);
-    if (!transactionDate || !amountReceived) {
-      setActionError('Lengkapi tanggal transaksi dan jumlah diterima.');
-      return;
-    }
-    if (!Number.isFinite(amount) || amount <= 0) {
-      setActionError('Jumlah diterima harus lebih dari 0.');
+    const missing: string[] = [];
+    if (!paymentMethod) missing.push('metode pembayaran');
+    if (!transactionDate.trim()) missing.push('tanggal transaksi');
+    if (!term.totalInvoice || term.totalInvoice <= 0) missing.push('jumlah diterima');
+    if (!proofFile) missing.push('upload bukti pembayaran');
+    if (missing.length > 0) {
+      setActionError(`Lengkapi ${missing.join(', ')}.`);
       return;
     }
     setActionError(null);
     onRequestPaymentConfirm?.({
       termId: term.id,
       termName: term.termName,
-      amountLabel: formatCurrency(amount),
+      amountLabel: formatCurrency(term.totalInvoice),
       buildFormData: buildPaymentFormData
     });
   };
@@ -245,7 +250,9 @@ export const InvoiceTermDetailModal = ({
                   <MetaItem label="Invoice No" value={term.invoiceNumber} />
                   <MetaItem label="Billing Schedule" value={formatDate(term.billingScheduleDate)} />
                   <MetaItem label="Issue Date" value={formatDate(term.issuedDate)} />
-                  <MetaItem label="Due Date" value={formatDate(term.dueDate)} />
+                  {shouldShowTermDueDate(term.statusDb) ? (
+                    <MetaItem label="Tenggat" value={formatDate(term.dueDate)} />
+                  ) : null}
                   {term.sentToClientAt ? (
                     <MetaItem label="Sent to Client" value={formatDateTimeId(term.sentToClientAt)} />
                   ) : null}
@@ -350,8 +357,16 @@ export const InvoiceTermDetailModal = ({
 
               {term.statusDb === 'READY_TO_ISSUE' ? (
                 <p className="rounded-lg border border-blue-100 bg-blue-50/80 px-4 py-3 text-sm text-slate-700">
-                  Termin siap diterbitkan. Klik <span className="font-semibold">Generate Invoice</span> di bawah untuk
-                  membuat nomor invoice.
+                  Termin siap diterbitkan. Generate invoice paling lambat{' '}
+                  <span className="font-semibold">{formatDate(term.dueDate)}</span>. Klik{' '}
+                  <span className="font-semibold">Generate Invoice</span> di bawah untuk membuat nomor invoice.
+                </p>
+              ) : null}
+
+              {term.statusDb === 'ISSUED' ? (
+                <p className="rounded-lg border border-blue-100 bg-blue-50/80 px-4 py-3 text-sm text-slate-700">
+                  Invoice telah diterbitkan. Kirim ke klien paling lambat{' '}
+                  <span className="font-semibold">{formatDate(term.dueDate)}</span> (1 hari sejak diterbitkan).
                 </p>
               ) : null}
 
@@ -365,6 +380,7 @@ export const InvoiceTermDetailModal = ({
                     <div>
                       <label className={labelClass} htmlFor="inv-pay-method">
                         Metode Pembayaran
+                        {requiredMark}
                       </label>
                       <select
                         id="inv-pay-method"
@@ -383,6 +399,7 @@ export const InvoiceTermDetailModal = ({
                     <div>
                       <label className={labelClass} htmlFor="inv-pay-date">
                         Tanggal Transaksi
+                        {requiredMark}
                       </label>
                       <input
                         id="inv-pay-date"
@@ -395,16 +412,17 @@ export const InvoiceTermDetailModal = ({
                     </div>
                     <div>
                       <label className={labelClass} htmlFor="inv-pay-amount">
-                        Jumlah Diterima (Net)
+                        Jumlah Diterima (Rp)
+                        {requiredMark}
                       </label>
                       <input
                         id="inv-pay-amount"
-                        type="number"
-                        min={0}
-                        value={amountReceived}
-                        disabled={busy}
-                        onChange={(e) => setAmountReceived(e.target.value)}
-                        className={inputClass}
+                        type="text"
+                        readOnly
+                        value={formatCurrency(term.totalInvoice)}
+                        tabIndex={-1}
+                        aria-readonly="true"
+                        className={`${inputClass} cursor-default bg-slate-50 text-slate-700`}
                       />
                     </div>
                     <div>
@@ -423,7 +441,10 @@ export const InvoiceTermDetailModal = ({
                     </div>
                   </div>
                   <div className="mt-4 sm:col-span-2">
-                    <label className={labelClass}>Upload Bukti Pembayaran</label>
+                    <label className={labelClass}>
+                      Upload Bukti Pembayaran
+                      {requiredMark}
+                    </label>
                     <div className="mt-2">
                       <InvoicePaymentProofField
                         pendingFile={proofFile}
@@ -474,7 +495,7 @@ export const InvoiceTermDetailModal = ({
                   {term.statusDb === 'SENT' || term.statusDb === 'OVERDUE' ? (
                     <button
                       type="button"
-                      disabled={busy || !transactionDate || !amountReceived}
+                      disabled={busy || !canSubmitPayment}
                       onClick={() => tryRequestPaymentConfirm()}
                       className={successBtnClass}
                     >

@@ -17,6 +17,7 @@ const {
   INVOICE_ACTIVITY_TYPES,
   insertInvoiceActivityLog
 } = require('../utils/invoice-activity-log');
+const { ensureReadyToIssueDueDates } = require('../utils/invoice-term-lifecycle');
 
 const LEAD_WORKSPACE_ELIGIBLE_SNIPPET = `
   l.lead_status IN ('ACTIVE', 'WON', 'LOST')
@@ -528,6 +529,7 @@ const markEngagementLetterSigned = async (leadIdRaw, engagementIdRaw, userId) =>
     );
     const accountId = accountInsert.insertId;
     await insertInvoiceTerms(conn, accountId, invoiceTerms);
+    await ensureReadyToIssueDueDates(conn, accountId);
 
     await insertInvoiceActivityLog(conn, {
       accountId,

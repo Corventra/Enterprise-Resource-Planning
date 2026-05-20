@@ -41,7 +41,7 @@ export const InvoiceDetailPage = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-4 md:space-y-6">
       <InvoiceDetailHeader detail={detail} onBack={() => navigate('/invoice')} />
       <InvoiceFinancialOverview detail={detail} />
       <InvoiceInstallmentsTable
@@ -50,13 +50,13 @@ export const InvoiceDetailPage = () => {
         onDetailUpdated={applyDetail}
       />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-12 md:gap-6">
         <InvoicePaymentHistoryTable
           paymentHistory={detail.paymentHistory}
           activityLogs={detail.activityLogs}
         />
 
-        <aside className="space-y-6 lg:col-span-4">
+        <aside className="min-w-0 space-y-4 md:col-span-4 md:space-y-6">
           <InvoiceDocumentsCard documents={detail.relatedDocuments} />
         </aside>
       </div>

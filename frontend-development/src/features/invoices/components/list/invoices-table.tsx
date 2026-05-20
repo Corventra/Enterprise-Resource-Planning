@@ -55,10 +55,9 @@ export const InvoicesTable = ({ invoices, onView, footer }: InvoicesTableProps) 
               <th className={`${thBase} text-left`}>Service</th>
               <th className={`${thBase} text-right`}>Contract Value</th>
               <th className={`${thBase} text-right`}>Estimated Net Receipt</th>
-              <th className={`${thBase} text-left`}>Next Due</th>
+              <th className={`${thBase} text-left`}>Tindakan & Tenggat</th>
               <th className={`${thBase} text-center`}>Status</th>
               <th className={`${thBase} text-center`}>Progress</th>
-              <th className={`${thBase} text-left`}>Next Action</th>
               <th className={`${thBase} text-center`}>Action</th>
             </tr>
           </thead>
@@ -77,12 +76,21 @@ export const InvoicesTable = ({ invoices, onView, footer }: InvoicesTableProps) 
                 <td className="px-4 py-3.5 text-right text-xs font-medium text-[#434653]">
                   {formatMoney(invoice.estimatedNetReceipt)}
                 </td>
-                <td
-                  className={`px-4 py-3.5 text-xs font-medium ${
-                    invoice.statusDb === 'OVERDUE' ? 'text-[#ba1a1a]' : 'text-[#434653]'
-                  }`}
-                >
-                  {formatDate(invoice.nextDueDate)}
+                <td className="max-w-[220px] px-4 py-3.5">
+                  <p
+                    className={`text-xs font-medium leading-snug ${
+                      invoice.statusDb === 'OVERDUE' ? 'text-[#ba1a1a]' : 'text-[#434653]'
+                    }`}
+                  >
+                    {invoice.nextAction}
+                  </p>
+                  <p
+                    className={`mt-0.5 text-[11px] ${
+                      invoice.statusDb === 'OVERDUE' ? 'text-[#ba1a1a]/80' : 'text-[#737784]'
+                    }`}
+                  >
+                    Tenggat: {formatDate(invoice.nextDueDate)}
+                  </p>
                 </td>
                 <td className="px-4 py-3.5">
                   <div className="flex justify-center">
@@ -113,7 +121,6 @@ export const InvoicesTable = ({ invoices, onView, footer }: InvoicesTableProps) 
                     <span className="text-[10px] text-[#737784]">{invoice.progressSummary}</span>
                   </div>
                 </td>
-                <td className="max-w-[200px] px-4 py-3.5 text-xs text-[#434653]">{invoice.nextAction}</td>
                 <td className="px-4 py-3.5">
                   <div className="flex items-center justify-center gap-1">
                     <button

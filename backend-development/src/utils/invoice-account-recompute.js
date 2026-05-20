@@ -1,38 +1,35 @@
-const { formatSqlDate } = require('./sql-date');
+const {
+  deriveAccountStatus,
+  deriveAccountNextDueDate
+} = require('./invoice-next-action');
 
 /**
  * Recompute invoice_accounts derived fields from current invoice_terms + payments.
  */
 const recomputeInvoiceAccountDerived = async (conn, accountId) => {
   const [termRows] = await conn.execute(
-    `SELECT status, due_date, billing_schedule_date
+    `SELECT
+        status,
+        due_date,
+        billing_schedule_date,
+        term_name,
+        term_type,
+        term_order,
+        trigger_reference_value,
+        trigger_confirmed_by,
+        trigger_confirmed_at
        FROM invoice_terms
-      WHERE account_id = ?`,
+      WHERE account_id = ?
+      ORDER BY term_order ASC, invoice_id ASC`,
     [accountId]
   );
+
   const total = termRows.length;
   const paid = termRows.filter((t) => t.status === 'PAID').length;
   const progressSummary = total > 0 ? `${paid}/${total} Paid` : null;
 
-  let status = 'READY_TO_BILL';
-  if (total > 0 && paid === total) {
-    status = 'SETTLED';
-  } else if (termRows.some((t) => t.status === 'OVERDUE')) {
-    status = 'OVERDUE';
-  } else if (termRows.some((t) => t.status === 'ISSUED' || t.status === 'SENT')) {
-    status = 'AWAITING_PAYMENT';
-  }
-
-  const [dueRows] = await conn.execute(
-    `SELECT MIN(COALESCE(due_date, billing_schedule_date)) AS next_due
-       FROM invoice_terms
-      WHERE account_id = ?
-        AND status IN ('ISSUED', 'SENT', 'OVERDUE')
-        AND COALESCE(due_date, billing_schedule_date) IS NOT NULL`,
-    [accountId]
-  );
-  const nextDueRaw = dueRows[0]?.next_due;
-  const nextDueDate = nextDueRaw != null ? formatSqlDate(nextDueRaw) : null;
+  const status = deriveAccountStatus(termRows);
+  const nextDueDate = deriveAccountNextDueDate(termRows);
 
   const [paidSumRows] = await conn.execute(
     `SELECT COALESCE(SUM(ip.amount_received_net), 0) AS total_paid

@@ -20,3 +20,5 @@ export const formatDate = (value: string) => {
   if (!d) return '-';
   return new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }).format(d);
 };
+
+export const shouldShowTermDueDate = (statusDb: string) => statusDb !== 'PAID';

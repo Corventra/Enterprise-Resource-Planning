@@ -52,9 +52,14 @@ const findInvoiceTermsByAccountIds = async (accountIds) => {
         account_id,
         invoice_id,
         term_name,
+        term_type,
         term_order,
         status,
-        due_date
+        due_date,
+        billing_schedule_date,
+        trigger_reference_value,
+        trigger_confirmed_by,
+        trigger_confirmed_at
       FROM invoice_terms
      WHERE account_id IN (${placeholders})
      ORDER BY account_id ASC, term_order ASC, invoice_id ASC`,

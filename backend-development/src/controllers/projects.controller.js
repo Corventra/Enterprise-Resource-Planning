@@ -1,5 +1,6 @@
 const { pool } = require('../config/db');
 const handoverRepo = require('../repositories/handover.repo');
+const { syncInvoiceTermLifecycle } = require('../utils/invoice-term-lifecycle');
 
 /**
  * Projects controller.
@@ -1057,8 +1058,9 @@ const rateMilestone = async (req, res) => {
  *
  * PM action: mark project Completed + trigger final invoice activation.
  * Cross-module integration dengan modul Invoice (PRD Rule B):
- *   - Project completion mengaktifkan term FINAL pada invoice_terms dari DRAFT
- *     → READY_TO_ISSUE, mengisi trigger_reference_value/_by/_at.
+ *   - Project completion mengisi trigger final invoice (trigger_reference_value/_by/_at).
+ *     Promosi DRAFT → READY_TO_ISSUE dijalankan lifecycle sync (termin sebelumnya
+ *     harus PAID, billing schedule final tercapai jika ada).
  *
  * Validasi:
  *   - Project exists, status In Progress (atau On Hold)
@@ -1154,22 +1156,31 @@ const completeProject = async (req, res) => {
       [todayIso, projectId]
     );
 
-    // 6. Trigger ke modul Invoice — aktifkan term FINAL dari DRAFT ke
-    // READY_TO_ISSUE sambil isi field trigger (sesuai contract PRD section 7.2).
-    // Hanya update term yang masih DRAFT supaya idempoten (kalau dipanggil ulang
-    // setelah Izhhar issue invoice, tidak override).
+    // 6. Trigger ke modul Invoice — isi field completion pada term FINAL (masih DRAFT).
+    // Promosi READY_TO_ISSUE via syncInvoiceTermLifecycle (previous terms PAID, dll.).
     const [triggerResult] = await conn.query(
       `UPDATE invoice_terms
-       SET status = 'READY_TO_ISSUE',
-           trigger_reference_value = 'Project completed',
+       SET trigger_reference_value = 'Project completed',
            trigger_confirmed_by = ?,
-           trigger_confirmed_at = NOW()
+           trigger_confirmed_at = NOW(),
+           updated_at = CURRENT_TIMESTAMP
        WHERE project_id = ?
          AND term_type = 'FINAL'
          AND status = 'DRAFT'`,
       [actorUserId, projectId]
     );
     const triggeredInvoiceTerms = triggerResult.affectedRows ?? 0;
+
+    const [accountRows] = await conn.query(
+      `SELECT DISTINCT account_id
+         FROM invoice_terms
+        WHERE project_id = ?
+          AND term_type = 'FINAL'`,
+      [projectId]
+    );
+    for (const row of accountRows) {
+      await syncInvoiceTermLifecycle(conn, row.account_id);
+    }
 
     // 7. Activity log (non-critical)
     try {

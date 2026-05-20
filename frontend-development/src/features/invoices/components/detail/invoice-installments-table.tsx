@@ -1,5 +1,8 @@
 import { useMemo, useRef, useState, type MouseEvent } from 'react';
 import { Download, Eye } from 'lucide-react';
+import { Toast } from '../../../../components/ui/toast';
+import { useToast } from '../../../../hooks/use-toast';
+import { INVOICE_TOAST } from '../../constants/invoice-toast';
 import type { InvoiceDetail, InvoiceInstallment } from '../../types/invoice.types';
 import { buildInvoicePdfModel, downloadInvoiceTermPdf } from '../../pdf/invoice-pdf-service';
 import type { InvoicePdfViewModel } from '../../pdf/invoice-pdf-types';
@@ -9,7 +12,7 @@ import { InvoiceTermGenerateConfirmDialog } from '../modals/invoice-term-generat
 import { InvoiceTermPaymentConfirmDialog } from '../modals/invoice-term-payment-confirm-dialog';
 import { InvoiceTermSentConfirmDialog } from '../modals/invoice-term-sent-confirm-dialog';
 import { invoicesService } from '../../services/invoices-service';
-import { formatCurrency, formatDate } from './invoice-detail-formatters';
+import { formatCurrency, formatDate, shouldShowTermDueDate } from './invoice-detail-formatters';
 
 interface InvoiceInstallmentsTableProps {
   invoiceDetail: InvoiceDetail;
@@ -44,6 +47,7 @@ export const InvoiceInstallmentsTable = ({
   } | null>(null);
   const [pendingAutoPdf, setPendingAutoPdf] = useState<InvoicePdfViewModel | null>(null);
   const pendingPaymentFormRef = useRef<FormData | null>(null);
+  const { message: toastMessage, variant: toastVariant, dismiss: dismissToast, show: showToast } = useToast();
 
   const sentConfirmBusy = busyId != null && sentConfirmTermId != null && busyId === sentConfirmTermId;
   const generateConfirmBusy =
@@ -54,6 +58,16 @@ export const InvoiceInstallmentsTable = ({
   const generateConfirmTermName = useMemo(
     () => installments.find((row) => row.id === generateConfirmTermId)?.termName,
     [installments, generateConfirmTermId]
+  );
+
+  const sentConfirmTermName = useMemo(
+    () => installments.find((row) => row.id === sentConfirmTermId)?.termName,
+    [installments, sentConfirmTermId]
+  );
+
+  const paymentConfirmTermName = useMemo(
+    () => installments.find((row) => row.id === paymentConfirmTermId)?.termName,
+    [installments, paymentConfirmTermId]
   );
 
   const handleDownload = async (id: string, e: MouseEvent) => {
@@ -79,8 +93,13 @@ export const InvoiceInstallmentsTable = ({
       onDetailUpdated(updated);
       setGenerateConfirmTermId(null);
       setPendingAutoPdf(buildInvoicePdfModel(updated, generateConfirmTermId));
+      const termLabel = generateConfirmTermName?.trim();
+      showToast(
+        termLabel ? `Invoice untuk ${termLabel} berhasil diterbitkan.` : INVOICE_TOAST.termGenerated,
+        { immediate: true }
+      );
     } catch (e) {
-      window.alert(e instanceof Error ? e.message : 'Gagal generate invoice.');
+      showToast(e instanceof Error ? e.message : INVOICE_TOAST.termGenerateFailed, { variant: 'error' });
       setBusyId(null);
     }
   };
@@ -95,8 +114,13 @@ export const InvoiceInstallmentsTable = ({
       setPaymentConfirmTermId(null);
       setPaymentConfirmMeta(null);
       pendingPaymentFormRef.current = null;
+      const termLabel = paymentConfirmTermName?.trim();
+      showToast(
+        termLabel ? `Bukti pembayaran untuk ${termLabel} berhasil dicatat.` : INVOICE_TOAST.termPaymentRecorded,
+        { immediate: true }
+      );
     } catch (e) {
-      window.alert(e instanceof Error ? e.message : 'Gagal menyimpan pembayaran.');
+      showToast(e instanceof Error ? e.message : INVOICE_TOAST.termPaymentFailed, { variant: 'error' });
       setBusyId(null);
     }
   };
@@ -108,8 +132,18 @@ export const InvoiceInstallmentsTable = ({
       const updated = await invoicesService.markTermSent(sentConfirmTermId);
       onDetailUpdated(updated);
       setSentConfirmTermId(null);
+      const termLabel = sentConfirmTermName?.trim();
+      showToast(
+        termLabel
+          ? `Invoice untuk ${termLabel} berhasil dikirim ke klien.`
+          : INVOICE_TOAST.termSentToClient,
+        { immediate: true }
+      );
     } catch (e) {
-      window.alert(e instanceof Error ? e.message : 'Gagal mengirim invoice ke klien.');
+      showToast(
+        e instanceof Error ? e.message : INVOICE_TOAST.termSentToClientFailed,
+        { variant: 'error' }
+      );
     } finally {
       setBusyId(null);
     }
@@ -117,57 +151,59 @@ export const InvoiceInstallmentsTable = ({
 
   return (
     <>
-      <section className="overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-[#eceef0]">
-        <div className="border-b border-[#eceef0] px-6 py-4">
-          <h3 className="font-bold text-[#191c1e]">Daftar Termin Pembayaran</h3>
+      <section className="min-w-0 overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-[#eceef0]">
+        <div className="border-b border-[#eceef0] px-4 py-3 sm:px-6 sm:py-4">
+          <h3 className="text-sm font-bold text-[#191c1e] sm:text-base">Daftar Termin Pembayaran</h3>
           <p className="mt-1 text-xs text-[#737784]">
             Gunakan ikon View untuk aksi termin (kirim ke klien, upload pembayaran). Download untuk PDF.
           </p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full min-w-[960px] text-left text-xs">
             <thead className="bg-[#f2f4f6] text-[10px] font-bold uppercase tracking-widest text-[#737784]">
               <tr>
-                <th className="px-6 py-4">Invoice No</th>
-                <th className="px-6 py-4">Term Name</th>
-                <th className="px-6 py-4">Percentage</th>
-                <th className="px-6 py-4">Tax</th>
-                <th className="px-6 py-4">DPP</th>
-                <th className="px-6 py-4">Net Amount</th>
-                <th className="px-6 py-4">Billing Schedule</th>
-                <th className="px-6 py-4">Issue Date</th>
-                <th className="px-6 py-4">Due Date</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4 text-right">Action</th>
+                <th className="px-3 py-3 sm:px-6 sm:py-4">Invoice No</th>
+                <th className="px-3 py-3 sm:px-6 sm:py-4">Term Name</th>
+                <th className="px-3 py-3 sm:px-6 sm:py-4">Percentage</th>
+                <th className="px-3 py-3 sm:px-6 sm:py-4">Tax</th>
+                <th className="px-3 py-3 sm:px-6 sm:py-4">DPP</th>
+                <th className="px-3 py-3 sm:px-6 sm:py-4">Net Amount</th>
+                <th className="px-3 py-3 sm:px-6 sm:py-4">Billing Schedule</th>
+                <th className="px-3 py-3 sm:px-6 sm:py-4">Issue Date</th>
+                <th className="px-3 py-3 sm:px-6 sm:py-4">Due Date</th>
+                <th className="px-3 py-3 sm:px-6 sm:py-4">Status</th>
+                <th className="px-3 py-3 text-right sm:px-6 sm:py-4">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#eceef0]">
               {installments.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-6 py-8 text-center text-sm text-[#737784]">
+                  <td colSpan={11} className="px-4 py-8 text-center text-sm text-[#737784] sm:px-6">
                     Belum ada termin pembayaran.
                   </td>
                 </tr>
               ) : (
                 installments.map((item) => (
                   <tr key={item.id} className="hover:bg-[#f7f9fb]">
-                    <td className="px-6 py-4 font-bold text-[#191c1e]">{item.invoiceNumber}</td>
-                    <td className="px-6 py-4">{item.termName}</td>
-                    <td className="px-6 py-4">{item.percentage}%</td>
-                    <td className="px-6 py-4">{item.taxScheme}</td>
-                    <td className="px-6 py-4 font-semibold">{formatCurrency(item.baseAmount)}</td>
-                    <td className="px-6 py-4 font-semibold text-[#004b31]">{formatCurrency(item.totalInvoice)}</td>
-                    <td className="px-6 py-4">{formatDate(item.billingScheduleDate)}</td>
-                    <td className="px-6 py-4">{formatDate(item.issuedDate)}</td>
-                    <td className="px-6 py-4">{formatDate(item.dueDate)}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 py-3 font-bold text-[#191c1e] sm:px-6 sm:py-4">{item.invoiceNumber}</td>
+                    <td className="px-3 py-3 sm:px-6 sm:py-4">{item.termName}</td>
+                    <td className="px-3 py-3 sm:px-6 sm:py-4">{item.percentage}%</td>
+                    <td className="px-3 py-3 sm:px-6 sm:py-4">{item.taxScheme}</td>
+                    <td className="px-3 py-3 font-semibold sm:px-6 sm:py-4">{formatCurrency(item.baseAmount)}</td>
+                    <td className="px-3 py-3 font-semibold text-[#004b31] sm:px-6 sm:py-4">{formatCurrency(item.totalInvoice)}</td>
+                    <td className="px-3 py-3 sm:px-6 sm:py-4">{formatDate(item.billingScheduleDate)}</td>
+                    <td className="px-3 py-3 sm:px-6 sm:py-4">{formatDate(item.issuedDate)}</td>
+                    <td className="px-3 py-3 sm:px-6 sm:py-4">
+                      {shouldShowTermDueDate(item.statusDb) ? formatDate(item.dueDate) : '—'}
+                    </td>
+                    <td className="px-3 py-3 sm:px-6 sm:py-4">
                       <span
                         className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase ${termStatusClass(item.statusDb)}`}
                       >
                         {item.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-3 py-3 text-right sm:px-6 sm:py-4">
                       <div className="inline-flex items-center justify-end gap-1">
                         <button
                           type="button"
@@ -275,6 +311,13 @@ export const InvoiceInstallmentsTable = ({
         model={pendingAutoPdf}
         onComplete={() => setBusyId(null)}
         onError={() => setBusyId(null)}
+      />
+
+      <Toast
+        open={toastMessage != null}
+        message={toastMessage ?? ''}
+        variant={toastVariant}
+        onClose={dismissToast}
       />
     </>
   );

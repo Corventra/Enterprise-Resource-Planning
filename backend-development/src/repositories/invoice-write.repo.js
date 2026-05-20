@@ -259,6 +259,14 @@ const createInvoiceTermPayment = async (invoiceIdRaw, payload, fileMeta, userId)
       createdBy: verifiedBy
     });
 
+    await conn.execute(
+      `UPDATE invoice_terms
+          SET due_date = NULL,
+              updated_at = CURRENT_TIMESTAMP
+        WHERE invoice_id = ?`,
+      [invoiceId]
+    );
+
     const termMarkedPaid = await markTermPaidIfFullySettled(conn, invoiceId, term.net_amount);
     const termStatusAfter = termMarkedPaid ? 'PAID' : term.status;
 
@@ -384,6 +392,7 @@ const generateInvoiceTerm = async (invoiceIdRaw, userId) => {
           SET invoice_number = ?,
               invoice_sequence_no = ?,
               issue_date = CURDATE(),
+              due_date = DATE_ADD(CURDATE(), INTERVAL 1 DAY),
               status = 'ISSUED',
               updated_at = CURRENT_TIMESTAMP
         WHERE invoice_id = ?
@@ -473,7 +482,6 @@ const confirmInvoiceTermTrigger = async (invoiceIdRaw, userId, triggerReferenceV
           SET trigger_reference_value = ?,
               trigger_confirmed_by = ?,
               trigger_confirmed_at = NOW(),
-              status = 'READY_TO_ISSUE',
               updated_at = CURRENT_TIMESTAMP
         WHERE invoice_id = ?
           AND status = 'DRAFT'`,

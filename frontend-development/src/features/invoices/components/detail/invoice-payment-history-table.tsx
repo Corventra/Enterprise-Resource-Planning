@@ -22,38 +22,38 @@ const formatDateTime = (iso?: string | null) => {
 
 export const InvoicePaymentHistoryTable = ({ paymentHistory, activityLogs }: InvoicePaymentHistoryTableProps) => {
   return (
-    <section className="h-fit overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-[#eceef0] lg:col-span-8">
-      <div className="border-b border-[#eceef0] px-6 py-4">
-        <h3 className="font-bold text-[#191c1e]">Riwayat Pembayaran</h3>
+    <section className="h-fit min-w-0 overflow-hidden rounded-lg bg-white shadow-sm ring-1 ring-[#eceef0] md:col-span-8">
+      <div className="border-b border-[#eceef0] px-4 py-3 sm:px-6 sm:py-4">
+        <h3 className="text-sm font-bold text-[#191c1e] sm:text-base">Riwayat Pembayaran</h3>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs">
+        <table className="w-full min-w-[640px] text-left text-xs">
           <thead className="bg-[#f2f4f6] text-[10px] font-bold uppercase tracking-widest text-[#737784]">
             <tr>
-              <th className="px-6 py-4">Tgl Transaksi</th>
-              <th className="px-6 py-4">Termin</th>
-              <th className="px-6 py-4">Uang Masuk</th>
-              <th className="px-6 py-4">Metode</th>
-              <th className="px-6 py-4">Diverifikasi Oleh</th>
-              <th className="px-6 py-4 text-right">Status</th>
+              <th className="px-3 py-3 sm:px-6 sm:py-4">Tgl Transaksi</th>
+              <th className="px-3 py-3 sm:px-6 sm:py-4">Termin</th>
+              <th className="px-3 py-3 sm:px-6 sm:py-4">Uang Masuk</th>
+              <th className="px-3 py-3 sm:px-6 sm:py-4">Metode</th>
+              <th className="px-3 py-3 sm:px-6 sm:py-4">Diverifikasi Oleh</th>
+              <th className="px-3 py-3 text-right sm:px-6 sm:py-4">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#eceef0]">
             {paymentHistory.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-sm text-[#737784]">
+                <td colSpan={6} className="px-4 py-8 text-center text-sm text-[#737784] sm:px-6">
                   Belum ada riwayat pembayaran.
                 </td>
               </tr>
             ) : (
               paymentHistory.map((history) => (
                 <tr key={history.id}>
-                  <td className="px-6 py-4 text-[#737784]">{formatDate(history.transactionDate)}</td>
-                  <td className="px-6 py-4">{history.installmentName}</td>
-                  <td className="px-6 py-4 font-semibold text-[#004b31]">{formatCurrency(history.amountReceived)}</td>
-                  <td className="px-6 py-4">{history.method}</td>
-                  <td className="px-6 py-4">{history.verifiedBy}</td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-3 py-3 text-[#737784] sm:px-6 sm:py-4">{formatDate(history.transactionDate)}</td>
+                  <td className="px-3 py-3 sm:px-6 sm:py-4">{history.installmentName}</td>
+                  <td className="px-3 py-3 font-semibold text-[#004b31] sm:px-6 sm:py-4">{formatCurrency(history.amountReceived)}</td>
+                  <td className="px-3 py-3 sm:px-6 sm:py-4">{history.method}</td>
+                  <td className="px-3 py-3 sm:px-6 sm:py-4">{history.verifiedBy}</td>
+                  <td className="px-3 py-3 text-right sm:px-6 sm:py-4">
                     <span
                       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
                         history.status === 'Verified'
@@ -74,7 +74,7 @@ export const InvoicePaymentHistoryTable = ({ paymentHistory, activityLogs }: Inv
         </table>
       </div>
 
-      <div className="border-t border-[#eceef0] bg-[#f7f9fb] p-6">
+      <div className="border-t border-[#eceef0] bg-[#f7f9fb] p-4 sm:p-6">
         <h4 className="mb-4 text-[10px] font-bold uppercase tracking-widest text-[#737784]">Activity Log</h4>
         {activityLogs.length === 0 ? (
           <p className="text-sm text-[#737784]">Belum ada aktivitas tercatat.</p>

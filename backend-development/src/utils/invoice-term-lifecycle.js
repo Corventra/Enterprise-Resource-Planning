@@ -7,11 +7,31 @@ const {
   INVOICE_ACTIVITY_TYPES,
   insertInvoiceActivityLog
 } = require('./invoice-activity-log');
+const { hasAllPreviousTermsPaid } = require('./invoice-term-readiness');
 
 const accountFilterSql = (accountId, alias = 'it') =>
   accountId != null ? ` AND ${alias}.account_id = ?` : '';
 
 const accountFilterParams = (accountId) => (accountId != null ? [accountId] : []);
+
+/** Operational deadline for admin to generate invoice (not client payment due). */
+const READY_TO_ISSUE_DUE_DATE_SQL = 'DATE_ADD(CURDATE(), INTERVAL 1 DAY)';
+
+/**
+ * READY_TO_ISSUE terms must carry due_date = H+1 (batas generate invoice).
+ */
+const ensureReadyToIssueDueDates = async (conn, accountId = null) => {
+  const params = accountFilterParams(accountId);
+  await conn.execute(
+    `UPDATE invoice_terms it
+        SET it.due_date = ${READY_TO_ISSUE_DUE_DATE_SQL},
+            it.updated_at = CURRENT_TIMESTAMP
+      WHERE it.status = 'READY_TO_ISSUE'
+        AND it.due_date IS NULL
+        ${accountFilterSql(accountId, 'it')}`,
+    params
+  );
+};
 
 /**
  * SENT -> OVERDUE when due_date < today and not yet PAID.
@@ -62,14 +82,13 @@ const applyOverdueStatusIfNeeded = async (conn, accountId = null) => {
 };
 
 /**
- * INSTALLMENT: DRAFT -> READY_TO_ISSUE when billing_schedule_date <= today.
+ * INSTALLMENT: DRAFT -> READY_TO_ISSUE when schedule reached and all lower term_order are PAID.
  */
 const applyInstallmentScheduleActivation = async (conn, accountId = null) => {
   const params = accountFilterParams(accountId);
-  await conn.execute(
-    `UPDATE invoice_terms it
-        SET it.status = 'READY_TO_ISSUE',
-            it.updated_at = CURRENT_TIMESTAMP
+  const [candidates] = await conn.execute(
+    `SELECT it.invoice_id, it.account_id, it.term_order
+       FROM invoice_terms it
       WHERE it.status = 'DRAFT'
         AND it.term_type = 'INSTALLMENT'
         AND it.billing_schedule_date IS NOT NULL
@@ -77,34 +96,68 @@ const applyInstallmentScheduleActivation = async (conn, accountId = null) => {
         ${accountFilterSql(accountId, 'it')}`,
     params
   );
+
+  for (const row of candidates) {
+    const previousPaid = await hasAllPreviousTermsPaid(conn, row.account_id, row.term_order);
+    if (!previousPaid) {
+      continue;
+    }
+
+    await conn.execute(
+      `UPDATE invoice_terms
+          SET status = 'READY_TO_ISSUE',
+              due_date = ${READY_TO_ISSUE_DUE_DATE_SQL},
+              updated_at = CURRENT_TIMESTAMP
+        WHERE invoice_id = ?
+          AND status = 'DRAFT'
+          AND term_type = 'INSTALLMENT'`,
+      [row.invoice_id]
+    );
+  }
 };
 
 /**
- * FINAL: DRAFT -> READY_TO_ISSUE when project completion trigger fields are set.
+ * FINAL: DRAFT -> READY_TO_ISSUE when trigger confirmed, schedule reached (if set),
+ * and all lower term_order are PAID.
  */
 const applyFinalTriggeredActivation = async (conn, accountId = null) => {
   const params = accountFilterParams(accountId);
-  await conn.execute(
-    `UPDATE invoice_terms it
-        SET it.status = 'READY_TO_ISSUE',
-            it.updated_at = CURRENT_TIMESTAMP
+  const [candidates] = await conn.execute(
+    `SELECT it.invoice_id, it.account_id, it.term_order
+       FROM invoice_terms it
       WHERE it.status = 'DRAFT'
         AND it.term_type = 'FINAL'
-        AND it.billing_trigger_type = 'PROJECT_COMPLETION'
         AND it.trigger_reference_value IS NOT NULL
         AND TRIM(it.trigger_reference_value) <> ''
         AND it.trigger_confirmed_by IS NOT NULL
         AND it.trigger_confirmed_at IS NOT NULL
+        AND (it.billing_schedule_date IS NULL OR it.billing_schedule_date <= CURDATE())
         ${accountFilterSql(accountId, 'it')}`,
     params
   );
+
+  for (const row of candidates) {
+    const previousPaid = await hasAllPreviousTermsPaid(conn, row.account_id, row.term_order);
+    if (!previousPaid) {
+      continue;
+    }
+
+    await conn.execute(
+      `UPDATE invoice_terms
+          SET status = 'READY_TO_ISSUE',
+              due_date = ${READY_TO_ISSUE_DUE_DATE_SQL},
+              updated_at = CURRENT_TIMESTAMP
+        WHERE invoice_id = ?
+          AND status = 'DRAFT'
+          AND term_type = 'FINAL'`,
+      [row.invoice_id]
+    );
+  }
 };
 
 /**
- * RETAINER: promote earliest eligible DRAFT term when schedule reached;
+ * RETAINER: promote earliest eligible DRAFT term when schedule reached and previous terms PAID;
  * only one RETAINER may be READY_TO_ISSUE per account at a time.
- *
- * Two-step (avoids MySQL 1093: cannot UPDATE invoice_terms while reading it in subquery).
  */
 const applyRetainerScheduleActivation = async (conn, accountId = null) => {
   const filterParams = accountFilterParams(accountId);
@@ -135,6 +188,12 @@ const applyRetainerScheduleActivation = async (conn, accountId = null) => {
     if (accountsWithReadyRetainer.has(row.account_id)) {
       continue;
     }
+
+    const previousPaid = await hasAllPreviousTermsPaid(conn, row.account_id, row.term_order);
+    if (!previousPaid) {
+      continue;
+    }
+
     const current = candidateByAccount.get(row.account_id);
     if (!current || row.term_order < current.term_order) {
       candidateByAccount.set(row.account_id, row);
@@ -145,6 +204,7 @@ const applyRetainerScheduleActivation = async (conn, accountId = null) => {
     await conn.execute(
       `UPDATE invoice_terms
           SET status = 'READY_TO_ISSUE',
+              due_date = ${READY_TO_ISSUE_DUE_DATE_SQL},
               updated_at = CURRENT_TIMESTAMP
         WHERE invoice_id = ?
           AND term_type = 'RETAINER'
@@ -164,6 +224,7 @@ const syncInvoiceTermLifecycle = async (conn, accountId = null) => {
   await applyInstallmentScheduleActivation(conn, accountId);
   await applyRetainerScheduleActivation(conn, accountId);
   await applyFinalTriggeredActivation(conn, accountId);
+  await ensureReadyToIssueDueDates(conn, accountId);
 
   const accountIds = await collectDistinctAccountIds(conn, accountId);
   await recomputeInvoiceAccountsDerived(conn, accountIds);
@@ -191,6 +252,7 @@ module.exports = {
   applyInstallmentScheduleActivation,
   applyRetainerScheduleActivation,
   applyFinalTriggeredActivation,
+  ensureReadyToIssueDueDates,
   syncInvoiceTermLifecycle,
   syncInvoiceTermLifecycleForRead
 };
