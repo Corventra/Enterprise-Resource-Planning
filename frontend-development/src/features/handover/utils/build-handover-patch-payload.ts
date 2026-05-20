@@ -15,13 +15,14 @@ export const buildHandoverPatchFormData = (form: HandoverDetail, extras: Handove
     form.projectTitle ??
     form.projectInformation.find((item) => item.label === 'Project Title')?.value ??
     '';
-  const companyGroup = form.companyGroup ?? nullIfDash(
-    form.projectInformation.find((item) => item.label === 'Company Group')?.value ?? ''
-  );
+  const companyGroup =
+    form.companyGroup ??
+    form.projectInformation.find((item) => item.label === 'Company Group')?.value ??
+    '';
 
   const payload = {
     project_title: nullIfDash(projectTitle),
-    company_group: companyGroup,
+    company_group: nullIfDash(companyGroup),
     project_start_date: form.projectStartDate?.trim() || null,
     project_end_date: form.projectEndDate?.trim() || null,
     background_summary: nullIfDash(form.backgroundSummary),

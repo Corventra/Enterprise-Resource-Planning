@@ -7,14 +7,16 @@ export const useHandoverDetail = (handoverId?: string) => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchDetail = useCallback(async () => {
+  const fetchDetail = useCallback(async (options?: { silent?: boolean }) => {
     if (!handoverId) {
       setDetail(undefined);
       setError(null);
       setIsLoading(false);
       return;
     }
-    setIsLoading(true);
+    if (!options?.silent) {
+      setIsLoading(true);
+    }
     setError(null);
     try {
       const data = await handoverService.getById(handoverId);
@@ -26,7 +28,9 @@ export const useHandoverDetail = (handoverId?: string) => {
       setDetail(undefined);
       setError(e instanceof Error ? e.message : 'Gagal memuat detail handover.');
     } finally {
-      setIsLoading(false);
+      if (!options?.silent) {
+        setIsLoading(false);
+      }
     }
   }, [handoverId]);
 

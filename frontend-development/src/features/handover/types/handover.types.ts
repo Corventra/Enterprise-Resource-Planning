@@ -117,6 +117,25 @@ export interface HandoverFeeItem {
   notes: string;
 }
 
+export type HandoverPaymentMethod = 'TERMIN' | 'RETAINER';
+
+export interface HandoverBillingScheduleRow {
+  label: string;
+  termTypeLabel?: string;
+  percentage?: string;
+  amount: string;
+  billingDate: string;
+  description: string;
+}
+
+export interface HandoverRetainerSummary {
+  contractStartDate: string;
+  contractEndDate: string;
+  billingTimingLabel: string;
+  monthCount: number;
+  monthlyAmount: string;
+}
+
 export interface HandoverContact {
   role: string;
   name: string;
@@ -189,7 +208,11 @@ export interface HandoverDetail {
   deliverables: string[];
   timelineMilestones: HandoverTimelineItem[];
   feeItems: HandoverFeeItem[];
+  agreedFee: string;
+  paymentMethod: HandoverPaymentMethod;
   paymentTerms: string;
+  billingSchedule: HandoverBillingScheduleRow[];
+  retainerSummary?: HandoverRetainerSummary | null;
   clientDocuments: HandoverClientDocumentItem[];
   storageLocation: string;
   outstandingData: string[];

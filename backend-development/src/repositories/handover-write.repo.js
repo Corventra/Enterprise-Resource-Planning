@@ -11,20 +11,27 @@ const normalizeHandoverId = (handoverId) => {
 };
 
 const normalizeOptionalDate = (v) => {
-  if (v === undefined || v === null) return null;
+  if (v === undefined || v === null || String(v).trim() === '') {
+    return { ok: true, value: null };
+  }
   const formatted = formatSqlDate(v);
-  if (formatted == null) return null;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(formatted)) {
+  if (formatted == null || !/^\d{4}-\d{2}-\d{2}$/.test(formatted)) {
     return { ok: false, message: 'Format tanggal harus YYYY-MM-DD.' };
   }
   return { ok: true, value: formatted };
 };
 
 const trimOrNull = (v, maxLen) => {
-  if (v === undefined || v === null) return null;
+  if (v === undefined || v === null) {
+    return { ok: true, value: null };
+  }
   const s = String(v).trim();
-  if (s === '') return null;
-  if (maxLen && s.length > maxLen) return { ok: false, message: `Teks maksimal ${maxLen} karakter.` };
+  if (s === '') {
+    return { ok: true, value: null };
+  }
+  if (maxLen && s.length > maxLen) {
+    return { ok: false, message: `Teks maksimal ${maxLen} karakter.` };
+  }
   return { ok: true, value: s };
 };
 

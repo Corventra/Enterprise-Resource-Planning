@@ -1,8 +1,12 @@
-import { useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useEffect, useMemo, useState } from 'react';
+import { ensureHandoverFormListDefaults } from '../utils/ensure-handover-form-list-defaults';
+import { useLocation, useNavigate, useParams } from 'react-router';
+import { Toast } from '../../../components/ui/toast';
+import { useToast } from '../../../hooks/use-toast';
 import { useAuth } from '../../../app/store/auth-store';
 import { HandoverCeoRevisionNoteCard } from '../components/detail/handover-ceo-revision-note-card';
 import { HandoverSubmitDialog } from '../components/detail/handover-submit-dialog';
+import { HANDOVER_TOAST } from '../constants/handover-toast';
 import { isHandoverEditableDbStatus, shouldShowCeoRevisionNote } from '../utils/handover-editable';
 import { HandoverUpdateFormSections } from '../components/update/handover-update-form-sections';
 import { HandoverUpdateHeader } from '../components/update/handover-update-header';
@@ -10,9 +14,22 @@ import { HandoverUpdateQuickNavigation } from '../components/update/handover-upd
 import { useHandoverDetail } from '../hooks/use-handover-detail';
 import { handoverService } from '../services/handover-service';
 import type { HandoverDetail } from '../types/handover.types';
+import {
+  firstHandoverSubmitErrorSectionId,
+  hasHandoverSubmitErrors,
+  validateHandoverForSubmit,
+  type HandoverSubmitErrors
+} from '../utils/handover-submit-validation';
+import { ApiError } from '../../../services/api-client';
+
+type HandoverUpdateLocationState = {
+  showSubmitErrors?: boolean;
+  showIncompleteToast?: boolean;
+};
 
 export const HandoverUpdatePage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { handoverId } = useParams();
   const { user } = useAuth();
   const { detail, isLoading } = useHandoverDetail(handoverId);
@@ -20,14 +37,41 @@ export const HandoverUpdatePage = () => {
   const [deletedDocumentIds, setDeletedDocumentIds] = useState<number[]>([]);
   const [busy, setBusy] = useState(false);
   const [submitOpen, setSubmitOpen] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const [submitErrors, setSubmitErrors] = useState<HandoverSubmitErrors>({});
+  const [showSubmitErrors, setShowSubmitErrors] = useState(false);
+  const { message: toastMessage, variant: toastVariant, dismiss: dismissToast, show: showToast } = useToast();
 
   const isOperator = useMemo(() => {
     if (!detail?.processedBy || !user?.id) return false;
     return Number(detail.processedBy) === Number(user.id);
   }, [detail?.processedBy, user?.id]);
 
-  const activeForm = form ?? detail;
+  const activeForm = useMemo(() => {
+    const base = form ?? detail;
+    if (!base) return undefined;
+    return ensureHandoverFormListDefaults(base);
+  }, [form, detail]);
+
+  useEffect(() => {
+    const state = location.state as HandoverUpdateLocationState | null;
+    if (!state?.showSubmitErrors) return;
+
+    if (state.showIncompleteToast) {
+      showToast(HANDOVER_TOAST.submitIncomplete, { variant: 'error' });
+    }
+
+    if (!activeForm) return;
+
+    const errors = validateHandoverForSubmit(activeForm);
+    setSubmitErrors(errors);
+    setShowSubmitErrors(true);
+    const sectionId = firstHandoverSubmitErrorSectionId(errors);
+    if (sectionId) {
+      document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    navigate(location.pathname, { replace: true, state: null });
+  }, [activeForm, location.pathname, location.state, navigate, showToast]);
 
   const collectPatchExtras = () => {
     const docs = activeForm?.clientDocuments ?? [];
@@ -38,38 +82,76 @@ export const HandoverUpdatePage = () => {
   const persistDraft = async () => {
     if (!handoverId || !activeForm) return;
     setBusy(true);
-    setActionError(null);
     try {
       const updated = await handoverService.updateDraft(handoverId, activeForm, collectPatchExtras());
-      setForm(updated);
+      setForm(ensureHandoverFormListDefaults(updated));
       setDeletedDocumentIds([]);
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : 'Gagal menyimpan draft handover.');
+      const message = e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Gagal menyimpan draft handover.';
+      showToast(message, { variant: 'error' });
       throw e;
     } finally {
       setBusy(false);
     }
   };
 
+  const handleFormChange = (next: HandoverDetail) => {
+    setForm(next);
+    setShowSubmitErrors(false);
+    setSubmitErrors({});
+  };
+
   const handleSaveDraft = async () => {
     try {
       await persistDraft();
+      showToast(HANDOVER_TOAST.draftSaved);
     } catch {
-      // error shown via actionError
+      /* toast shown in persistDraft */
     }
   };
 
+  const handleRequestSubmit = () => {
+    if (!activeForm) return;
+    const errors = validateHandoverForSubmit(activeForm);
+    if (hasHandoverSubmitErrors(errors)) {
+      setSubmitErrors(errors);
+      setShowSubmitErrors(true);
+      showToast(HANDOVER_TOAST.submitIncomplete, { variant: 'error' });
+      const sectionId = firstHandoverSubmitErrorSectionId(errors);
+      if (sectionId) {
+        document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      return;
+    }
+    setSubmitErrors({});
+    setShowSubmitErrors(false);
+    setSubmitOpen(true);
+  };
+
   const handleSubmit = async () => {
-    if (!handoverId) return;
+    if (!handoverId || !activeForm) return;
+    const errors = validateHandoverForSubmit(activeForm);
+    if (hasHandoverSubmitErrors(errors)) {
+      setSubmitErrors(errors);
+      setShowSubmitErrors(true);
+      setSubmitOpen(false);
+      const sectionId = firstHandoverSubmitErrorSectionId(errors);
+      if (sectionId) {
+        document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      return;
+    }
+
     setBusy(true);
-    setActionError(null);
     try {
       await persistDraft();
       await handoverService.submit(handoverId);
       setSubmitOpen(false);
+      showToast(detail?.dbStatus === 'NEED_REVISION' ? HANDOVER_TOAST.resubmitted : HANDOVER_TOAST.submitted);
       navigate(`/handover/${handoverId}`);
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : 'Gagal submit handover.');
+      const message = e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Gagal submit handover.';
+      showToast(message, { variant: 'error' });
     } finally {
       setBusy(false);
     }
@@ -117,38 +199,49 @@ export const HandoverUpdatePage = () => {
   }
 
   return (
-    <div className="space-y-5">
-      <HandoverUpdateHeader
-        busy={busy}
-        onBack={() => navigate(`/handover/${detail.id}`)}
-        onSaveDraft={() => void handleSaveDraft()}
-        onSubmit={() => setSubmitOpen(true)}
-      />
+    <>
+      <div className="space-y-5">
+        <HandoverUpdateHeader
+          busy={busy}
+          onBack={() => navigate(`/handover/${detail.id}`)}
+          onSaveDraft={() => void handleSaveDraft()}
+          onSubmit={handleRequestSubmit}
+        />
 
-      {actionError ? <p className="text-sm text-red-800">{actionError}</p> : null}
+        {shouldShowCeoRevisionNote(detail.dbStatus) ? (
+          <HandoverCeoRevisionNoteCard note={detail.ceoRevisionNote} />
+        ) : null}
 
-      {shouldShowCeoRevisionNote(detail.dbStatus) ? (
-        <HandoverCeoRevisionNoteCard note={detail.ceoRevisionNote} />
-      ) : null}
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-12 md:gap-6">
+          <HandoverUpdateQuickNavigation />
+          <HandoverUpdateFormSections
+            form={activeForm}
+            onChange={handleFormChange}
+            onDeleteDocument={(documentId) => {
+              setDeletedDocumentIds((prev) => (prev.includes(documentId) ? prev : [...prev, documentId]));
+            }}
+            submitErrors={submitErrors}
+            showSubmitErrors={showSubmitErrors}
+          />
+        </div>
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-12 md:gap-6">
-        <HandoverUpdateQuickNavigation />
-        <HandoverUpdateFormSections
-          form={activeForm}
-          onChange={setForm}
-          onDeleteDocument={(documentId) => {
-            setDeletedDocumentIds((prev) => (prev.includes(documentId) ? prev : [...prev, documentId]));
+        <HandoverSubmitDialog
+          open={submitOpen}
+          busy={busy}
+          isResubmit={detail.dbStatus === 'NEED_REVISION'}
+          onClose={() => {
+            if (!busy) setSubmitOpen(false);
           }}
+          onConfirm={handleSubmit}
         />
       </div>
 
-      <HandoverSubmitDialog
-        open={submitOpen}
-        busy={busy}
-        isResubmit={detail.dbStatus === 'NEED_REVISION'}
-        onClose={() => setSubmitOpen(false)}
-        onConfirm={handleSubmit}
+      <Toast
+        open={toastMessage != null}
+        message={toastMessage ?? ''}
+        variant={toastVariant}
+        onClose={dismissToast}
       />
-    </div>
+    </>
   );
 };

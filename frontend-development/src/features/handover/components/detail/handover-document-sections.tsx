@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { HandoverFeeStructureSection } from '../shared/handover-fee-structure-section';
 import type { HandoverDetail } from '../../types/handover.types';
 
 interface HandoverDocumentSectionsProps {
@@ -64,7 +65,7 @@ export const HandoverDocumentSections = ({ detail, ceoApprovalActions, hideFees 
           2. Background Summary
         </h3>
         <div className="rounded-xl border-l-4 border-[#003c90] bg-[#f2f4f6] p-5 text-sm italic leading-relaxed text-[#434653]">
-          {detail.backgroundSummary}
+          {detail.backgroundSummary.trim() || 'Belum ada background summary.'}
         </div>
       </section>
 
@@ -160,38 +161,13 @@ export const HandoverDocumentSections = ({ detail, ceoApprovalActions, hideFees 
             <span className="material-symbols-outlined">payments</span>
             4. Fee Structure & Payment Terms
           </h3>
-          <div className="overflow-hidden rounded-xl border border-[#e6e8ea]">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-[#f2f4f6] font-bold text-[#434653]">
-                <tr>
-                  <th className="px-4 py-3">Item</th>
-                  <th className="px-4 py-3">Amount (IDR)</th>
-                  <th className="px-4 py-3">Notes</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#eceef0]">
-                {detail.feeItems.length === 0 ? (
-                  <tr>
-                    <td colSpan={3} className="px-4 py-6 text-center text-sm text-[#737784]">
-                      Belum ada struktur fee dari engagement letter.
-                    </td>
-                  </tr>
-                ) : (
-                  detail.feeItems.map((item) => (
-                    <tr key={item.item}>
-                      <td className="px-4 py-3 font-semibold text-[#191c1e]">{item.item}</td>
-                      <td className="px-4 py-3 text-[#434653]">{item.amount}</td>
-                      <td className="px-4 py-3 text-[#737784]">{item.notes}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-          <div className="mt-4 rounded-xl bg-[#e6e8ea] p-5">
-            <p className={labelClass}>Payment Terms</p>
-            <p className="mt-1 text-sm text-[#191c1e]">{detail.paymentTerms}</p>
-          </div>
+          <HandoverFeeStructureSection
+            agreedFee={detail.agreedFee}
+            paymentMethod={detail.paymentMethod}
+            paymentTerms={detail.paymentTerms}
+            billingSchedule={detail.billingSchedule}
+            retainerSummary={detail.retainerSummary}
+          />
         </section>
       )}
 
@@ -263,7 +239,7 @@ export const HandoverDocumentSections = ({ detail, ceoApprovalActions, hideFees 
             </div>
             <div>
               <p className="text-sm font-bold uppercase tracking-wide text-[#ba1a1a]">Internal Confidential Note</p>
-              <p className="mt-1 text-sm leading-relaxed text-[#93000a]">{detail.confidentialNote}</p>
+              <p className="mt-1 text-sm leading-relaxed text-[#93000a]">{detail.confidentialNote.trim() || '-'}</p>
             </div>
           </div>
         </div>

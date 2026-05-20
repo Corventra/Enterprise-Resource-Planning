@@ -1,5 +1,9 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router';
+import { Toast } from '../../../components/ui/toast';
+import { useToast } from '../../../hooks/use-toast';
+import { ApiError } from '../../../services/api-client';
+import { APPROVAL_HANDOVER_TOAST } from '../constants/approval-handover-toast';
 import { ApprovalEmptyState } from '../components/approval-empty-state';
 import { ApprovalSearch } from '../components/approval-search';
 import { HandoverMemoTable } from '../../handover/components/list/handover-memo-table';
@@ -18,8 +22,7 @@ export const ApprovalHandoverPage = () => {
   const [rejectOpen, setRejectOpen] = useState(false);
   const [actionItem, setActionItem] = useState<ApprovalItem | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const { message: toastMessage, variant: toastVariant, dismiss: dismissToast, show: showToast } = useToast();
 
   const handoverItems = useMemo(
     () => pendingItems.filter((item) => item.kind === 'HandoverMemo'),
@@ -44,77 +47,72 @@ export const ApprovalHandoverPage = () => {
   const handleApprove = useCallback(async () => {
     if (!actionItem) return;
     setActionBusy(true);
-    setActionError(null);
-    setActionSuccess(null);
     try {
       await approve(actionItem);
-      await refreshQueue();
       setApproveOpen(false);
       setActionItem(null);
-      setActionSuccess('Handover berhasil disetujui.');
+      showToast(APPROVAL_HANDOVER_TOAST.approved, { immediate: true });
+      await refreshQueue({ silent: true });
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : 'Gagal menyetujui handover.');
+      const message = e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Gagal menyetujui handover.';
+      showToast(message, { variant: 'error' });
     } finally {
       setActionBusy(false);
     }
-  }, [actionItem, approve, refreshQueue]);
+  }, [actionItem, approve, refreshQueue, showToast]);
 
   const handleRequestRevision = useCallback(
     async (note: string) => {
       if (!actionItem) return;
       setActionBusy(true);
-      setActionError(null);
-      setActionSuccess(null);
       try {
         await requestRevision(actionItem, note);
-        await refreshQueue();
         setRejectOpen(false);
         setActionItem(null);
-        setActionSuccess('Permintaan revisi handover telah dikirim.');
+        showToast(APPROVAL_HANDOVER_TOAST.rejected, { immediate: true });
+        await refreshQueue({ silent: true });
       } catch (e) {
-        setActionError(e instanceof Error ? e.message : 'Gagal mengirim permintaan revisi.');
+        const message =
+          e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Gagal mengirim permintaan revisi.';
+        showToast(message, { variant: 'error' });
       } finally {
         setActionBusy(false);
       }
     },
-    [actionItem, refreshQueue, requestRevision]
+    [actionItem, refreshQueue, requestRevision, showToast]
+  );
+
+  const toast = (
+    <Toast
+      open={toastMessage != null}
+      message={toastMessage ?? ''}
+      variant={toastVariant}
+      onClose={dismissToast}
+    />
   );
 
   if (queueLoading) {
     return (
-      <div className="rounded-xl border border-[#eceef0] bg-white p-4 text-sm text-[#737784] shadow-sm">
-        Loading approval queue...
-      </div>
+      <>
+        <div className="rounded-xl border border-[#eceef0] bg-white p-4 text-sm text-[#737784] shadow-sm">
+          Loading approval queue...
+        </div>
+        {toast}
+      </>
     );
   }
 
   if (handoverItems.length === 0) {
     return (
       <>
-        {actionSuccess ? (
-          <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-            {actionSuccess}
-          </p>
-        ) : null}
-        {actionError ? (
-          <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{actionError}</p>
-        ) : null}
         <ApprovalEmptyState />
+        {toast}
       </>
     );
   }
 
   return (
     <div className="space-y-4">
-      {actionSuccess ? (
-        <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-          {actionSuccess}
-        </p>
-      ) : null}
-      {actionError ? (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{actionError}</p>
-      ) : null}
-
       <ApprovalSearch search={search} onSearchChange={setSearch} onReset={() => setSearch('')} />
 
       {filteredItems.length === 0 ? (
@@ -128,16 +126,12 @@ export const ApprovalHandoverPage = () => {
           onApprove={(row) => {
             const item = filteredItems.find((entry) => entry.id === row.id);
             if (!item) return;
-            setActionError(null);
-            setActionSuccess(null);
             setActionItem(item);
             setApproveOpen(true);
           }}
           onRequestRevision={(row) => {
             const item = filteredItems.find((entry) => entry.id === row.id);
             if (!item) return;
-            setActionError(null);
-            setActionSuccess(null);
             setActionItem(item);
             setRejectOpen(true);
           }}
@@ -166,6 +160,8 @@ export const ApprovalHandoverPage = () => {
         }}
         onConfirm={handleRequestRevision}
       />
+
+      {toast}
     </div>
   );
 };

@@ -16,12 +16,19 @@ import type {
   HandoverTeamMember,
   HandoverTimelineItem
 } from '../types/handover.types';
+import { mapHandoverBillingSchedule, mapHandoverRetainerSummary } from './map-handover-billing-schedule';
 import { mapHandoverDbStatusToLabel } from '../types/handover.types';
 
 const dash = (v?: string | null) => {
   if (v === undefined || v === null) return '-';
   const t = String(v).trim();
   return t === '' ? '-' : t;
+};
+
+/** Nilai untuk input/textarea edit — kosong jika null, bukan "-". */
+const formText = (v?: string | null) => {
+  if (v === undefined || v === null) return '';
+  return String(v).trim();
 };
 
 const formatDateTimeId = (iso?: string | null) => {
@@ -91,8 +98,14 @@ export const mapApiHandoverDetailToDetail = (api: ApiHandoverDetailPayload): Han
     notes: dash(item.description)
   }));
 
+  const paymentMethod = api.fee_structure.payment_method;
+  const agreedFee = formatIdr(api.fee_structure.agreed_fee);
+  const retainerSummary =
+    paymentMethod === 'RETAINER' ? mapHandoverRetainerSummary(api.fee_structure) : null;
+  const billingSchedule = mapHandoverBillingSchedule(api.fee_structure);
+
   const paymentTerms =
-    api.fee_structure.payment_method === 'RETAINER' && api.fee_structure.retainer_summary
+    paymentMethod === 'RETAINER' && api.fee_structure.retainer_summary
       ? `Retainer · ${formatDateOnlyId(api.fee_structure.retainer_summary.contract_start_date)} s/d ${formatDateOnlyId(
           api.fee_structure.retainer_summary.contract_end_date
         )} · penagihan ${
@@ -100,7 +113,7 @@ export const mapApiHandoverDetailToDetail = (api: ApiHandoverDetailPayload): Han
             ? 'awal bulan'
             : 'akhir bulan'
         }`
-      : api.fee_structure.payment_method === 'TERMIN'
+      : paymentMethod === 'TERMIN'
         ? 'Termin pembayaran sesuai engagement letter (Down Payment, Installment, Final).'
         : '-';
 
@@ -108,14 +121,14 @@ export const mapApiHandoverDetailToDetail = (api: ApiHandoverDetailPayload): Han
     milestone: m.milestone_name,
     targetDate: formatDateOnlyId(m.target_date),
     targetDateIso: m.target_date,
-    notes: dash(m.notes)
+    notes: formText(m.notes)
   }));
 
   const communicationContacts: HandoverContact[] = api.communication_protocol.external_items.map((c) => ({
     role: c.role,
     name: c.name,
     contact: c.contact,
-    instruction: dash(c.instruction)
+    instruction: formText(c.instruction)
   }));
 
   const teamAssignments: HandoverTeamMember[] = api.team_requirements.map((t) => ({
@@ -189,17 +202,21 @@ export const mapApiHandoverDetailToDetail = (api: ApiHandoverDetailPayload): Han
       { label: 'Proposal Reference', value: dash(pi.proposal_reference) },
       { label: 'Created By', value: dash(pi.created_by_name) }
     ],
-    backgroundSummary: dash(api.background_summary),
+    backgroundSummary: formText(api.background_summary),
     scopeIncluded: api.scope.scope_included,
     scopeExcluded: api.scope.scope_excluded,
     deliverables: api.scope.deliverables,
     timelineMilestones,
     feeItems,
+    agreedFee,
+    paymentMethod,
     paymentTerms,
+    billingSchedule,
+    retainerSummary,
     clientDocuments,
     storageLocation: '-',
     outstandingData: api.outstanding_requirements.map((r) => r.requirement_text),
-    confidentialNote: dash(api.risks.risk_internal_note),
+    confidentialNote: formText(api.risks.risk_internal_note),
     keyRisks: api.risks.risk_items,
     communicationProtocol: api.communication_protocol.internal_items,
     communicationContacts,

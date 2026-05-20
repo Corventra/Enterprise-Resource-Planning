@@ -6,6 +6,9 @@ export interface PdfDocumentFieldProps {
   existingDocumentName?: string | null;
   disabled?: boolean;
   onSelectFile: (file: File | null) => void;
+  /** Saat `multiple`, file yang lolos validasi dikirim ke callback ini (bukan `onSelectFile`). */
+  onSelectFiles?: (files: File[]) => void;
+  multiple?: boolean;
   onClearPending: () => void;
   /** Teks baris kedua saat menampilkan dokumen yang sudah ada (tanpa file baru dipilih). */
   existingDocumentDescription?: string;
@@ -19,6 +22,8 @@ export interface PdfDocumentFieldProps {
   isAcceptedFile?: (file: File) => boolean;
   /** Teks bantuan format di area kosong. */
   formatHint?: string;
+  /** Judul area kosong (drag & drop). */
+  emptyStateTitle?: string;
 }
 
 const ACCEPTED_PDF_TYPES = new Set(['application/pdf']);
@@ -31,7 +36,7 @@ const isAcceptedPdfFile = (file: File) => {
   return /\.pdf$/i.test(file.name);
 };
 
-const formatFileSize = (bytes: number) => {
+export const formatDocumentFileSize = (bytes: number) => {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -46,13 +51,16 @@ export const PdfDocumentField = ({
   existingDocumentName = null,
   disabled = false,
   onSelectFile,
+  onSelectFiles,
+  multiple = false,
   onClearPending,
   existingDocumentDescription = 'Dokumen saat ini',
   clearPendingAriaLabel = 'Hapus file yang dipilih',
   emptyStateExampleHint,
   accept = 'application/pdf,.pdf',
   isAcceptedFile = isAcceptedPdfFile,
-  formatHint = 'PDF saja — maks. 20 MB'
+  formatHint = 'PDF saja — maks. 20 MB',
+  emptyStateTitle = 'Seret & lepas PDF di sini, atau klik untuk memilih'
 }: PdfDocumentFieldProps) => {
   const fileInputId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -67,18 +75,23 @@ export const PdfDocumentField = ({
     fileInputRef.current?.click();
   };
 
-  const handleSelectFile = (file: File | null) => {
-    if (!file) {
-      onSelectFile(null);
-      return;
-    }
-    if (!isAcceptedFile(file)) {
+  const acceptFiles = (files: FileList | File[] | null | undefined) => {
+    if (!files?.length) return;
+    const accepted = Array.from(files).filter(isAcceptedFile);
+    if (!accepted.length) {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
       return;
     }
-    onSelectFile(file);
+    if (multiple && onSelectFiles) {
+      onSelectFiles(accepted);
+    } else {
+      onSelectFile(accepted[0] ?? null);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const clearPendingFile = () => {
@@ -96,9 +109,10 @@ export const PdfDocumentField = ({
         id={fileInputId}
         type="file"
         accept={accept}
+        multiple={multiple}
         className="sr-only"
         disabled={disabled}
-        onChange={(event) => handleSelectFile(event.target.files?.[0] ?? null)}
+        onChange={(event) => acceptFiles(event.target.files)}
       />
 
       {!hasDocument ? (
@@ -141,7 +155,7 @@ export const PdfDocumentField = ({
             event.stopPropagation();
             dragCounter.current = 0;
             setIsDragging(false);
-            handleSelectFile(event.dataTransfer.files?.[0] ?? null);
+            acceptFiles(event.dataTransfer.files);
           }}
           className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-8 text-center outline-none transition-colors focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-2 ${
             disabled
@@ -155,7 +169,7 @@ export const PdfDocumentField = ({
             className={`h-8 w-8 shrink-0 ${isDragging ? 'text-blue-600' : 'text-slate-400'}`}
             strokeWidth={1.75}
           />
-          <p className="text-sm font-medium text-slate-700">Seret & lepas PDF di sini, atau klik untuk memilih</p>
+          <p className="text-sm font-medium text-slate-700">{emptyStateTitle}</p>
           <p className="text-xs text-slate-500">{formatHint}</p>
           {emptyStateExampleHint ? (
             <p className="text-xs font-medium text-slate-400">{emptyStateExampleHint}</p>
@@ -178,7 +192,7 @@ export const PdfDocumentField = ({
                   </p>
                   <p className="mt-0.5 text-xs text-slate-500">
                     {pendingFile
-                      ? `${formatFileSize(pendingFile.size)} · Akan diunggah saat menyimpan`
+                      ? `${formatDocumentFileSize(pendingFile.size)} · Akan diunggah saat menyimpan`
                       : existingDocumentDescription}
                   </p>
                 </div>

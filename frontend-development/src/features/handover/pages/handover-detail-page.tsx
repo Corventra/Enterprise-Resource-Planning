@@ -1,10 +1,16 @@
 import { useCallback, useMemo, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router';
+import { Toast } from '../../../components/ui/toast';
+import { useToast } from '../../../hooks/use-toast';
 import { PERMISSIONS } from '../../../app/permissions';
 import { useAuth } from '../../../app/store/auth-store';
+import { ApiError } from '../../../services/api-client';
+import { HANDOVER_TOAST } from '../constants/handover-toast';
+import { hasHandoverSubmitErrors, validateHandoverForSubmit } from '../utils/handover-submit-validation';
 import { ApproveHandoverDialog } from '../../approval/components/modals/approve-handover-dialog';
 import { RejectHandoverDialog } from '../../approval/components/modals/reject-handover-dialog';
+import { APPROVAL_HANDOVER_TOAST } from '../../approval/constants/approval-handover-toast';
 import { approvalHandoversService } from '../../approval/services/approval-handovers-service';
 import { HandoverActivityLogPanel } from '../components/detail/handover-activity-log-panel';
 import { HandoverApprovalTrail } from '../components/detail/handover-approval-trail';
@@ -31,8 +37,7 @@ export const HandoverDetailPage = () => {
   const [approveOpen, setApproveOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [approvalBusy, setApprovalBusy] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const { message: toastMessage, variant: toastVariant, dismiss: dismissToast, show: showToast } = useToast();
   const [assignPmOpen, setAssignPmOpen] = useState(false);
   const [assignPmBusy, setAssignPmBusy] = useState(false);
   const [assignPmError, setAssignPmError] = useState<string | undefined>(undefined);
@@ -47,16 +52,31 @@ export const HandoverDetailPage = () => {
     [can, detail?.dbStatus]
   );
 
+  const handleRequestSubmit = useCallback(() => {
+    if (!detail) return;
+    const errors = validateHandoverForSubmit(detail);
+    if (hasHandoverSubmitErrors(errors)) {
+      navigate(`/handover/${detail.id}/edit`, {
+        state: { showSubmitErrors: true, showIncompleteToast: true }
+      });
+      return;
+    }
+    setSubmitOpen(true);
+  }, [detail, navigate]);
+
   const handleSubmit = async () => {
-    if (!handoverId) return;
+    if (!handoverId || !detail) return;
     setSubmitBusy(true);
-    setActionError(null);
     try {
       await handoverService.submit(handoverId);
       setSubmitOpen(false);
-      await refetch();
+      showToast(detail.dbStatus === 'NEED_REVISION' ? HANDOVER_TOAST.resubmitted : HANDOVER_TOAST.submitted, {
+        immediate: true
+      });
+      await refetch({ silent: true });
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : 'Gagal submit handover.');
+      const message = e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Gagal submit handover.';
+      showToast(message, { variant: 'error' });
     } finally {
       setSubmitBusy(false);
     }
@@ -65,38 +85,37 @@ export const HandoverDetailPage = () => {
   const handleApprove = useCallback(async () => {
     if (!handoverId) return;
     setApprovalBusy(true);
-    setActionError(null);
-    setActionSuccess(null);
     try {
       await approvalHandoversService.approveHandover(handoverId);
       setApproveOpen(false);
-      await refetch();
-      setActionSuccess('Handover berhasil disetujui.');
+      showToast(APPROVAL_HANDOVER_TOAST.approved, { immediate: true });
+      await refetch({ silent: true });
     } catch (e) {
-      setActionError(e instanceof Error ? e.message : 'Gagal menyetujui handover.');
+      const message = e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Gagal menyetujui handover.';
+      showToast(message, { variant: 'error' });
     } finally {
       setApprovalBusy(false);
     }
-  }, [handoverId, refetch]);
+  }, [handoverId, refetch, showToast]);
 
   const handleReject = useCallback(
     async (note: string) => {
       if (!handoverId) return;
       setApprovalBusy(true);
-      setActionError(null);
-      setActionSuccess(null);
       try {
         await approvalHandoversService.rejectHandover(handoverId, note);
         setRejectOpen(false);
-        await refetch();
-        setActionSuccess('Permintaan revisi handover telah dikirim.');
+        showToast(APPROVAL_HANDOVER_TOAST.rejected, { immediate: true });
+        await refetch({ silent: true });
       } catch (e) {
-        setActionError(e instanceof Error ? e.message : 'Gagal mengirim permintaan revisi.');
+        const message =
+          e instanceof ApiError ? e.message : e instanceof Error ? e.message : 'Gagal mengirim permintaan revisi.';
+        showToast(message, { variant: 'error' });
       } finally {
         setApprovalBusy(false);
       }
     },
-    [handoverId, refetch]
+    [handoverId, refetch, showToast]
   );
 
   const canAssignPM = can(PERMISSIONS.PROJECT_ASSIGN_PM);
@@ -106,8 +125,6 @@ export const HandoverDetailPage = () => {
       if (!handoverId || !role) return;
       setAssignPmBusy(true);
       setAssignPmError(undefined);
-      setActionError(null);
-      setActionSuccess(null);
       try {
         await projectService.createFromHandover(
           handoverId,
@@ -116,27 +133,40 @@ export const HandoverDetailPage = () => {
           note
         );
         setAssignPmOpen(false);
-        await refetch();
-        setActionSuccess(`Project berhasil dibuat dan di-assign ke ${pm.name}.`);
+        showToast(`Project berhasil dibuat dan di-assign ke ${pm.name}.`, { immediate: true });
+        await refetch({ silent: true });
       } catch (e) {
         setAssignPmError(e instanceof Error ? e.message : 'Gagal assign PM.');
       } finally {
         setAssignPmBusy(false);
       }
     },
-    [handoverId, role, user?.name, refetch]
+    [handoverId, role, user?.name, refetch, showToast]
+  );
+
+  const toast = (
+    <Toast
+      open={toastMessage != null}
+      message={toastMessage ?? ''}
+      variant={toastVariant}
+      onClose={dismissToast}
+    />
   );
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-[#eceef0] bg-white p-4 text-sm text-[#737784] shadow-sm">
-        Memuat detail handover…
-      </div>
+      <>
+        <div className="rounded-xl border border-[#eceef0] bg-white p-4 text-sm text-[#737784] shadow-sm">
+          Memuat detail handover…
+        </div>
+        {toast}
+      </>
     );
   }
 
   if (!detail) {
     return (
+      <>
       <div className="rounded-xl border border-[#eceef0] bg-white p-4 shadow-sm">
         <h1 className="text-base font-semibold text-[#191c1e]">Handover tidak ditemukan</h1>
         {error ? <p className="mt-2 text-sm text-red-800">{error}</p> : null}
@@ -148,6 +178,8 @@ export const HandoverDetailPage = () => {
           Back to Handover List
         </button>
       </div>
+        {toast}
+      </>
     );
   }
 
@@ -167,18 +199,13 @@ export const HandoverDetailPage = () => {
         dbStatus={detail.dbStatus}
         isOperator={isOperator}
         onEdit={() => navigate(`/handover/${detail.id}/edit`)}
-        onSubmit={() => setSubmitOpen(true)}
+        onSubmit={handleRequestSubmit}
         onAssignPM={canAssignPM ? () => setAssignPmOpen(true) : undefined}
       />
 
       {shouldShowCeoRevisionNote(detail.dbStatus) ? (
         <HandoverCeoRevisionNoteCard note={detail.ceoRevisionNote} />
       ) : null}
-
-      {actionSuccess ? (
-        <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">{actionSuccess}</p>
-      ) : null}
-      {actionError ? <p className="text-sm text-red-800">{actionError}</p> : null}
 
       <HandoverActivityLogPanel entries={detail.activityLogs} isLoading={isLoading} />
 
@@ -198,16 +225,8 @@ export const HandoverDetailPage = () => {
                 <HandoverCeoApprovalActions
                   embedded
                   disabled={approvalBusy || submitBusy}
-                  onApprove={() => {
-                    setActionSuccess(null);
-                    setActionError(null);
-                    setApproveOpen(true);
-                  }}
-                  onReject={() => {
-                    setActionSuccess(null);
-                    setActionError(null);
-                    setRejectOpen(true);
-                  }}
+                  onApprove={() => setApproveOpen(true)}
+                  onReject={() => setRejectOpen(true)}
                 />
               ) : null
             }
@@ -246,6 +265,8 @@ export const HandoverDetailPage = () => {
         }}
         onAssign={handleAssignPm}
       />
+
+      {toast}
     </div>
   );
 };

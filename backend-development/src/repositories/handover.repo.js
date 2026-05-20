@@ -310,7 +310,7 @@ const findHandoverFeeStructure = async (conn, engagementId, paymentMethod, agree
 
   if (paymentMethod === 'TERMIN') {
     const [rows] = await db.execute(
-      `SELECT term_name, term_type, percentage, description, sort_order
+      `SELECT term_name, term_type, percentage, description, billing_schedule_date, sort_order
          FROM engagement_letter_termins
         WHERE engagement_id = ?
         ORDER BY sort_order ASC, termin_id ASC`,
@@ -318,6 +318,7 @@ const findHandoverFeeStructure = async (conn, engagementId, paymentMethod, agree
     );
     return {
       payment_method: 'TERMIN',
+      agreed_fee: Number.isFinite(fee) ? fee : null,
       fee_items: rows.map((r) => {
         const pct = Number(r.percentage);
         const amount = Number.isFinite(fee) ? Math.round((fee * pct) / 100) : null;
@@ -326,7 +327,8 @@ const findHandoverFeeStructure = async (conn, engagementId, paymentMethod, agree
           amount,
           description: r.description ?? null,
           term_type: r.term_type,
-          percentage: pct
+          percentage: pct,
+          billing_schedule_date: formatSqlDate(r.billing_schedule_date)
         };
       })
     };
@@ -341,7 +343,7 @@ const findHandoverFeeStructure = async (conn, engagementId, paymentMethod, agree
   );
   const retainer = retainerRows[0];
   if (!retainer) {
-    return { payment_method: 'RETAINER', fee_items: [] };
+    return { payment_method: 'RETAINER', agreed_fee: Number.isFinite(fee) ? fee : null, fee_items: [] };
   }
 
   const start = formatSqlDate(retainer.contract_start_date);
@@ -363,6 +365,7 @@ const findHandoverFeeStructure = async (conn, engagementId, paymentMethod, agree
 
   return {
     payment_method: 'RETAINER',
+    agreed_fee: Number.isFinite(fee) ? fee : null,
     fee_items: [
       {
         term_name: 'Retainer fee (ringkasan kontrak)',

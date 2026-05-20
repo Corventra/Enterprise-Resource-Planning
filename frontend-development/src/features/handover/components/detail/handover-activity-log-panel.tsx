@@ -6,7 +6,8 @@ interface HandoverActivityLogPanelProps {
   isLoading?: boolean;
 }
 
-const panelBodyClassName = 'min-h-0 flex-1 overflow-y-auto pr-0.5';
+/** ~3 timeline rows (icon + title/meta + spacing) before scroll — aligned with lead workspace. */
+const activityLogPanelBodyClassName = 'max-h-[calc(3*4.25rem)] min-h-0 overflow-y-auto pr-0.5';
 
 const formatDateTime = (iso: string) => {
   const d = new Date(iso);
@@ -73,13 +74,13 @@ const resolveTimelineStyle = (item: HandoverActivityLogEntry) => {
 
 export const HandoverActivityLogPanel = ({ entries, isLoading = false }: HandoverActivityLogPanelProps) => {
   return (
-    <section className="flex min-h-0 flex-col overflow-hidden rounded-xl bg-white p-5 shadow-sm ring-1 ring-[#eceef0]">
+    <section className="flex flex-col overflow-hidden rounded-xl bg-white p-5 shadow-sm ring-1 ring-[#eceef0]">
       <div className="shrink-0 pb-3">
         <h3 className="text-base font-bold text-[#191c1e]">Activity Log</h3>
         <p className="mt-0.5 text-[11px] text-[#737784]">Aktivitas terbaru handover</p>
       </div>
 
-      <div className={panelBodyClassName}>
+      <div className={activityLogPanelBodyClassName}>
         {isLoading ? (
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, index) => (

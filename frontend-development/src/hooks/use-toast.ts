@@ -17,11 +17,18 @@ export const useToast = () => {
     setMessage(null);
   }, []);
 
-  const show = useCallback((text: string, options?: { variant?: ToastVariant }) => {
+  const show = useCallback((text: string, options?: { variant?: ToastVariant; immediate?: boolean }) => {
     if (showTimerRef.current) {
       clearTimeout(showTimerRef.current);
+      showTimerRef.current = null;
     }
     const nextVariant = options?.variant ?? 'success';
+    const immediate = options?.immediate ?? nextVariant === 'error';
+    if (immediate) {
+      setVariant(nextVariant);
+      setMessage(text);
+      return;
+    }
     showTimerRef.current = setTimeout(() => {
       setVariant(nextVariant);
       setMessage(text);

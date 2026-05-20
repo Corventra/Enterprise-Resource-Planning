@@ -29,6 +29,7 @@ export interface ApiHandoverFeeItem {
   description: string | null;
   term_type?: string;
   percentage?: number | null;
+  billing_schedule_date?: string | null;
 }
 
 export interface ApiHandoverClientDocument {
@@ -100,6 +101,7 @@ export interface ApiHandoverDetailPayload {
   };
   fee_structure: {
     payment_method: 'TERMIN' | 'RETAINER';
+    agreed_fee?: number | null;
     fee_items: ApiHandoverFeeItem[];
     retainer_summary?: {
       contract_start_date: string | null;
