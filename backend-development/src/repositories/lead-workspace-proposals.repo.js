@@ -2,6 +2,12 @@ const { pool } = require('../config/db');
 const { LEAD_ACTIVITY_TYPES } = require('../constants/lead-activity-types');
 const { safeUnlinkOldUploadFile } = require('../utils/file');
 const { generateNextProposalCode } = require('../utils/entity-display-code');
+const {
+  PROPOSAL_REQUIRES_MINUTES_MESSAGE,
+  LEAD_HAS_PROPOSAL_MESSAGE,
+  leadHasMinutes,
+  leadHasProposal
+} = require('../utils/lead-workspace-readiness');
 
 const ELIGIBLE_LEAD_WHERE = `
   lead_status IN ('ACTIVE', 'WON', 'LOST')
@@ -377,16 +383,24 @@ const createDraftProposal = async (leadId, payload, fileMeta, userId, { submit =
       return { ok: false, reason: 'NOT_FOUND' };
     }
 
-    const [existingRows] = await conn.execute(
-      `SELECT proposal_id
-         FROM proposals
-        WHERE lead_id = ?
-        LIMIT 1`,
-      [normalizedLeadId]
-    );
-    if (existingRows[0]) {
+    const hasMinutes = await leadHasMinutes(conn, normalizedLeadId);
+    if (!hasMinutes) {
       await conn.rollback();
-      return { ok: false, reason: 'PROPOSAL_EXISTS' };
+      return {
+        ok: false,
+        reason: 'MINUTES_REQUIRED',
+        message: PROPOSAL_REQUIRES_MINUTES_MESSAGE
+      };
+    }
+
+    const proposalExists = await leadHasProposal(conn, normalizedLeadId);
+    if (proposalExists) {
+      await conn.rollback();
+      return {
+        ok: false,
+        reason: 'PROPOSAL_EXISTS',
+        message: LEAD_HAS_PROPOSAL_MESSAGE
+      };
     }
 
     const service = await findActiveService(conn, payload.service_id);

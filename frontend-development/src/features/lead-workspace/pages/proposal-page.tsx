@@ -10,14 +10,17 @@ import { MarkProposalRespondedDialog } from '../components/modals/mark-proposal-
 import { SentToClientProposalDialog } from '../components/modals/sent-to-client-proposal-dialog';
 import { ProposalDetailSection } from '../components/proposal-detail-section';
 import { ProposalHistorySection } from '../components/proposal-history-section';
+import { useLeadMeetings } from '../hooks/use-lead-meetings';
 import { useLeadProposal } from '../hooks/use-lead-proposals';
 import type { LeadWorkspaceOutletContext } from '../types/lead-workspace.types';
 import type { ProposalSaveAction, SaveProposalDraftPayload } from '../types/lead-proposals.types';
 
 export const ProposalPage = () => {
   const { leadId, refetchWorkspace } = useOutletContext<LeadWorkspaceOutletContext>();
+  const { meetings } = useLeadMeetings(leadId);
   const { proposal, isLoading, loadError, refetch, createDraft, updateDraft, deleteDraft, markSentToClient, markResponded } =
     useLeadProposal(leadId);
+  const canCreateProposal = meetings.some((meeting) => meeting.hasMinutes);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
   const [dialogBusy, setDialogBusy] = useState(false);
@@ -158,9 +161,15 @@ export const ProposalPage = () => {
           </div>
         ) : null}
 
-        <ProposalHistorySection proposal={proposal} isLoading={false} onCreateProposal={openCreateDialog} />
+        <ProposalHistorySection
+          proposal={proposal}
+          isLoading={false}
+          canCreateProposal={canCreateProposal}
+          onCreateProposal={openCreateDialog}
+        />
         <ProposalDetailSection
           proposal={proposal}
+          canCreateProposal={canCreateProposal}
           onEditProposal={openEditDialog}
           onCreateProposal={openCreateDialog}
           onDeleteDraft={() => setDeleteDialogOpen(true)}

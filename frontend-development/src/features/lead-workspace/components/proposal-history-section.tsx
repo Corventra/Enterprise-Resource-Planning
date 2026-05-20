@@ -6,6 +6,7 @@ import type { LeadWorkspaceProposalView } from '../types/lead-proposals.types';
 interface ProposalHistorySectionProps {
   proposal: LeadWorkspaceProposalView | null;
   isLoading: boolean;
+  canCreateProposal?: boolean;
   onCreateProposal: () => void;
 }
 
@@ -41,19 +42,25 @@ const tableHead = (
   </thead>
 );
 
-export const ProposalHistorySection = ({ proposal, isLoading, onCreateProposal }: ProposalHistorySectionProps) => {
+export const ProposalHistorySection = ({
+  proposal,
+  isLoading,
+  canCreateProposal = false,
+  onCreateProposal
+}: ProposalHistorySectionProps) => {
   const { processedByUserId } = useOutletContext<LeadWorkspaceOutletContext>();
   const { canManageLeadWorkspace } = useLeadWorkspacePermissions({ processedByUserId });
+  const showCreate = canManageLeadWorkspace && !proposal && canCreateProposal;
 
   return (
     <div className="col-span-12 flex flex-col gap-4 lg:col-span-7">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <h2 className="text-xl font-bold tracking-tight text-[#191c1e]">Proposal</h2>
-        {canManageLeadWorkspace && !proposal ? (
+        {showCreate ? (
           <button
             type="button"
             onClick={onCreateProposal}
-            className="inline-flex items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-[#003c90]/20 transition-opacity hover:opacity-90 sm:text-sm"
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-[#003c90]/20 transition-opacity hover:opacity-90 sm:text-sm"
           >
             Create Proposal
           </button>

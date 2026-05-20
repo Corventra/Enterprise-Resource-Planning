@@ -2,6 +2,7 @@ import { Download, FileStack, Info } from 'lucide-react';
 import { useOutletContext } from 'react-router';
 import { getApiOrigin } from '../../../services/api-client';
 import { EngagementDocumentCard } from './engagement-document-card';
+import { LEAD_WORKSPACE_READINESS_HINT } from '../constants/lead-workspace-readiness';
 import { useLeadWorkspacePermissions } from '../hooks/use-lead-workspace-permissions';
 import type { LeadWorkspaceEngagementLetterItem } from '../types/lead-engagement-letters.types';
 import type { LeadWorkspaceOutletContext } from '../types/lead-workspace.types';
@@ -71,13 +72,9 @@ export const EngagementLetterDetailSection = ({
       <aside className="col-span-12 flex flex-col gap-4 lg:col-span-5">
         <h2 className="text-xl font-bold tracking-tight text-[#191c1e]">Engagement detail</h2>
         <div className="flex flex-1 flex-col items-center justify-center rounded-xl bg-white px-6 py-14 text-center shadow-sm ring-1 ring-[#eceef0]">
-          <p className="max-w-sm text-sm text-[#515f74]">
-            Belum ada engagement letter untuk lead ini. Buat engagement letter setelah proposal berstatus direspons
-            klien dan lead berada pada tahap Engagement Letter.
-          </p>
           {showOperatorHint ? (
-            <p className="mt-3 max-w-sm text-xs text-[#737784]">
-              Tombol buat akan tersedia saat proposal tanpa EL sudah berstatus Responded.
+            <p className="max-w-sm text-sm text-[#515f74]">
+              {LEAD_WORKSPACE_READINESS_HINT.engagementRequiresProposal}
             </p>
           ) : null}
           {showCreate ? (

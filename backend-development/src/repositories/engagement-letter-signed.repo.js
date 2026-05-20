@@ -18,6 +18,7 @@ const {
   insertInvoiceActivityLog
 } = require('../utils/invoice-activity-log');
 const { ensureReadyToIssueDueDates } = require('../utils/invoice-term-lifecycle');
+const { LEAD_HAS_HANDOVER_MESSAGE, leadHasHandover } = require('../utils/lead-workspace-readiness');
 
 const LEAD_WORKSPACE_ELIGIBLE_SNIPPET = `
   l.lead_status IN ('ACTIVE', 'WON', 'LOST')
@@ -364,6 +365,16 @@ const markEngagementLetterSigned = async (leadIdRaw, engagementIdRaw, userId) =>
     if (existingHandover[0]) {
       await conn.rollback();
       return { ok: false, reason: 'ALREADY_PROVISIONED' };
+    }
+
+    const handoverExistsForLead = await leadHasHandover(conn, leadId);
+    if (handoverExistsForLead) {
+      await conn.rollback();
+      return {
+        ok: false,
+        reason: 'HANDOVER_EXISTS',
+        message: LEAD_HAS_HANDOVER_MESSAGE
+      };
     }
 
     const [existingAccount] = await conn.execute(

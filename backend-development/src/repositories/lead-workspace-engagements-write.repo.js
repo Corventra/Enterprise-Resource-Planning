@@ -8,6 +8,12 @@ const {
   normalizeEngagementId,
   normalizeLeadId
 } = require('./lead-workspace-engagements.repo');
+const {
+  ENGAGEMENT_REQUIRES_PROPOSAL_MESSAGE,
+  LEAD_HAS_ENGAGEMENT_MESSAGE,
+  leadHasProposal,
+  leadHasEngagementLetter
+} = require('../utils/lead-workspace-readiness');
 
 const LEAD_WORKSPACE_ELIGIBLE_SNIPPET = `
   l.lead_status IN ('ACTIVE', 'WON', 'LOST')
@@ -433,26 +439,34 @@ const createDraftEngagementLetter = async (leadIdRaw, body, fileMeta, userId) =>
       await conn.rollback();
       return { ok: false, reason: 'NOT_FOUND' };
     }
-    if (lead.current_stage !== 'ENGAGEMENT_LETTER') {
+
+    const hasProposal = await leadHasProposal(conn, leadId);
+    if (!hasProposal) {
       await conn.rollback();
       return {
         ok: false,
-        reason: 'STAGE_NOT_EL',
-        message: 'Engagement letter hanya dapat dibuat saat tahap Engagement Letter.'
+        reason: 'NO_PROPOSAL',
+        message: ENGAGEMENT_REQUIRES_PROPOSAL_MESSAGE
       };
     }
 
     const proposal = await fetchProposalForNewEngagement(conn, leadId);
     if (!proposal) {
       await conn.rollback();
-      return { ok: false, reason: 'NO_PROPOSAL', message: 'Tidak ada proposal yang siap untuk engagement letter.' };
+      return {
+        ok: false,
+        reason: 'NO_PROPOSAL',
+        message: ENGAGEMENT_REQUIRES_PROPOSAL_MESSAGE
+      };
     }
-    if (proposal.proposal_status !== 'RESPONDED') {
+
+    const engagementExists = await leadHasEngagementLetter(conn, leadId);
+    if (engagementExists) {
       await conn.rollback();
       return {
         ok: false,
-        reason: 'PROPOSAL_NOT_RESPONDED',
-        message: 'Proposal harus berstatus Responded sebelum membuat engagement letter.'
+        reason: 'ENGAGEMENT_EXISTS',
+        message: LEAD_HAS_ENGAGEMENT_MESSAGE
       };
     }
 

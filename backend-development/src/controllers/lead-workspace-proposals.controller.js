@@ -211,7 +211,15 @@ const mapRepoFailure = (res, result) => {
     case 'NOT_FOUND':
       return res.status(404).json({ success: false, message: 'Lead tidak ditemukan.' });
     case 'PROPOSAL_EXISTS':
-      return res.status(409).json({ success: false, message: 'Proposal untuk lead ini sudah ada.' });
+      return res.status(409).json({
+        success: false,
+        message: result.message || 'Lead ini sudah memiliki proposal.'
+      });
+    case 'MINUTES_REQUIRED':
+      return res.status(409).json({
+        success: false,
+        message: result.message || 'Proposal hanya dapat dibuat setelah meeting memiliki notulensi.'
+      });
     case 'SERVICE_NOT_FOUND':
       return res.status(400).json({ success: false, message: 'Service tidak ditemukan.' });
     case 'SERVICE_INACTIVE':

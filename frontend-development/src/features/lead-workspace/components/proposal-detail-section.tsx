@@ -1,6 +1,7 @@
 import { Download, FileStack, FileText, Info } from 'lucide-react';
 import { useOutletContext } from 'react-router';
 import { getApiOrigin } from '../../../services/api-client';
+import { LEAD_WORKSPACE_READINESS_HINT } from '../constants/lead-workspace-readiness';
 import { useLeadWorkspacePermissions } from '../hooks/use-lead-workspace-permissions';
 import type { LeadWorkspaceOutletContext } from '../types/lead-workspace.types';
 import type { LeadWorkspaceProposalView } from '../types/lead-proposals.types';
@@ -10,6 +11,7 @@ interface ProposalDetailSectionProps {
   onEditProposal: () => void;
   /** Dipakai saat belum ada proposal (empty state selaras Engagement Letter). */
   onCreateProposal?: () => void;
+  canCreateProposal?: boolean;
   onDeleteDraft: () => void;
   deleteBusy?: boolean;
   processedByUserId?: number | null;
@@ -51,6 +53,7 @@ export const ProposalDetailSection = ({
   proposal,
   onEditProposal,
   onCreateProposal,
+  canCreateProposal = false,
   onDeleteDraft,
   deleteBusy = false,
   processedByUserId: processedByUserIdProp,
@@ -72,6 +75,8 @@ export const ProposalDetailSection = ({
     proposal?.status === 'APPROVED' && canManageLeadWorkspace && Boolean(onSendToClient);
   const showMarkRespondedAction =
     proposal?.status === 'SENT' && canManageLeadWorkspace && Boolean(onMarkResponded);
+  const showCreateProposalAction = canManageLeadWorkspace && canCreateProposal && Boolean(onCreateProposal);
+  const showProposalReadinessHint = canManageLeadWorkspace && !proposal && !canCreateProposal;
   const documentUrl = proposal?.document ? `${getApiOrigin()}${proposal.document.filePath}` : null;
   const revisionNote = proposal?.revisionNote?.trim() ?? '';
 
@@ -272,13 +277,15 @@ export const ProposalDetailSection = ({
           </div>
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center px-6 py-14 text-center">
-            <p className="max-w-sm text-sm text-[#515f74]">
-              Belum ada proposal untuk lead ini. Buat proposal setelah meeting dan notulensi tersedia sesuai alur tim.
-            </p>
-            {canManageLeadWorkspace ? (
+            {showProposalReadinessHint ? (
+              <p className="max-w-sm text-sm text-[#515f74]">
+                {LEAD_WORKSPACE_READINESS_HINT.proposalRequiresMinutes}
+              </p>
+            ) : null}
+            {showCreateProposalAction ? (
               <button
                 type="button"
-                onClick={onCreateProposal ?? onEditProposal}
+                onClick={onCreateProposal}
                 className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-4 py-2.5 text-xs font-bold text-white shadow-sm shadow-[#003c90]/20 transition-opacity hover:opacity-90 sm:text-sm"
               >
                 Create Proposal

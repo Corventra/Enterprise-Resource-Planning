@@ -104,6 +104,11 @@ const mapWriteFailure = (res, result) => {
     case 'NO_PROPOSAL':
     case 'PROPOSAL_NOT_RESPONDED':
       return res.status(409).json({ success: false, message: result.message || 'Lead belum siap untuk engagement letter.' });
+    case 'ENGAGEMENT_EXISTS':
+      return res.status(409).json({
+        success: false,
+        message: result.message || 'Lead ini sudah memiliki engagement letter.'
+      });
     case 'ALREADY_PENDING':
       return res.status(409).json({ success: false, message: 'Engagement letter sudah memiliki approval pending.' });
     case 'NOT_APPROVED':
@@ -120,6 +125,11 @@ const mapWriteFailure = (res, result) => {
       return res.status(409).json({
         success: false,
         message: 'Handover atau akun invoice untuk engagement ini sudah ada.'
+      });
+    case 'HANDOVER_EXISTS':
+      return res.status(409).json({
+        success: false,
+        message: result.message || 'Lead ini sudah memiliki handover.'
       });
     case 'TERMIN_BILLING_SCHEDULE_REQUIRED':
       return res.status(409).json({

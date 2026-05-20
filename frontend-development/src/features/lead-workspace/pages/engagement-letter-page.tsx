@@ -42,7 +42,7 @@ export const EngagementLetterPage = () => {
   const { message: toastMessage, variant: toastVariant, dismiss: dismissToast, show: showToast } = useToast();
   const pendingSubmitFdRef = useRef<FormData | null>(null);
 
-  const canCreateEngagementLetter = proposalWithoutEngagement?.proposal_status === 'RESPONDED';
+  const canCreateEngagementLetter = Boolean(proposalWithoutEngagement);
 
   const resolvedSelectedId = useMemo(() => {
     if (engagementLetters.length === 0) return null;
