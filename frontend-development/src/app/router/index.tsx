@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router';
 import { AuthLayout } from '../layouts/AuthLayout';
 import { LoginPage } from '../../features/auth/pages/LoginPage';
-import { DashboardPage } from '../../features/dashboard/pages/DashboardPage';
+import { DashboardPage } from '../../features/dashboard/pages/dashboard-page';
 import { AppShellLayout } from '../layouts/app-shell-layout';
 import { CampaignsPage } from '../../features/campaigns/pages/campaigns-page';
 import { CampaignDetailPage } from '../../features/campaigns/pages/campaign-detail-page';

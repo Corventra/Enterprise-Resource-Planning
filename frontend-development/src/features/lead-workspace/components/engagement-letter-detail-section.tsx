@@ -78,13 +78,18 @@ export const EngagementLetterDetailSection = ({
             </p>
           ) : null}
           {showCreate ? (
-            <button
-              type="button"
-              onClick={onCreateEngagementLetter}
-              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-4 py-2.5 text-xs font-bold text-white shadow-sm shadow-[#003c90]/20 transition-opacity hover:opacity-90 sm:text-sm"
-            >
-              Create Engagement Letter
-            </button>
+            <>
+              <p className="max-w-sm text-sm text-[#515f74]">
+                {LEAD_WORKSPACE_READINESS_HINT.engagementReadyToCreate}
+              </p>
+              <button
+                type="button"
+                onClick={onCreateEngagementLetter}
+                className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-4 py-2.5 text-xs font-bold text-white shadow-sm shadow-[#003c90]/20 transition-opacity hover:opacity-90 sm:text-sm"
+              >
+                Create Engagement Letter
+              </button>
+            </>
           ) : null}
         </div>
       </aside>

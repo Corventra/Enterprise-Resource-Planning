@@ -283,13 +283,18 @@ export const ProposalDetailSection = ({
               </p>
             ) : null}
             {showCreateProposalAction ? (
-              <button
-                type="button"
-                onClick={onCreateProposal}
-                className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-4 py-2.5 text-xs font-bold text-white shadow-sm shadow-[#003c90]/20 transition-opacity hover:opacity-90 sm:text-sm"
-              >
-                Create Proposal
-              </button>
+              <>
+                <p className="max-w-sm text-sm text-[#515f74]">
+                  {LEAD_WORKSPACE_READINESS_HINT.proposalReadyToCreate}
+                </p>
+                <button
+                  type="button"
+                  onClick={onCreateProposal}
+                  className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[linear-gradient(135deg,#003c90_0%,#0f52ba_100%)] px-4 py-2.5 text-xs font-bold text-white shadow-sm shadow-[#003c90]/20 transition-opacity hover:opacity-90 sm:text-sm"
+                >
+                  Create Proposal
+                </button>
+              </>
             ) : null}
           </div>
         )}
