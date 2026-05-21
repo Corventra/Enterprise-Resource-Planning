@@ -76,7 +76,10 @@ export const ProposalDetailSection = ({
   const showMarkRespondedAction =
     proposal?.status === 'SENT' && canManageLeadWorkspace && Boolean(onMarkResponded);
   const showCreateProposalAction = canManageLeadWorkspace && canCreateProposal && Boolean(onCreateProposal);
-  const showProposalReadinessHint = canManageLeadWorkspace && !proposal && !canCreateProposal;
+  const showProposalReadinessHint =
+    canViewLeadWorkspace && !proposal && !canCreateProposal;
+  const showProposalReadyHintForViewer =
+    canViewLeadWorkspace && !canManageLeadWorkspace && !proposal && canCreateProposal;
   const documentUrl = proposal?.document ? `${getApiOrigin()}${proposal.document.filePath}` : null;
   const revisionNote = proposal?.revisionNote?.trim() ?? '';
 
@@ -295,6 +298,11 @@ export const ProposalDetailSection = ({
                   Create Proposal
                 </button>
               </>
+            ) : null}
+            {showProposalReadyHintForViewer ? (
+              <p className="max-w-sm text-sm text-[#515f74]">
+                {LEAD_WORKSPACE_READINESS_HINT.proposalReadyToCreate}
+              </p>
             ) : null}
           </div>
         )}

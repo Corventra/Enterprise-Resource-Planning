@@ -52,5 +52,6 @@ const safeUnlinkOldUploadFile = async (dbPath) => {
 };
 
 module.exports = {
-  safeUnlinkOldUploadFile
+  safeUnlinkOldUploadFile,
+  resolveDbUploadPathToAbsolute
 };

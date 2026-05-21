@@ -23,6 +23,7 @@ const projectsRoutes = require("./routes/projects.routes");
 const kpiRoutes = require("./routes/kpi.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const meetingsRoutes = require("./routes/meetings.routes");
+const documentCenterRoutes = require("./routes/document-center.routes");
 
 const app = express();
 
@@ -72,6 +73,7 @@ app.use("/api/projects", projectsRoutes);
 app.use("/api/kpi", kpiRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/meetings", meetingsRoutes);
+app.use("/api/document-center", documentCenterRoutes);
 
 // Fallback 404 untuk path /api/* yang tidak match
 app.use("/api", (req, res) => {

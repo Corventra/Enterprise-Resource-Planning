@@ -61,18 +61,21 @@ export const EngagementLetterDetailSection = ({
 }: EngagementLetterDetailSectionProps) => {
   const outlet = useOutletContext<LeadWorkspaceOutletContext | undefined>();
   const processedByUserId = processedByUserIdProp ?? outlet?.processedByUserId ?? null;
-  const { canApproveEngagementLetter, canManageLeadWorkspace } = useLeadWorkspacePermissions({
-    processedByUserId
-  });
+  const { canApproveEngagementLetter, canManageLeadWorkspace, canViewLeadWorkspace } =
+    useLeadWorkspacePermissions({
+      processedByUserId
+    });
 
   if (!engagementLetter) {
     const showCreate = canManageLeadWorkspace && canCreateEngagementLetter && Boolean(onCreateEngagementLetter);
-    const showOperatorHint = canManageLeadWorkspace && !canCreateEngagementLetter;
+    const showReadinessHint = canViewLeadWorkspace && !canCreateEngagementLetter;
+    const showReadyHintForViewer =
+      canViewLeadWorkspace && !canManageLeadWorkspace && canCreateEngagementLetter;
     return (
       <aside className="col-span-12 flex flex-col gap-4 lg:col-span-5">
         <h2 className="text-xl font-bold tracking-tight text-[#191c1e]">Engagement detail</h2>
         <div className="flex flex-1 flex-col items-center justify-center rounded-xl bg-white px-6 py-14 text-center shadow-sm ring-1 ring-[#eceef0]">
-          {showOperatorHint ? (
+          {showReadinessHint ? (
             <p className="max-w-sm text-sm text-[#515f74]">
               {LEAD_WORKSPACE_READINESS_HINT.engagementRequiresProposal}
             </p>
@@ -90,6 +93,11 @@ export const EngagementLetterDetailSection = ({
                 Create Engagement Letter
               </button>
             </>
+          ) : null}
+          {showReadyHintForViewer ? (
+            <p className="max-w-sm text-sm text-[#515f74]">
+              {LEAD_WORKSPACE_READINESS_HINT.engagementReadyToCreate}
+            </p>
           ) : null}
         </div>
       </aside>

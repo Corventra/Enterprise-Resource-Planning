@@ -20,6 +20,7 @@ import { HandoverUpdatePage } from '../../features/handover/pages/handover-updat
 import { InvoicesPage } from '../../features/invoices/pages/invoices-page';
 import { InvoiceDetailPage } from '../../features/invoices/pages/invoice-detail-page';
 import { DocumentCenterPage } from '../../features/document-center/pages/document-center-page';
+import { DocumentCenterLeadPage } from '../../features/document-center/pages/document-center-lead-page';
 import { ApprovalCenterPage } from '../../features/approval/pages/approval-center-page';
 import { ApprovalEngagementLetterPage } from '../../features/approval/pages/approval-engagement-letter-page';
 import { ApprovalHandoverPage } from '../../features/approval/pages/approval-handover-page';
@@ -117,6 +118,7 @@ export const AppRouter = () => {
 
           <Route element={<PermissionGuard permissions={[PERMISSIONS.DOCUMENT_VIEW]} />}>
             <Route path="/document-center" element={<DocumentCenterPage />} />
+            <Route path="/document-center/:leadId" element={<DocumentCenterLeadPage />} />
           </Route>
 
           <Route element={<PermissionGuard roles={[ROLES.CEO, ROLES.COO]} />}>
