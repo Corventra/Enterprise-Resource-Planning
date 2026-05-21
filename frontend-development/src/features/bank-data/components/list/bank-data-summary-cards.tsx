@@ -1,4 +1,7 @@
 import { Archive, Inbox, ListChecks, Sparkles } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { CeoSummaryCard } from '../../../dashboard/components/ceo/ceo-dashboard-ui';
+import { formatDashboardNumber } from '../../../dashboard/utils/format-dashboard';
 
 interface BankDataSummaryCardsProps {
   summary: {
@@ -9,58 +12,54 @@ interface BankDataSummaryCardsProps {
   };
 }
 
-const cards = [
+const cards: Array<{
+  label: string;
+  valueKey: keyof BankDataSummaryCardsProps['summary'];
+  hint: string;
+  icon: LucideIcon;
+  accent: string;
+}> = [
   {
     label: 'Total Entries',
-    valueKey: 'totalEntries' as const,
-    hint: 'All sources',
-    hintClass: 'text-[#006544]',
+    valueKey: 'totalEntries',
+    hint: 'Semua sumber data',
     icon: ListChecks,
-    iconClass: 'text-[#003c90] bg-[#003c90]/10'
+    accent: 'from-[#003c90] to-[#0f52ba]'
   },
   {
     label: 'New',
-    valueKey: 'newEntries' as const,
-    hint: 'Need action',
-    hintClass: 'text-[#0f52ba]',
+    valueKey: 'newEntries',
+    hint: 'Perlu ditindaklanjuti',
     icon: Sparkles,
-    iconClass: 'text-[#0f52ba] bg-[#d9e2ff]'
+    accent: 'from-[#0f52ba] to-[#2d6fd4]'
   },
   {
     label: 'Processed',
-    valueKey: 'processedEntries' as const,
-    hint: 'Handled',
-    hintClass: 'text-[#006544]',
+    valueKey: 'processedEntries',
+    hint: 'Sudah diproses',
     icon: Inbox,
-    iconClass: 'text-[#004b31] bg-[#4edea3]/20'
+    accent: 'from-[#006544] to-[#2ea87a]'
   },
   {
     label: 'Archived',
-    valueKey: 'archivedEntries' as const,
-    hint: 'Stored',
-    hintClass: 'text-[#737784]',
+    valueKey: 'archivedEntries',
+    hint: 'Disimpan di arsip',
     icon: Archive,
-    iconClass: 'text-[#515f74] bg-[#e0e3e5]'
+    accent: 'from-[#434653] to-[#5c6070]'
   }
 ];
 
-export const BankDataSummaryCards = ({ summary }: BankDataSummaryCardsProps) => {
-  return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-      {cards.map(({ label, valueKey, hint, hintClass, icon: Icon, iconClass }) => (
-        <div key={valueKey} className="flex flex-col justify-between rounded-xl bg-white p-5 shadow-sm ring-1 ring-[#eceef0]">
-          <div className="mb-4 flex items-center justify-between">
-            <span className={`rounded-full p-2 ${iconClass}`}>
-              <Icon className="h-5 w-5" strokeWidth={2} />
-            </span>
-            <span className={`text-[11px] font-bold ${hintClass}`}>{hint}</span>
-          </div>
-          <div>
-            <p className="mb-0.5 text-xs font-medium text-[#737784]">{label}</p>
-            <h3 className="text-2xl font-semibold tracking-tight text-[#191c1e]">{summary[valueKey]}</h3>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
+export const BankDataSummaryCards = ({ summary }: BankDataSummaryCardsProps) => (
+  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    {cards.map(({ label, valueKey, hint, icon, accent }) => (
+      <CeoSummaryCard
+        key={valueKey}
+        title={label}
+        value={formatDashboardNumber(summary[valueKey])}
+        icon={icon}
+        accent={accent}
+        footer={<p className="text-xs text-[#737784]">{hint}</p>}
+      />
+    ))}
+  </div>
+);

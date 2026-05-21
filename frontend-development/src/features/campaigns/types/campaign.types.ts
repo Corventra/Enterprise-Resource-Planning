@@ -64,6 +64,38 @@ export interface CampaignFilters {
   createdBy: string;
 }
 
+export interface CampaignSummaryMetric {
+  value: number;
+  previous: number;
+  delta: { value: number; direction: 'up' | 'down' | 'flat' };
+}
+
+/** Angka snapshot tanpa perbandingan periode. */
+export interface CampaignSnapshotCount {
+  value: number;
+}
+
+export interface CampaignsSummary {
+  total: CampaignSnapshotCount;
+  active: CampaignSnapshotCount;
+  totalSubmissions: CampaignSummaryMetric;
+  averagePerCampaign: CampaignSummaryMetric;
+}
+
+export type CampaignsSummaryScope = 'own_marketing' | 'organization' | 'filtered_user';
+
+export interface CampaignsListMeta {
+  period: string;
+  periodStart: string;
+  periodEndExclusive: string;
+  comparisonLabel: string;
+  scope: CampaignsSummaryScope;
+  summaryCreatedByUserId?: number;
+}
+
+/** Target summary untuk CEO/COO saat filter creator dipilih. */
+export type CampaignsSummaryCreatedByTarget = number | null;
+
 /** Payload submit dari modal ke hook/service */
 export interface CampaignSubmitInput {
   values: CampaignFormValues;

@@ -79,6 +79,7 @@ export const mapApiHandoverListRowToItem = (row: ApiHandoverListRow): HandoverIt
     status: mapHandoverDbStatusToLabel(row.handover_status),
     dbStatus: row.handover_status,
     createdBy: dash(row.created_by_name),
+    createdById: row.created_by ?? null,
     createdAt: row.created_at
   };
 };

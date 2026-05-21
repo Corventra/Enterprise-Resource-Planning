@@ -1,6 +1,8 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router';
+import { ROLES } from '../../../app/permissions';
+import { useAuth } from '../../../app/store/auth-store';
 import { HandoverEmptyState } from '../components/list/handover-empty-state';
 import { HandoverFiltersSection } from '../components/list/handover-filters';
 import { HandoverSummaryCards } from '../components/list/handover-summary-cards';
@@ -10,7 +12,8 @@ import { useHandoverList } from '../hooks/use-handover-list';
 
 export const HandoverPage = () => {
   const navigate = useNavigate();
-  const { items, isLoading, summary } = useHandoverList();
+  const { user } = useAuth();
+  const { items, isLoading, summary, refetchSummary } = useHandoverList();
   const {
     filters,
     filteredItems,
@@ -21,8 +24,23 @@ export const HandoverPage = () => {
     setCurrentPage,
     updateFilter,
     resetFilters,
-    serviceLineOptions
+    serviceLineOptions,
+    createdByFilterOptions,
+    summaryCreatedByTarget
   } = useHandoverFilters(items);
+
+  const canFilterSummaryByCreator =
+    user?.role === ROLES.CEO || user?.role === ROLES.COO || user?.role === ROLES.SUPERADMIN;
+  const skipInitialOrgSummarySync = useRef(true);
+
+  useEffect(() => {
+    if (!canFilterSummaryByCreator || isLoading) return;
+    if (skipInitialOrgSummarySync.current) {
+      skipInitialOrgSummarySync.current = false;
+      if (summaryCreatedByTarget == null) return;
+    }
+    void refetchSummary(summaryCreatedByTarget);
+  }, [canFilterSummaryByCreator, isLoading, summaryCreatedByTarget, refetchSummary]);
 
   const pageNumbers = useMemo(() => Array.from({ length: totalPages }, (_, index) => index + 1), [totalPages]);
   const rangeStart = filteredItems.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
@@ -89,9 +107,10 @@ export const HandoverPage = () => {
       <HandoverFiltersSection
         filters={filters}
         serviceLineOptions={serviceLineOptions}
+        createdByFilterOptions={createdByFilterOptions}
         onSearchChange={(value) => updateFilter('search', value)}
         onServiceLineChange={(value) => updateFilter('serviceLine', value)}
-        onEngagementStatusChange={(value) => updateFilter('engagementStatus', value)}
+        onCreatedByChange={(value) => updateFilter('createdBy', value)}
         onStatusChange={(value) => updateFilter('status', value)}
         onReset={resetFilters}
       />

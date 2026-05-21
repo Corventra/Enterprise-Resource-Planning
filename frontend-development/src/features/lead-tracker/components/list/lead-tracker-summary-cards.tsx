@@ -1,66 +1,77 @@
 import { CheckCircle2, ListChecks, Trophy, XCircle } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { CeoMetricDeltaFooter, CeoSummaryCard } from '../../../dashboard/components/ceo/ceo-dashboard-ui';
+import { formatDashboardNumber } from '../../../dashboard/utils/format-dashboard';
+import type { LeadTrackerSummary, LeadTrackerSummaryMetric } from '../../types/lead-tracker.types';
 
 interface LeadTrackerSummaryCardsProps {
-  summary: {
-    totalLeads: number;
-    activeLeads: number;
-    wonLeads: number;
-    lostLeads: number;
-  };
+  summary: LeadTrackerSummary;
+  comparisonLabel: string;
 }
 
-const cards = [
+type PeriodCardKey = 'totalLeads' | 'wonLeads' | 'lostLeads';
+
+const cardOrder: Array<
+  | { kind: 'period'; label: string; valueKey: PeriodCardKey; icon: LucideIcon; accent: string }
+  | { kind: 'snapshot'; label: string; valueKey: 'activeLeads'; hint: string; icon: LucideIcon; accent: string }
+> = [
   {
+    kind: 'period',
     label: 'Total Leads',
-    valueKey: 'totalLeads' as const,
-    hint: 'Pipeline',
-    hintClass: 'text-[#006544]',
+    valueKey: 'totalLeads',
     icon: ListChecks,
-    iconClass: 'text-[#003c90] bg-[#003c90]/10'
+    accent: 'from-[#003c90] to-[#0f52ba]'
   },
   {
+    kind: 'snapshot',
     label: 'Active',
-    valueKey: 'activeLeads' as const,
-    hint: 'In progress',
-    hintClass: 'text-[#00419c]',
+    valueKey: 'activeLeads',
+    hint: 'Pipeline aktif saat ini',
     icon: CheckCircle2,
-    iconClass: 'text-[#00419c] bg-[#d9e2ff]'
+    accent: 'from-[#0f52ba] to-[#2d6fd4]'
   },
   {
+    kind: 'period',
     label: 'Won',
-    valueKey: 'wonLeads' as const,
-    hint: 'Closed won',
-    hintClass: 'text-[#006544]',
+    valueKey: 'wonLeads',
     icon: Trophy,
-    iconClass: 'text-[#004b31] bg-[#4edea3]/20'
+    accent: 'from-[#006544] to-[#2ea87a]'
   },
   {
+    kind: 'period',
     label: 'Lost',
-    valueKey: 'lostLeads' as const,
-    hint: 'Closed lost',
-    hintClass: 'text-[#737784]',
+    valueKey: 'lostLeads',
     icon: XCircle,
-    iconClass: 'text-[#737784] bg-[#e0e3e5]'
+    accent: 'from-[#434653] to-[#5c6070]'
   }
 ];
 
-export const LeadTrackerSummaryCards = ({ summary }: LeadTrackerSummaryCardsProps) => {
-  return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-      {cards.map(({ label, valueKey, hint, hintClass, icon: Icon, iconClass }) => (
-        <div key={valueKey} className="flex flex-col justify-between rounded-xl bg-white p-5 shadow-sm ring-1 ring-[#eceef0]">
-          <div className="mb-4 flex items-center justify-between">
-            <span className={`rounded-full p-2 ${iconClass}`}>
-              <Icon className="h-5 w-5" strokeWidth={2} />
-            </span>
-            <span className={`text-[11px] font-bold ${hintClass}`}>{hint}</span>
-          </div>
-          <div>
-            <p className="mb-0.5 text-xs font-medium text-[#737784]">{label}</p>
-            <h3 className="text-2xl font-semibold tracking-tight text-[#191c1e]">{summary[valueKey]}</h3>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
+export const LeadTrackerSummaryCards = ({ summary, comparisonLabel }: LeadTrackerSummaryCardsProps) => (
+  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    {cardOrder.map((cfg) => {
+      if (cfg.kind === 'snapshot') {
+        return (
+          <CeoSummaryCard
+            key={cfg.valueKey}
+            title={cfg.label}
+            value={formatDashboardNumber(summary[cfg.valueKey].value)}
+            icon={cfg.icon}
+            accent={cfg.accent}
+            footer={<p className="text-xs text-[#737784]">{cfg.hint}</p>}
+          />
+        );
+      }
+      const metric: LeadTrackerSummaryMetric = summary[cfg.valueKey];
+      return (
+        <CeoSummaryCard
+          key={cfg.valueKey}
+          title={cfg.label}
+          value={formatDashboardNumber(metric.value)}
+          icon={cfg.icon}
+          accent={cfg.accent}
+          footer={<CeoMetricDeltaFooter metric={metric} comparisonLabel={comparisonLabel} currency={false} />}
+        />
+      );
+    })}
+  </div>
+);

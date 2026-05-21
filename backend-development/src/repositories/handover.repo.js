@@ -35,6 +35,7 @@ const mapListRow = (row) => ({
   engagement_status: row.engagement_status ?? null,
   engagement_signed_at: formatDateTimeIso(row.engagement_signed_at),
   handover_status: row.handover_status,
+  created_by: row.created_by ?? null,
   created_by_name: row.created_by_name ?? null,
   created_at: formatDateTimeIso(row.created_at)
 });
@@ -63,6 +64,7 @@ const findHandoverList = async (access = {}) => {
         h.created_at,
         l.company_name,
         s.name AS service_name,
+        h.created_by,
         uc.name AS created_by_name,
         e.engagement_status,
         e.signed_at AS engagement_signed_at
@@ -76,6 +78,45 @@ const findHandoverList = async (access = {}) => {
     params
   );
   return rows.map(mapListRow);
+};
+
+/** CEO/COO/SUPERADMIN = null (semua). Lainnya = handovers.created_by. */
+const buildCreatedByFilter = (userId) => {
+  if (userId == null) return { sql: '', params: [] };
+  return { sql: ' AND h.created_by = ?', params: [Number(userId)] };
+};
+
+const countHandovers = async (userId, { statusIn = null } = {}) => {
+  const owner = buildCreatedByFilter(userId);
+  let statusSql = '';
+  const params = [];
+  if (statusIn != null && statusIn.length > 0) {
+    statusSql = ` AND h.status IN (${statusIn.map(() => '?').join(', ')})`;
+    params.push(...statusIn);
+  }
+  params.push(...owner.params);
+  const [rows] = await pool.execute(
+    `SELECT COUNT(*) AS cnt FROM handovers h WHERE 1=1${statusSql}${owner.sql}`,
+    params
+  );
+  return Number(rows[0]?.cnt ?? 0);
+};
+
+/** Ringkasan keseluruhan (tanpa periode / perbandingan). */
+const getHandoverSummary = async (userId) => {
+  const [totalHandover, totalDraft, totalAwaitingApproval, totalActive] = await Promise.all([
+    countHandovers(userId),
+    countHandovers(userId, { statusIn: ['DRAFT', 'NEED_REVISION'] }),
+    countHandovers(userId, { statusIn: ['WAITING_CEO_APPROVAL'] }),
+    countHandovers(userId, { statusIn: ['APPROVED', 'ROUTED_TO_COO', 'ASSIGNED_TO_PM'] })
+  ]);
+
+  return {
+    total_handover: { value: totalHandover },
+    total_draft: { value: totalDraft },
+    total_awaiting_approval: { value: totalAwaitingApproval },
+    total_active: { value: totalActive }
+  };
 };
 
 const findHandoverDepartmentId = async (handoverId) => {
@@ -530,6 +571,7 @@ module.exports = {
   normalizeHandoverId,
   buildHandoverDetailPayload,
   findHandoverList,
+  getHandoverSummary,
   findHandoverDepartmentId,
   findHandoverDetail,
   findHandoverScopeItems,

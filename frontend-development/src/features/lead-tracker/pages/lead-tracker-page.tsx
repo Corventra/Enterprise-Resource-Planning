@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { PERMISSIONS } from '../../../app/permissions';
+import { PERMISSIONS, ROLES } from '../../../app/permissions';
 import { useAuth } from '../../../app/store/auth-store';
 import { Toast } from '../../../components/ui/toast';
 import { useToast } from '../../../hooks/use-toast';
@@ -20,7 +20,8 @@ export const LeadTrackerPage = () => {
   const navigate = useNavigate();
   const { can, user } = useAuth();
   const allowLeadManage = can(PERMISSIONS.LEAD_MANAGE);
-  const { items, isLoading, loadError, summary, createManualLead, markLeadLost } = useLeadTrackerList();
+  const { items, isLoading, loadError, summary, meta, refetchSummary, createManualLead, markLeadLost } =
+    useLeadTrackerList();
   const [addManualOpen, setAddManualOpen] = useState(false);
   const [lostTarget, setLostTarget] = useState<LeadTrackerItem | undefined>();
   const [mutationBusy, setMutationBusy] = useState(false);
@@ -33,12 +34,27 @@ export const LeadTrackerPage = () => {
     totalPages,
     pageSize,
     processedByFilterOptions,
+    summaryProcessedByTarget,
     setCurrentPage,
     updateFilter,
     resetFilters
   } = useLeadTrackerFilters(items);
 
+  const canFilterSummaryByProcessor =
+    user?.role === ROLES.CEO || user?.role === ROLES.COO || user?.role === ROLES.SUPERADMIN;
+  const skipInitialOrgSummarySync = useRef(true);
+
+  useEffect(() => {
+    if (!canFilterSummaryByProcessor || isLoading) return;
+    if (skipInitialOrgSummarySync.current) {
+      skipInitialOrgSummarySync.current = false;
+      if (summaryProcessedByTarget == null) return;
+    }
+    void refetchSummary(summaryProcessedByTarget);
+  }, [canFilterSummaryByProcessor, isLoading, summaryProcessedByTarget, refetchSummary]);
+
   const pageNumbers = useMemo(() => Array.from({ length: totalPages }, (_, index) => index + 1), [totalPages]);
+  const comparisonLabel = meta?.comparisonLabel ?? 'vs bulan lalu';
   const rangeStart = filteredItems.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const rangeEnd = Math.min(currentPage * pageSize, filteredItems.length);
 
@@ -117,7 +133,7 @@ export const LeadTrackerPage = () => {
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Lead Tracker</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Monitor pipeline progression for processed leads and follow up by due date.
+            Pantau perkembangan proses pipeline untuk prospek yang telah diproses dan lakukan tindak lanjut sesuai dengan tenggat waktu.
           </p>
         </div>
         {allowLeadManage ? (
@@ -132,7 +148,7 @@ export const LeadTrackerPage = () => {
         ) : null}
       </header>
 
-      <LeadTrackerSummaryCards summary={summary} />
+      <LeadTrackerSummaryCards summary={summary} comparisonLabel={comparisonLabel} />
 
       <LeadTrackerFiltersSection
         filters={filters}

@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router';
+import { ROLES } from '../../../app/permissions';
 import { useAuth } from '../../../app/store/auth-store';
 import { Toast } from '../../../components/ui/toast';
 import { useCampaignPermissions } from '../hooks/use-campaign-permissions';
@@ -21,7 +22,9 @@ export const CampaignsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { canViewCampaignArea, canManageCampaigns } = useCampaignPermissions();
-  const { campaigns, isLoading, summary, createCampaign, updateCampaign, archiveCampaign } = useCampaignsList();
+  const { campaigns, isLoading, summary, meta, refetchSummary, createCampaign, updateCampaign, archiveCampaign } =
+    useCampaignsList();
+  const comparisonLabel = meta?.comparisonLabel ?? 'vs bulan lalu';
   const {
     filters,
     filteredCampaigns,
@@ -31,10 +34,24 @@ export const CampaignsPage = () => {
     pageSize,
     typeFilterOptions,
     createdByFilterOptions,
+    summaryCreatedByTarget,
     setCurrentPage,
     updateFilter,
     resetFilters
   } = useCampaignFilters(campaigns);
+
+  const canFilterSummaryByCreator =
+    user?.role === ROLES.CEO || user?.role === ROLES.COO || user?.role === ROLES.SUPERADMIN;
+  const skipInitialOrgSummarySync = useRef(true);
+
+  useEffect(() => {
+    if (!canFilterSummaryByCreator || isLoading) return;
+    if (skipInitialOrgSummarySync.current) {
+      skipInitialOrgSummarySync.current = false;
+      if (summaryCreatedByTarget == null) return;
+    }
+    void refetchSummary(summaryCreatedByTarget);
+  }, [canFilterSummaryByCreator, isLoading, summaryCreatedByTarget, refetchSummary]);
 
   const [lookups, setLookups] = useState<{
     types: CampaignLookupType[];
@@ -155,7 +172,7 @@ export const CampaignsPage = () => {
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Campaigns</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Manage campaign initiatives, monitor submissions, and update campaign lifecycle.
+            Mengelola inisiatif kampanye, memantau submission, dan memperbarui siklus hidup kampanye.
           </p>
         </div>
         {canManageCampaigns ? (
@@ -170,7 +187,7 @@ export const CampaignsPage = () => {
         ) : null}
       </header>
 
-      <CampaignsSummaryCards summary={summary} />
+      <CampaignsSummaryCards summary={summary} comparisonLabel={comparisonLabel} />
 
       <CampaignFiltersSection
         filters={filters}

@@ -3,8 +3,38 @@ const handoverWriteRepo = require('../repositories/handover-write.repo');
 const { ensureLeadWorkspaceOperator } = require('../utils/lead-workspace-operator');
 const { buildHandoverAccessFromRequest } = require('../utils/handover-access');
 const { safeUnlinkOldUploadFile } = require('../utils/file');
+const { ValidationError } = require('../utils/validation');
+
+const HANDOVER_ORG_SUMMARY_ROLES = new Set(['CEO', 'COO', 'SUPERADMIN']);
+
+const parseSummaryCreatedByOverride = (req) => {
+  const raw = req.query.summary_created_by;
+  if (raw === undefined || raw === null || String(raw).trim() === '') {
+    return null;
+  }
+  const id = Number(raw);
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new ValidationError('summary_created_by harus bilangan bulat positif.');
+  }
+  return { summaryUserId: id, scope: 'filtered_user', summary_created_by: id };
+};
+
+const resolveSummaryScope = (req, userId) => {
+  const role = String(req.user?.role ?? '')
+    .trim()
+    .toUpperCase();
+  if (HANDOVER_ORG_SUMMARY_ROLES.has(role)) {
+    const override = parseSummaryCreatedByOverride(req);
+    if (override) return override;
+    return { summaryUserId: null, scope: 'organization' };
+  }
+  return { summaryUserId: userId, scope: 'own_handovers' };
+};
 
 const sendError = (res, e) => {
+  if (e instanceof ValidationError) {
+    return res.status(400).json({ success: false, message: e.message });
+  }
   // eslint-disable-next-line no-console
   console.error('[handover.controller] error:', e);
   return res.status(500).json({ success: false, message: 'Internal server error' });
@@ -57,9 +87,26 @@ const mapWriteFailure = (res, result) => {
 
 const listHandovers = async (req, res) => {
   try {
+    const userId = getUserIdFromRequest(req, res);
+    if (userId == null) return undefined;
+
     const access = await buildHandoverAccessFromRequest(req);
-    const items = await handoverRepo.findHandoverList(access);
-    return res.json({ success: true, data: { items } });
+    const summaryScope = resolveSummaryScope(req, userId);
+
+    const [items, summary] = await Promise.all([
+      handoverRepo.findHandoverList(access),
+      handoverRepo.getHandoverSummary(summaryScope.summaryUserId)
+    ]);
+
+    const meta = { scope: summaryScope.scope };
+    if (summaryScope.summary_created_by != null) {
+      meta.summary_created_by = summaryScope.summary_created_by;
+    }
+
+    return res.json({
+      success: true,
+      data: { items, summary, meta }
+    });
   } catch (e) {
     return sendError(res, e);
   }

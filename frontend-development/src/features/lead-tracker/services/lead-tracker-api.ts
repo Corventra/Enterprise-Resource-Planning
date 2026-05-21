@@ -17,9 +17,45 @@ export interface ApiLeadTrackerListRow {
   processed_at: string | null;
 }
 
+interface ApiLeadTrackerSummaryMetric {
+  value: number;
+  previous: number;
+  delta: { value: number; direction: 'up' | 'down' | 'flat' };
+}
+
+interface ApiLeadTrackerSnapshotCount {
+  value: number;
+}
+
+interface ApiLeadTrackerSummary {
+  total_leads: ApiLeadTrackerSummaryMetric;
+  active_leads: ApiLeadTrackerSnapshotCount;
+  won_leads: ApiLeadTrackerSummaryMetric;
+  lost_leads: ApiLeadTrackerSummaryMetric;
+}
+
+interface ApiLeadTrackerListMeta {
+  period: string;
+  period_start: string;
+  period_end_exclusive: string;
+  comparison_label: string;
+  scope: 'own_leads' | 'organization' | 'filtered_user' | 'filtered_unassigned';
+  summary_processed_by?: number;
+}
+
 interface ApiListResponse {
   success: boolean;
-  data: { entries: ApiLeadTrackerListRow[] };
+  data: {
+    entries: ApiLeadTrackerListRow[];
+    summary: ApiLeadTrackerSummary;
+    meta: ApiLeadTrackerListMeta;
+  };
+}
+
+export interface LeadTrackerListPayload {
+  entries: ApiLeadTrackerListRow[];
+  summary: ApiLeadTrackerSummary;
+  meta: ApiLeadTrackerListMeta;
 }
 
 interface ApiMutationResponse {
@@ -42,9 +78,25 @@ export interface ApiMarkLeadLostBody {
   lost_reason_note?: string | null;
 }
 
-export const getLeadTrackerEntries = async (): Promise<ApiLeadTrackerListRow[]> => {
-  const res = await apiGet<ApiListResponse>('/lead-tracker');
-  return res.data.entries;
+export type LeadTrackerSummaryQuery =
+  | { processedByUserId: number }
+  | { unassigned: true }
+  | null;
+
+export const getLeadTrackerList = async (
+  period = 'this_month',
+  summaryQuery: LeadTrackerSummaryQuery = null
+): Promise<LeadTrackerListPayload> => {
+  const params = new URLSearchParams({ period });
+  if (summaryQuery != null) {
+    if ('unassigned' in summaryQuery && summaryQuery.unassigned) {
+      params.set('summary_unassigned', '1');
+    } else if ('processedByUserId' in summaryQuery) {
+      params.set('summary_processed_by', String(summaryQuery.processedByUserId));
+    }
+  }
+  const res = await apiGet<ApiListResponse>(`/lead-tracker?${params.toString()}`);
+  return res.data;
 };
 
 export const createManualLeadEntry = async (body: ApiCreateManualLeadBody): Promise<ApiLeadTrackerListRow> => {

@@ -1,16 +1,71 @@
 import { deleteDraftForm, getCampaignForms } from '../../forms/services/forms-api';
-import type { Campaign, Form } from '../types/campaign.types';
+import type {
+  Campaign,
+  CampaignsListMeta,
+  CampaignsSummary,
+  CampaignsSummaryCreatedByTarget,
+  CampaignSnapshotCount,
+  CampaignSummaryMetric,
+  Form
+} from '../types/campaign.types';
 import {
   archiveCampaignApi,
   createCampaignApi,
   getCampaignById,
-  getCampaigns,
+  getCampaignsList,
   updateCampaignApi
 } from './campaigns-api';
 
+const mapSnapshotCount = (row: { value: number }): CampaignSnapshotCount => ({
+  value: row.value
+});
+
+const mapSummaryMetric = (row: {
+  value: number;
+  previous: number;
+  delta: { value: number; direction: 'up' | 'down' | 'flat' };
+}): CampaignSummaryMetric => ({
+  value: row.value,
+  previous: row.previous,
+  delta: row.delta
+});
+
+const mapMeta = (row: {
+  period: string;
+  period_start: string;
+  period_end_exclusive: string;
+  comparison_label: string;
+  scope: CampaignsListMeta['scope'];
+  summary_created_by?: number;
+}): CampaignsListMeta => ({
+  period: row.period,
+  periodStart: row.period_start,
+  periodEndExclusive: row.period_end_exclusive,
+  comparisonLabel: row.comparison_label,
+  scope: row.scope,
+  summaryCreatedByUserId: row.summary_created_by
+});
+
 export const campaignsService = {
-  async getAll(): Promise<Campaign[]> {
-    return getCampaigns();
+  async getList(
+    period = 'this_month',
+    summaryCreatedByTarget: CampaignsSummaryCreatedByTarget = null
+  ): Promise<{
+    campaigns: Campaign[];
+    summary: CampaignsSummary;
+    meta: CampaignsListMeta;
+  }> {
+    const data = await getCampaignsList(period, summaryCreatedByTarget);
+    return {
+      campaigns: data.campaigns,
+      summary: {
+        total: mapSnapshotCount(data.summary.total),
+        active: mapSnapshotCount(data.summary.active),
+        totalSubmissions: mapSummaryMetric(data.summary.total_submissions),
+        averagePerCampaign: mapSummaryMetric(data.summary.average_per_campaign)
+      },
+      meta: mapMeta(data.meta)
+    };
   },
 
   async getById(campaignId: string): Promise<Campaign | undefined> {

@@ -66,8 +66,29 @@ export interface HandoverItem {
   status: HandoverStatus;
   dbStatus?: string;
   createdBy: string;
+  createdById: number | null;
   createdAt: string | null;
 }
+
+export interface HandoverSnapshotCount {
+  value: number;
+}
+
+export interface HandoverSummary {
+  totalHandover: HandoverSnapshotCount;
+  totalDraft: HandoverSnapshotCount;
+  totalAwaitingApproval: HandoverSnapshotCount;
+  totalActive: HandoverSnapshotCount;
+}
+
+export type HandoverSummaryScope = 'own_handovers' | 'organization' | 'filtered_user';
+
+export interface HandoverListMeta {
+  scope: HandoverSummaryScope;
+  summaryCreatedByUserId?: number;
+}
+
+export type HandoverSummaryCreatedByTarget = number | null;
 
 export type HandoverApprovalAction =
   | 'submitted'
@@ -99,7 +120,7 @@ export const HANDOVER_APPROVAL_ACTION_LABELS: Record<HandoverApprovalAction, str
 export interface HandoverFilters {
   search: string;
   serviceLine: string;
-  engagementStatus: HandoverEngagementStatus | 'All';
+  createdBy: string;
   status: HandoverStatus | 'All';
 }
 

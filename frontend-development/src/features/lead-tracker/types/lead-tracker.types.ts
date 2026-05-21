@@ -31,6 +31,41 @@ export interface LeadTrackerItem {
   leadStatus: LeadPipelineStatus;
 }
 
+export interface LeadTrackerSummaryMetric {
+  value: number;
+  previous: number;
+  delta: { value: number; direction: 'up' | 'down' | 'flat' };
+}
+
+export interface LeadTrackerSnapshotCount {
+  value: number;
+}
+
+export interface LeadTrackerSummary {
+  totalLeads: LeadTrackerSummaryMetric;
+  activeLeads: LeadTrackerSnapshotCount;
+  wonLeads: LeadTrackerSummaryMetric;
+  lostLeads: LeadTrackerSummaryMetric;
+}
+
+export type LeadTrackerSummaryScope =
+  | 'own_leads'
+  | 'organization'
+  | 'filtered_user'
+  | 'filtered_unassigned';
+
+export interface LeadTrackerListMeta {
+  period: string;
+  periodStart: string;
+  periodEndExclusive: string;
+  comparisonLabel: string;
+  scope: LeadTrackerSummaryScope;
+  summaryProcessedByUserId?: number;
+}
+
+/** Target summary untuk CEO/COO saat filter processor dipilih. */
+export type LeadTrackerSummaryProcessedByTarget = number | 'unassigned' | null;
+
 export interface LeadTrackerFilters {
   search: string;
   stage: LeadStage | 'All';

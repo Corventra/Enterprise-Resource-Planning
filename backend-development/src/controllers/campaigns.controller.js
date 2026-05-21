@@ -1,6 +1,33 @@
 const campaignsRepo = require('../repositories/campaigns.repo');
+const { resolveComparisonPeriod, resolveDashboardPeriod } = require('../utils/dashboard-period');
 const { safeUnlinkOldUploadFile } = require('../utils/file');
 const { ValidationError, requireString } = require('../utils/validation');
+
+const CAMPAIGN_ORG_SUMMARY_ROLES = new Set(['CEO', 'COO', 'SUPERADMIN']);
+
+const parseSummaryCreatedByOverride = (req) => {
+  const raw = req.query.summary_created_by;
+  if (raw === undefined || raw === null || String(raw).trim() === '') {
+    return null;
+  }
+  const id = Number(raw);
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new ValidationError('summary_created_by harus bilangan bulat positif.');
+  }
+  return { summaryUserId: id, scope: 'filtered_user', summary_created_by: id };
+};
+
+const resolveSummaryScope = (req, userId) => {
+  const role = String(req.user?.role ?? '')
+    .trim()
+    .toUpperCase();
+  if (CAMPAIGN_ORG_SUMMARY_ROLES.has(role)) {
+    const override = parseSummaryCreatedByOverride(req);
+    if (override) return override;
+    return { summaryUserId: null, scope: 'organization' };
+  }
+  return { summaryUserId: userId, scope: 'own_marketing' };
+};
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -102,10 +129,48 @@ const listTopics = async (_req, res) => {
   }
 };
 
-const list = async (_req, res) => {
+const list = async (req, res) => {
   try {
-    const campaigns = await campaignsRepo.listAllWithJoins();
-    return res.json({ campaigns });
+    const userId = getUserIdFromRequest(req, res);
+    if (userId === null) return;
+
+    let period;
+    try {
+      period = resolveDashboardPeriod({
+        period: req.query.period,
+        from: req.query.from,
+        to: req.query.to
+      });
+    } catch (periodErr) {
+      return res.status(400).json({
+        error: periodErr instanceof Error ? periodErr.message : 'Periode tidak valid.'
+      });
+    }
+
+    const comparison = resolveComparisonPeriod(period, req.query.comparison);
+    const summaryScope = resolveSummaryScope(req, userId);
+
+    const [campaigns, summary] = await Promise.all([
+      campaignsRepo.listAllWithJoins(),
+      campaignsRepo.getCampaignSummary(summaryScope.summaryUserId, period, comparison)
+    ]);
+
+    const meta = {
+      period: period.periodKey,
+      period_start: period.startSql,
+      period_end_exclusive: period.endSqlExclusive,
+      comparison_label: comparison.label,
+      scope: summaryScope.scope
+    };
+    if (summaryScope.summary_created_by != null) {
+      meta.summary_created_by = summaryScope.summary_created_by;
+    }
+
+    return res.json({
+      campaigns,
+      summary,
+      meta
+    });
   } catch (e) {
     return sendError(res, e);
   }

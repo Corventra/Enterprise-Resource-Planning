@@ -11,6 +11,7 @@ export interface ApiHandoverListRow {
   engagement_status: string | null;
   engagement_signed_at: string | null;
   handover_status: string;
+  created_by: number | null;
   created_by_name: string | null;
   created_at: string | null;
 }
@@ -132,9 +133,29 @@ export interface ApiHandoverDetailPayload {
   activity_logs: ApiHandoverActivityLogRow[];
 }
 
+interface ApiHandoverSnapshotCount {
+  value: number;
+}
+
+interface ApiHandoverSummary {
+  total_handover: ApiHandoverSnapshotCount;
+  total_draft: ApiHandoverSnapshotCount;
+  total_awaiting_approval: ApiHandoverSnapshotCount;
+  total_active: ApiHandoverSnapshotCount;
+}
+
+interface ApiHandoverListMeta {
+  scope: 'own_handovers' | 'organization' | 'filtered_user';
+  summary_created_by?: number;
+}
+
 interface ApiHandoverListResponse {
   success: boolean;
-  data: { items: ApiHandoverListRow[] };
+  data: {
+    items: ApiHandoverListRow[];
+    summary: ApiHandoverSummary;
+    meta: ApiHandoverListMeta;
+  };
 }
 
 interface ApiHandoverDetailResponse {
@@ -142,9 +163,22 @@ interface ApiHandoverDetailResponse {
   data: ApiHandoverDetailPayload;
 }
 
-export const getHandovers = async (): Promise<ApiHandoverListRow[]> => {
-  const res = await apiGet<ApiHandoverListResponse>('/handovers');
-  return res.data.items;
+export interface HandoverListPayload {
+  items: ApiHandoverListRow[];
+  summary: ApiHandoverSummary;
+  meta: ApiHandoverListMeta;
+}
+
+export const getHandoverList = async (
+  summaryCreatedByUserId: number | null = null
+): Promise<HandoverListPayload> => {
+  const params = new URLSearchParams();
+  if (summaryCreatedByUserId != null) {
+    params.set('summary_created_by', String(summaryCreatedByUserId));
+  }
+  const qs = params.toString();
+  const res = await apiGet<ApiHandoverListResponse>(qs ? `/handovers?${qs}` : '/handovers');
+  return res.data;
 };
 
 export const getHandoverById = async (handoverId: string): Promise<ApiHandoverDetailPayload> => {

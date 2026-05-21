@@ -64,9 +64,57 @@ export const getCampaignTopics = async (): Promise<CampaignLookupTopic[]> => {
   return res.topics ?? [];
 };
 
-export const getCampaigns = async (): Promise<Campaign[]> => {
-  const res = await apiGet<{ campaigns: ApiCampaignRow[] }>('/campaigns');
-  return (res.campaigns ?? []).map(mapApiRowToCampaign);
+interface ApiCampaignSummaryMetric {
+  value: number;
+  previous: number;
+  delta: { value: number; direction: 'up' | 'down' | 'flat' };
+}
+
+interface ApiCampaignSnapshotCount {
+  value: number;
+}
+
+interface ApiCampaignsSummary {
+  total: ApiCampaignSnapshotCount;
+  active: ApiCampaignSnapshotCount;
+  total_submissions: ApiCampaignSummaryMetric;
+  average_per_campaign: ApiCampaignSummaryMetric;
+}
+
+interface ApiCampaignsListMeta {
+  period: string;
+  period_start: string;
+  period_end_exclusive: string;
+  comparison_label: string;
+  scope: 'own_marketing' | 'organization' | 'filtered_user';
+  summary_created_by?: number;
+}
+
+export interface CampaignsListPayload {
+  campaigns: Campaign[];
+  summary: ApiCampaignsSummary;
+  meta: ApiCampaignsListMeta;
+}
+
+export const getCampaignsList = async (
+  period = 'this_month',
+  summaryCreatedByUserId: number | null = null
+): Promise<CampaignsListPayload> => {
+  const params = new URLSearchParams({ period });
+  if (summaryCreatedByUserId != null) {
+    params.set('summary_created_by', String(summaryCreatedByUserId));
+  }
+  const res = await apiGet<{
+    campaigns: ApiCampaignRow[];
+    summary: ApiCampaignsSummary;
+    meta: ApiCampaignsListMeta;
+  }>(`/campaigns?${params.toString()}`);
+
+  return {
+    campaigns: (res.campaigns ?? []).map(mapApiRowToCampaign),
+    summary: res.summary,
+    meta: res.meta
+  };
 };
 
 export const getCampaignById = async (id: string): Promise<Campaign | null> => {

@@ -1,4 +1,5 @@
 const { pool } = require('../config/db');
+const { deltaPercent } = require('../utils/dashboard-period');
 const { formatSqlDate } = require('../utils/sql-date');
 
 const mapTypeRow = (row) => ({
@@ -90,6 +91,84 @@ const baseSelect = `
 const listAllWithJoins = async () => {
   const [rows] = await pool.query(`${baseSelect} ORDER BY c.created_at DESC`);
   return rows.map(mapCampaignRow);
+};
+
+/** CEO/COO = null (semua user). MEO = campaigns.created_by. */
+const buildCreatedByFilter = (userId) => {
+  if (userId == null) return { sql: '', params: [] };
+  return { sql: ' AND c.created_by = ?', params: [Number(userId)] };
+};
+
+const countAllCampaigns = async (userId) => {
+  const owner = buildCreatedByFilter(userId);
+  const [rows] = await pool.execute(
+    `SELECT COUNT(*) AS cnt FROM campaigns c WHERE 1=1${owner.sql}`,
+    owner.params
+  );
+  return Number(rows[0]?.cnt ?? 0);
+};
+
+const countAllActiveCampaigns = async (userId) => {
+  const owner = buildCreatedByFilter(userId);
+  const [rows] = await pool.execute(
+    `SELECT COUNT(*) AS cnt
+       FROM campaigns c
+      WHERE c.status = 'ACTIVE'
+        ${owner.sql}`,
+    owner.params
+  );
+  return Number(rows[0]?.cnt ?? 0);
+};
+
+const countSubmissionsInPeriod = async (userId, { startSql, endSqlExclusive }) => {
+  const owner = buildCreatedByFilter(userId);
+  const [rows] = await pool.execute(
+    `SELECT COUNT(*) AS cnt
+       FROM form_submissions fs
+       INNER JOIN forms f ON f.form_id = fs.form_id
+       INNER JOIN campaigns c ON c.campaign_id = f.campaign_id
+      WHERE fs.submitted_at >= ? AND fs.submitted_at < ?
+        ${owner.sql}`,
+    [startSql, endSqlExclusive, ...owner.params]
+  );
+  return Number(rows[0]?.cnt ?? 0);
+};
+
+const averagePerCampaign = (submissions, total) => {
+  if (total === 0) return 0;
+  return Math.round(submissions / total);
+};
+
+const fetchPeriodSubmissionMetrics = async (userId, period) => {
+  const submissions = await countSubmissionsInPeriod(userId, period);
+  const campaignTotal = await countAllCampaigns(userId);
+  return {
+    submissions,
+    average: averagePerCampaign(submissions, campaignTotal)
+  };
+};
+
+const toSummaryMetric = (value, previous) => ({
+  value,
+  previous,
+  delta: deltaPercent(value, previous)
+});
+
+/** Total & active = keseluruhan; submission & average = periode + vs bulan lalu. */
+const getCampaignSummary = async (userId, period, comparisonPeriod) => {
+  const [total, active, currentPeriod, previousPeriod] = await Promise.all([
+    countAllCampaigns(userId),
+    countAllActiveCampaigns(userId),
+    fetchPeriodSubmissionMetrics(userId, period),
+    fetchPeriodSubmissionMetrics(userId, comparisonPeriod)
+  ]);
+
+  return {
+    total: { value: total },
+    active: { value: active },
+    total_submissions: toSummaryMetric(currentPeriod.submissions, previousPeriod.submissions),
+    average_per_campaign: toSummaryMetric(currentPeriod.average, previousPeriod.average)
+  };
 };
 
 const findByIdWithJoins = async (campaignId) => {
@@ -189,6 +268,7 @@ module.exports = {
   listActiveTypes,
   listActiveTopics,
   listAllWithJoins,
+  getCampaignSummary,
   findByIdWithJoins,
   create,
   update,

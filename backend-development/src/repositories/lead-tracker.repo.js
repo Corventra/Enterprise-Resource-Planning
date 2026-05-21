@@ -1,5 +1,6 @@
 const { pool } = require('../config/db');
 const { LEAD_ACTIVITY_TYPES } = require('../constants/lead-activity-types');
+const { deltaPercent } = require('../utils/dashboard-period');
 const { generateNextLeadCode } = require('../utils/entity-display-code');
 
 const LOST_REASON_CODES = [
@@ -24,6 +25,14 @@ const LOST_REASON_LABELS = {
   OTHER: 'Lainnya'
 };
 
+const TRACKED_LEAD_WHERE = `
+  l.lead_status IN ('ACTIVE', 'WON', 'LOST')
+  AND (
+    (l.source_type = 'FORM_LEAD_CAPTURE' AND l.bank_data_status = 'PROCESSED')
+    OR l.source_type = 'MANUAL'
+  )
+`;
+
 const LEAD_TRACKER_LIST_SELECT = `
   SELECT
       l.lead_id,
@@ -42,11 +51,7 @@ const LEAD_TRACKER_LIST_SELECT = `
       up.name AS processed_by_name
     FROM leads l
     LEFT JOIN users up ON up.id = l.processed_by
-   WHERE l.lead_status IN ('ACTIVE', 'WON', 'LOST')
-     AND (
-       (l.source_type = 'FORM_LEAD_CAPTURE' AND l.bank_data_status = 'PROCESSED')
-       OR l.source_type = 'MANUAL'
-     )
+   WHERE ${TRACKED_LEAD_WHERE}
 `;
 
 const mapListRow = (row) => ({
@@ -72,6 +77,92 @@ const listTrackedLeads = async () => {
      ORDER BY COALESCE(l.due_date, l.processed_at, l.created_at) ASC, l.lead_id DESC`
   );
   return rows.map(mapListRow);
+};
+
+/** CEO = null (semua). number = user. 'unassigned' = belum ada processor. */
+const buildProcessedByFilter = (userId) => {
+  if (userId == null) return { sql: '', params: [] };
+  if (userId === 'unassigned') return { sql: ' AND l.processed_by IS NULL', params: [] };
+  return { sql: ' AND l.processed_by = ?', params: [Number(userId)] };
+};
+
+const countTrackedLeadMetric = async (userId, { startSql, endSqlExclusive }, metric) => {
+  const owner = buildProcessedByFilter(userId);
+  let statusSql = '';
+  let dateSql = 'l.processed_at >= ? AND l.processed_at < ?';
+
+  switch (metric) {
+    case 'active':
+      statusSql = " AND l.lead_status = 'ACTIVE'";
+      break;
+    case 'won':
+      statusSql = " AND l.lead_status = 'WON'";
+      dateSql = 'l.updated_at >= ? AND l.updated_at < ?';
+      break;
+    case 'lost':
+      statusSql = " AND l.lead_status = 'LOST'";
+      dateSql = 'l.lost_at >= ? AND l.lost_at < ?';
+      break;
+    case 'total':
+    default:
+      break;
+  }
+
+  const [rows] = await pool.execute(
+    `SELECT COUNT(*) AS cnt
+       FROM leads l
+      WHERE ${TRACKED_LEAD_WHERE}
+        ${owner.sql}
+        ${statusSql}
+        AND ${dateSql}`,
+    [...owner.params, startSql, endSqlExclusive]
+  );
+  return Number(rows[0]?.cnt ?? 0);
+};
+
+const countAllActiveLeads = async (userId) => {
+  const owner = buildProcessedByFilter(userId);
+  const [rows] = await pool.execute(
+    `SELECT COUNT(*) AS cnt
+       FROM leads l
+      WHERE ${TRACKED_LEAD_WHERE}
+        AND l.lead_status = 'ACTIVE'
+        ${owner.sql}`,
+    owner.params
+  );
+  return Number(rows[0]?.cnt ?? 0);
+};
+
+const fetchPeriodCounts = async (userId, period) => {
+  const { startSql, endSqlExclusive } = period;
+  const [total, won, lost] = await Promise.all([
+    countTrackedLeadMetric(userId, { startSql, endSqlExclusive }, 'total'),
+    countTrackedLeadMetric(userId, { startSql, endSqlExclusive }, 'won'),
+    countTrackedLeadMetric(userId, { startSql, endSqlExclusive }, 'lost')
+  ]);
+  return { total, won, lost };
+};
+
+const toSummaryMetric = (value, previous) => ({
+  value,
+  previous,
+  delta: deltaPercent(value, previous)
+});
+
+/** Active = keseluruhan; total/won/lost = periode + vs bulan lalu. */
+const getTrackedLeadSummary = async (userId, period, comparisonPeriod) => {
+  const [active, current, previous] = await Promise.all([
+    countAllActiveLeads(userId),
+    fetchPeriodCounts(userId, period),
+    fetchPeriodCounts(userId, comparisonPeriod)
+  ]);
+
+  return {
+    total_leads: toSummaryMetric(current.total, previous.total),
+    active_leads: { value: active },
+    won_leads: toSummaryMetric(current.won, previous.won),
+    lost_leads: toSummaryMetric(current.lost, previous.lost)
+  };
 };
 
 const findTrackedLeadById = async (leadId) => {
@@ -225,6 +316,7 @@ module.exports = {
   LOST_REASON_CODES,
   LOST_REASON_LABELS,
   listTrackedLeads,
+  getTrackedLeadSummary,
   findTrackedLeadById,
   createManualLead,
   markLeadLost

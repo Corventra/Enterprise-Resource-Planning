@@ -128,7 +128,7 @@ export const BankDataPage = () => {
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Bank Data</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Manage incoming lead entries from campaigns and forms in one operational table.
+            Kelola entri lead yang masuk dari kampanye dan formulir dalam satu tabel operasional.
           </p>
         </div>
       </header>

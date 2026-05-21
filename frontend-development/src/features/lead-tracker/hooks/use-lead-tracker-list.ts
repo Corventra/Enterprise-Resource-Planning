@@ -1,29 +1,78 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { leadTrackerService } from '../services/lead-tracker-service';
-import type { CreateManualLeadPayload, LeadTrackerItem, MarkLeadLostPayload } from '../types/lead-tracker.types';
+import type {
+  CreateManualLeadPayload,
+  LeadTrackerItem,
+  LeadTrackerListMeta,
+  LeadTrackerSummary,
+  LeadTrackerSummaryMetric,
+  LeadTrackerSummaryProcessedByTarget,
+  MarkLeadLostPayload
+} from '../types/lead-tracker.types';
+
+const emptyMetric = (): LeadTrackerSummaryMetric => ({
+  value: 0,
+  previous: 0,
+  delta: { value: 0, direction: 'flat' }
+});
+
+const emptySummary: LeadTrackerSummary = {
+  totalLeads: emptyMetric(),
+  activeLeads: { value: 0 },
+  wonLeads: emptyMetric(),
+  lostLeads: emptyMetric()
+};
 
 export const useLeadTrackerList = () => {
   const [items, setItems] = useState<LeadTrackerItem[]>([]);
+  const [summary, setSummary] = useState<LeadTrackerSummary>(emptySummary);
+  const [meta, setMeta] = useState<LeadTrackerListMeta | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const fetchItems = useCallback(async (options?: { silent?: boolean }) => {
-    if (!options?.silent) {
-      setIsLoading(true);
-    }
-    setLoadError(null);
-    try {
-      const data = await leadTrackerService.getAll();
-      setItems(data);
-    } catch (e) {
-      setItems([]);
-      setLoadError(e instanceof Error ? e.message : 'Gagal memuat Lead Tracker.');
-    } finally {
-      if (!options?.silent) {
-        setIsLoading(false);
+  const fetchItems = useCallback(
+    async (options?: {
+      silent?: boolean;
+      summaryOnly?: boolean;
+      summaryProcessedBy?: LeadTrackerSummaryProcessedByTarget;
+    }) => {
+      if (!options?.silent && !options?.summaryOnly) {
+        setIsLoading(true);
       }
-    }
-  }, []);
+      if (!options?.summaryOnly) {
+        setLoadError(null);
+      }
+      try {
+        const data = await leadTrackerService.getList(
+          'this_month',
+          options?.summaryProcessedBy ?? null
+        );
+        if (!options?.summaryOnly) {
+          setItems(data.items);
+        }
+        setSummary(data.summary);
+        setMeta(data.meta);
+      } catch (e) {
+        if (!options?.summaryOnly) {
+          setItems([]);
+          setMeta(null);
+          setLoadError(e instanceof Error ? e.message : 'Gagal memuat Lead Tracker.');
+        }
+        setSummary(emptySummary);
+      } finally {
+        if (!options?.silent && !options?.summaryOnly) {
+          setIsLoading(false);
+        }
+      }
+    },
+    []
+  );
+
+  const refetchSummary = useCallback(
+    (summaryProcessedBy: LeadTrackerSummaryProcessedByTarget) =>
+      fetchItems({ silent: true, summaryOnly: true, summaryProcessedBy }),
+    [fetchItems]
+  );
 
   useEffect(() => {
     void fetchItems();
@@ -39,26 +88,14 @@ export const useLeadTrackerList = () => {
     await fetchItems({ silent: true });
   };
 
-  const summary = useMemo(() => {
-    const totalLeads = items.length;
-    const activeLeads = items.filter((item) => item.leadStatus === 'ACTIVE').length;
-    const wonLeads = items.filter((item) => item.leadStatus === 'WON').length;
-    const lostLeads = items.filter((item) => item.leadStatus === 'LOST').length;
-
-    return {
-      totalLeads,
-      activeLeads,
-      wonLeads,
-      lostLeads
-    };
-  }, [items]);
-
   return {
     items,
     isLoading,
     loadError,
     summary,
+    meta,
     refetch: fetchItems,
+    refetchSummary,
     createManualLead,
     markLeadLost
   };

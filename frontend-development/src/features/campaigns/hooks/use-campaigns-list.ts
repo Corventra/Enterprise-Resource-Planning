@@ -1,22 +1,72 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { campaignsService } from '../services/campaigns-service';
-import type { Campaign, CampaignSubmitInput } from '../types/campaign.types';
+import type {
+  Campaign,
+  CampaignsListMeta,
+  CampaignsSummary,
+  CampaignsSummaryCreatedByTarget,
+  CampaignSubmitInput,
+  CampaignSummaryMetric
+} from '../types/campaign.types';
+
+const emptyMetric = (): CampaignSummaryMetric => ({
+  value: 0,
+  previous: 0,
+  delta: { value: 0, direction: 'flat' }
+});
+
+const emptySummary: CampaignsSummary = {
+  total: { value: 0 },
+  active: { value: 0 },
+  totalSubmissions: emptyMetric(),
+  averagePerCampaign: emptyMetric()
+};
 
 export const useCampaignsList = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [summary, setSummary] = useState<CampaignsSummary>(emptySummary);
+  const [meta, setMeta] = useState<CampaignsListMeta | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchCampaigns = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const response = await campaignsService.getAll();
-      setCampaigns(response);
-    } catch {
-      setCampaigns([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const fetchCampaigns = useCallback(
+    async (options?: {
+      silent?: boolean;
+      summaryOnly?: boolean;
+      summaryCreatedBy?: CampaignsSummaryCreatedByTarget;
+    }) => {
+      if (!options?.silent && !options?.summaryOnly) {
+        setIsLoading(true);
+      }
+      try {
+        const data = await campaignsService.getList(
+          'this_month',
+          options?.summaryCreatedBy ?? null
+        );
+        if (!options?.summaryOnly) {
+          setCampaigns(data.campaigns);
+        }
+        setSummary(data.summary);
+        setMeta(data.meta);
+      } catch {
+        if (!options?.summaryOnly) {
+          setCampaigns([]);
+          setMeta(null);
+        }
+        setSummary(emptySummary);
+      } finally {
+        if (!options?.silent && !options?.summaryOnly) {
+          setIsLoading(false);
+        }
+      }
+    },
+    []
+  );
+
+  const refetchSummary = useCallback(
+    (summaryCreatedBy: CampaignsSummaryCreatedByTarget) =>
+      fetchCampaigns({ silent: true, summaryOnly: true, summaryCreatedBy }),
+    [fetchCampaigns]
+  );
 
   useEffect(() => {
     void fetchCampaigns();
@@ -55,25 +105,13 @@ export const useCampaignsList = () => {
     await fetchCampaigns();
   };
 
-  const summary = useMemo(() => {
-    const total = campaigns.length;
-    const active = campaigns.filter((campaign) => campaign.status === 'ACTIVE').length;
-    const totalSubmissions = campaigns.reduce((acc, campaign) => acc + campaign.totalSubmissions, 0);
-    const averagePerCampaign = total === 0 ? 0 : Math.round(totalSubmissions / total);
-
-    return {
-      total,
-      active,
-      totalSubmissions,
-      averagePerCampaign
-    };
-  }, [campaigns]);
-
   return {
     campaigns,
     isLoading,
     summary,
+    meta,
     refetch: fetchCampaigns,
+    refetchSummary,
     createCampaign,
     updateCampaign,
     archiveCampaign

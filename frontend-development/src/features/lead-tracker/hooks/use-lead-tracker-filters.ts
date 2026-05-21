@@ -1,5 +1,9 @@
 import { useMemo, useState } from 'react';
-import type { LeadTrackerFilters, LeadTrackerItem } from '../types/lead-tracker.types';
+import type {
+  LeadTrackerFilters,
+  LeadTrackerItem,
+  LeadTrackerSummaryProcessedByTarget
+} from '../types/lead-tracker.types';
 
 const PROCESSED_BY_UNASSIGNED = 'Unassigned';
 
@@ -30,6 +34,13 @@ const compareLeadTrackerRows = (a: LeadTrackerItem, b: LeadTrackerItem) =>
 export const useLeadTrackerFilters = (items: LeadTrackerItem[], pageSize = 6) => {
   const [filters, setFilters] = useState<LeadTrackerFilters>(defaultFilters);
   const [currentPage, setCurrentPage] = useState(1);
+
+  const summaryProcessedByTarget = useMemo((): LeadTrackerSummaryProcessedByTarget => {
+    if (filters.processedBy === 'All') return null;
+    if (filters.processedBy === PROCESSED_BY_UNASSIGNED) return 'unassigned';
+    const match = items.find((item) => item.processedBy === filters.processedBy);
+    return match?.processedByUserId ?? null;
+  }, [filters.processedBy, items]);
 
   const processedByFilterOptions = useMemo(() => {
     const names = new Set<string>();
@@ -92,6 +103,7 @@ export const useLeadTrackerFilters = (items: LeadTrackerItem[], pageSize = 6) =>
     totalPages,
     pageSize,
     processedByFilterOptions,
+    summaryProcessedByTarget,
     setCurrentPage,
     updateFilter,
     resetFilters

@@ -1,6 +1,39 @@
 const leadTrackerRepo = require('../repositories/lead-tracker.repo');
 const { ensureLeadWorkspaceOperator } = require('../utils/lead-workspace-operator');
+const { resolveComparisonPeriod, resolveDashboardPeriod } = require('../utils/dashboard-period');
 const { ValidationError, requireString, requireEmail } = require('../utils/validation');
+
+const LEAD_TRACKER_ORG_SUMMARY_ROLES = new Set(['CEO', 'COO', 'SUPERADMIN']);
+
+const parseSummaryProcessedByOverride = (req) => {
+  const unassigned = String(req.query.summary_unassigned ?? '').trim().toLowerCase();
+  if (unassigned === '1' || unassigned === 'true') {
+    return { summaryUserId: 'unassigned', scope: 'filtered_unassigned' };
+  }
+
+  const raw = req.query.summary_processed_by;
+  if (raw === undefined || raw === null || String(raw).trim() === '') {
+    return null;
+  }
+
+  const id = Number(raw);
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new ValidationError('summary_processed_by harus bilangan bulat positif.');
+  }
+  return { summaryUserId: id, scope: 'filtered_user', summary_processed_by: id };
+};
+
+const resolveSummaryScope = (req, userId) => {
+  const role = String(req.user?.role ?? '')
+    .trim()
+    .toUpperCase();
+  if (LEAD_TRACKER_ORG_SUMMARY_ROLES.has(role)) {
+    const override = parseSummaryProcessedByOverride(req);
+    if (override) return override;
+    return { summaryUserId: null, scope: 'organization' };
+  }
+  return { summaryUserId: userId, scope: 'own_leads' };
+};
 
 const sendError = (res, e) => {
   if (e instanceof ValidationError) {
@@ -63,8 +96,50 @@ const parseMarkLostPayload = (body) => {
 
 const list = async (req, res) => {
   try {
-    const entries = await leadTrackerRepo.listTrackedLeads();
-    return res.json({ success: true, data: { entries } });
+    const userId = getUserIdFromRequest(req, res);
+    if (userId == null) return undefined;
+
+    let period;
+    try {
+      period = resolveDashboardPeriod({
+        period: req.query.period,
+        from: req.query.from,
+        to: req.query.to
+      });
+    } catch (periodErr) {
+      return res.status(400).json({
+        success: false,
+        message: periodErr instanceof Error ? periodErr.message : 'Periode tidak valid.'
+      });
+    }
+
+    const comparison = resolveComparisonPeriod(period, req.query.comparison);
+    const summaryScope = resolveSummaryScope(req, userId);
+
+    const [entries, summary] = await Promise.all([
+      leadTrackerRepo.listTrackedLeads(),
+      leadTrackerRepo.getTrackedLeadSummary(summaryScope.summaryUserId, period, comparison)
+    ]);
+
+    const meta = {
+      period: period.periodKey,
+      period_start: period.startSql,
+      period_end_exclusive: period.endSqlExclusive,
+      comparison_label: comparison.label,
+      scope: summaryScope.scope
+    };
+    if (summaryScope.summary_processed_by != null) {
+      meta.summary_processed_by = summaryScope.summary_processed_by;
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        entries,
+        summary,
+        meta
+      }
+    });
   } catch (e) {
     return sendError(res, e);
   }

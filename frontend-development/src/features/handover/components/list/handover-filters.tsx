@@ -1,17 +1,13 @@
 import { Filter, Search } from 'lucide-react';
-import {
-  HANDOVER_STATUS_OPTIONS,
-  type HandoverEngagementStatus,
-  type HandoverFilters,
-  type HandoverStatus
-} from '../../types/handover.types';
+import { HANDOVER_STATUS_OPTIONS, type HandoverFilters, type HandoverStatus } from '../../types/handover.types';
 
 interface HandoverFiltersProps {
   filters: HandoverFilters;
   serviceLineOptions?: string[];
+  createdByFilterOptions?: string[];
   onSearchChange: (value: string) => void;
   onServiceLineChange: (value: string) => void;
-  onEngagementStatusChange: (value: HandoverEngagementStatus | 'All') => void;
+  onCreatedByChange: (value: string) => void;
   onStatusChange: (value: HandoverStatus | 'All') => void;
   onReset: () => void;
 }
@@ -22,9 +18,10 @@ const selectClassName = `rounded-lg border-none bg-white py-2 pl-3 pr-8 text-xs 
 export const HandoverFiltersSection = ({
   filters,
   serviceLineOptions = [],
+  createdByFilterOptions = [],
   onSearchChange,
   onServiceLineChange,
-  onEngagementStatusChange,
+  onCreatedByChange,
   onStatusChange,
   onReset
 }: HandoverFiltersProps) => {
@@ -57,14 +54,16 @@ export const HandoverFiltersSection = ({
         </select>
 
         <select
-          value={filters.engagementStatus}
-          onChange={(event) => onEngagementStatusChange(event.target.value as HandoverEngagementStatus | 'All')}
+          value={filters.createdBy}
+          onChange={(event) => onCreatedByChange(event.target.value)}
           className={selectClassName}
-          aria-label="Filter by engagement status"
+          aria-label="Filter by created by"
         >
-          <option value="All">All Engagement Status</option>
-          <option value="Signed">Signed</option>
-          <option value="Pending">Pending</option>
+          {createdByFilterOptions.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt === 'All' ? 'All creators' : opt}
+            </option>
+          ))}
         </select>
 
         <select

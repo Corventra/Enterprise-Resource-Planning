@@ -1,6 +1,6 @@
 import {
   getHandoverById,
-  getHandovers,
+  getHandoverList,
   patchHandoverDraft,
   submitHandover as submitHandoverApi,
   type ApiHandoverDetailPayload
@@ -9,12 +9,35 @@ import { apiGet } from '../../../services/api-client';
 import { mapApiHandoverDetailToDetail, mapApiHandoverListRowToItem } from '../utils/map-api-handover';
 import type { HandoverPatchExtras } from '../utils/build-handover-patch-payload';
 import { buildHandoverPatchFormData } from '../utils/build-handover-patch-payload';
-import type { HandoverDetail, HandoverItem } from '../types/handover.types';
+import type {
+  HandoverDetail,
+  HandoverItem,
+  HandoverListMeta,
+  HandoverSnapshotCount,
+  HandoverSummary,
+  HandoverSummaryCreatedByTarget
+} from '../types/handover.types';
+
+const mapSnapshot = (row: { value: number }): HandoverSnapshotCount => ({ value: row.value });
 
 export const handoverService = {
-  async getAll(): Promise<HandoverItem[]> {
-    const rows = await getHandovers();
-    return rows.map(mapApiHandoverListRowToItem);
+  async getList(
+    summaryCreatedByTarget: HandoverSummaryCreatedByTarget = null
+  ): Promise<{ items: HandoverItem[]; summary: HandoverSummary; meta: HandoverListMeta }> {
+    const data = await getHandoverList(summaryCreatedByTarget);
+    return {
+      items: data.items.map(mapApiHandoverListRowToItem),
+      summary: {
+        totalHandover: mapSnapshot(data.summary.total_handover),
+        totalDraft: mapSnapshot(data.summary.total_draft),
+        totalAwaitingApproval: mapSnapshot(data.summary.total_awaiting_approval),
+        totalActive: mapSnapshot(data.summary.total_active)
+      },
+      meta: {
+        scope: data.meta.scope,
+        summaryCreatedByUserId: data.meta.summary_created_by
+      }
+    };
   },
 
   async getById(id: string): Promise<HandoverDetail | undefined> {
@@ -43,7 +66,7 @@ export const handoverService = {
   },
 
   async getItemById(id: string): Promise<HandoverItem | undefined> {
-    const items = await this.getAll();
+    const { items } = await this.getList();
     return items.find((entry) => entry.id === id);
   },
 

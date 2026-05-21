@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import type { Campaign, CampaignFilters } from '../types/campaign.types';
+import type { Campaign, CampaignFilters, CampaignsSummaryCreatedByTarget } from '../types/campaign.types';
 
 const defaultFilters: CampaignFilters = {
   search: '',
@@ -11,6 +11,12 @@ const defaultFilters: CampaignFilters = {
 export const useCampaignFilters = (campaigns: Campaign[], pageSize = 5) => {
   const [filters, setFilters] = useState<CampaignFilters>(defaultFilters);
   const [currentPage, setCurrentPage] = useState(1);
+
+  const summaryCreatedByTarget = useMemo((): CampaignsSummaryCreatedByTarget => {
+    if (filters.createdBy === 'All') return null;
+    const match = campaigns.find((c) => c.createdBy === filters.createdBy);
+    return match?.createdById ?? null;
+  }, [filters.createdBy, campaigns]);
 
   const typeFilterOptions = useMemo(() => {
     const uniq = Array.from(new Set(campaigns.map((c) => c.campaignTypeName)))
@@ -70,6 +76,7 @@ export const useCampaignFilters = (campaigns: Campaign[], pageSize = 5) => {
     pageSize,
     typeFilterOptions,
     createdByFilterOptions,
+    summaryCreatedByTarget,
     setCurrentPage,
     updateFilter,
     resetFilters
