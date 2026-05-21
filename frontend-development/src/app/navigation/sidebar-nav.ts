@@ -58,7 +58,7 @@ export const sidebarNavItems: SidebarNavItem[] = [
     path: '/meetings',
     icon: CalendarDays,
     group: 'Main',
-    permission: [ROLES.CEO, ROLES.BD]
+    meetingMonitorAccess: true
   },
   {
     label: 'Handover',

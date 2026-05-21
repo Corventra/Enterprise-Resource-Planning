@@ -14,4 +14,6 @@ export interface SidebarNavItem {
    * Combined with `permission` using OR (matches `PermissionGuard` patterns).
    */
   anyPermission?: Permission[];
+  /** Halaman Meeting monitoring — CEO atau BD department EXECUTIVE (filter di sidebar). */
+  meetingMonitorAccess?: boolean;
 }

@@ -1,8 +1,6 @@
 const meetingsMonitorRepo = require('../repositories/meetings-monitor.repo');
 const { ValidationError } = require('../utils/validation');
 
-const MEETINGS_MONITOR_ROLES = new Set(['CEO', 'BD']);
-
 const sendError = (res, e) => {
   if (e instanceof ValidationError) {
     return res.status(400).json({ success: false, message: e.message });
@@ -37,9 +35,6 @@ const resolveScope = (req, userId) => {
   const role = String(req.user?.role ?? '')
     .trim()
     .toUpperCase();
-  if (!MEETINGS_MONITOR_ROLES.has(role)) {
-    return { denied: true };
-  }
   if (role === 'BD') {
     return { processedByUserId: userId, scope: 'own_leads' };
   }
@@ -56,9 +51,6 @@ const list = async (req, res) => {
     if (userId == null) return undefined;
 
     const scope = resolveScope(req, userId);
-    if (scope.denied) {
-      return res.status(403).json({ success: false, message: 'Akses ditolak untuk halaman meeting.' });
-    }
 
     const [items, summary] = await Promise.all([
       meetingsMonitorRepo.listMeetingsForScope(scope.processedByUserId),

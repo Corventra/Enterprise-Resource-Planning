@@ -43,6 +43,7 @@ import { SystemSettingsPage } from '../../features/admin/pages/system-settings-p
 import { AuthGuard } from '../guards/auth-guard';
 import { GuestGuard } from '../guards/guest-guard';
 import { PermissionGuard } from '../guards/permission-guard';
+import { MeetingsAccessGuard } from '../guards/meetings-access-guard';
 import { PERMISSIONS, ROLES } from '../permissions';
 
 export const AppRouter = () => {
@@ -88,7 +89,7 @@ export const AppRouter = () => {
             <Route path="/lead-tracker" element={<LeadTrackerPage />} />
           </Route>
 
-          <Route element={<PermissionGuard roles={[ROLES.CEO, ROLES.BD]} />}>
+          <Route element={<MeetingsAccessGuard />}>
             <Route path="/meetings" element={<MeetingsPage />} />
           </Route>
 

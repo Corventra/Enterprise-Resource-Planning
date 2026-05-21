@@ -5,6 +5,7 @@ import { sidebarNavItems } from '../../../../app/navigation/sidebar-nav';
 import type { SidebarNavItem } from '../../../../types/navigation';
 import { ROLES } from '../../../../app/permissions';
 import { useAuth } from '../../../../app/store/auth-store';
+import { canAccessMeetingsMonitor } from '../../../../features/meetings/utils/meetings-access';
 
 /** Staff Admin: invoice + document center only (dashboard tetap sebagai beranda). */
 const STAFF_ADMIN_NAV_PATHS = new Set(['/dashboard', '/invoice', '/document-center']);
@@ -15,9 +16,12 @@ interface SidebarProps {
 }
 
 export const Sidebar = ({ isCollapsed, onToggleCollapse }: SidebarProps) => {
-  const { role, canAny } = useAuth();
+  const { role, departments, canAny } = useAuth();
 
   const visibleItems = sidebarNavItems.filter((item) => {
+    if (item.meetingMonitorAccess) {
+      return canAccessMeetingsMonitor(role, departments);
+    }
     if (role === ROLES.STAFF_ADMIN) {
       return STAFF_ADMIN_NAV_PATHS.has(item.path);
     }

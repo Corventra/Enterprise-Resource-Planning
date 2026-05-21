@@ -1,9 +1,9 @@
 const express = require('express');
 const { authenticate } = require('../middleware/authenticate');
-const { requireRole } = require('../middleware/require-role');
+const { requireMeetingsMonitorAccess } = require('../utils/meetings-monitor-access');
 const { list } = require('../controllers/meetings-monitor.controller');
 
-const monitorStack = [authenticate, requireRole(['CEO', 'BD'])];
+const monitorStack = [authenticate, requireMeetingsMonitorAccess];
 
 const router = express.Router();
 
