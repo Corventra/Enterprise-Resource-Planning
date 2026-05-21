@@ -109,7 +109,11 @@ export const AppRouter = () => {
             <Route path="/handover/:handoverId/edit" element={<HandoverUpdatePage />} />
           </Route>
 
-          <Route element={<PermissionGuard permissions={[PERMISSIONS.INVOICE_MANAGE]} />}>
+          <Route
+            element={
+              <PermissionGuard permissions={[PERMISSIONS.INVOICE_VIEW, PERMISSIONS.INVOICE_MANAGE]} />
+            }
+          >
             <Route path="/invoice" element={<InvoicesPage />} />
             <Route path="/invoices" element={<InvoicesPage />} />
             <Route path="/invoice/:invoiceId" element={<InvoiceDetailPage />} />

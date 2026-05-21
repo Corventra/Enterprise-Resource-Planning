@@ -86,7 +86,7 @@ export const sidebarNavItems: SidebarNavItem[] = [
     path: '/invoice',
     icon: Receipt,
     group: 'Main',
-    anyPermission: [PERMISSIONS.INVOICE_MANAGE]
+    anyPermission: [PERMISSIONS.INVOICE_VIEW, PERMISSIONS.INVOICE_MANAGE]
   },
   {
     label: 'Document Center',

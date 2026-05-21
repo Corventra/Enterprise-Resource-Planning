@@ -11,6 +11,7 @@ import { InvoiceTermDetailModal } from '../modals/invoice-term-detail-modal';
 import { InvoiceTermGenerateConfirmDialog } from '../modals/invoice-term-generate-confirm-dialog';
 import { InvoiceTermPaymentConfirmDialog } from '../modals/invoice-term-payment-confirm-dialog';
 import { InvoiceTermSentConfirmDialog } from '../modals/invoice-term-sent-confirm-dialog';
+import { useInvoicePermissions } from '../../hooks/use-invoice-permissions';
 import { invoicesService } from '../../services/invoices-service';
 import { formatCurrency, formatDate, shouldShowTermDueDate } from './invoice-detail-formatters';
 
@@ -36,6 +37,7 @@ export const InvoiceInstallmentsTable = ({
   installments,
   onDetailUpdated
 }: InvoiceInstallmentsTableProps) => {
+  const { canManageInvoices } = useInvoicePermissions();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [viewTermId, setViewTermId] = useState<string | null>(null);
   const [sentConfirmTermId, setSentConfirmTermId] = useState<string | null>(null);
@@ -155,7 +157,9 @@ export const InvoiceInstallmentsTable = ({
         <div className="border-b border-[#eceef0] px-4 py-3 sm:px-6 sm:py-4">
           <h3 className="text-sm font-bold text-[#191c1e] sm:text-base">Daftar Termin Pembayaran</h3>
           <p className="mt-1 text-xs text-[#737784]">
-            Gunakan ikon View untuk aksi termin (kirim ke klien, upload pembayaran). Download untuk PDF.
+            {canManageInvoices
+              ? 'Gunakan ikon View untuk aksi termin (kirim ke klien, upload pembayaran). Download untuk PDF.'
+              : 'Mode baca saja: gunakan ikon View untuk detail termin. Download untuk PDF yang sudah diterbitkan.'}
           </p>
         </div>
         <div className="overflow-x-auto">
@@ -246,33 +250,48 @@ export const InvoiceInstallmentsTable = ({
         open={viewTermId != null}
         invoiceDetail={invoiceDetail}
         termId={viewTermId ?? ''}
+        canManageInvoices={canManageInvoices}
         busy={modalBusy}
         onBusyChange={(isBusy) => setBusyId(isBusy ? viewTermId : null)}
         onClose={() => {
           if (!modalBusy) setViewTermId(null);
         }}
         onDetailUpdated={onDetailUpdated}
-        onRequestSentToClient={() => {
-          if (!viewTermId || modalBusy) return;
-          const termId = viewTermId;
-          setViewTermId(null);
-          setSentConfirmTermId(termId);
-        }}
-        onRequestGenerateConfirm={() => {
-          if (!viewTermId || modalBusy) return;
-          const termId = viewTermId;
-          setViewTermId(null);
-          setGenerateConfirmTermId(termId);
-        }}
-        onRequestPaymentConfirm={(draft) => {
-          if (!viewTermId || modalBusy) return;
-          pendingPaymentFormRef.current = draft.buildFormData();
-          setPaymentConfirmMeta({ termName: draft.termName, amountLabel: draft.amountLabel });
-          setViewTermId(null);
-          setPaymentConfirmTermId(draft.termId);
-        }}
+        onRequestSentToClient={
+          canManageInvoices
+            ? () => {
+                if (!viewTermId || modalBusy) return;
+                const termId = viewTermId;
+                setViewTermId(null);
+                setSentConfirmTermId(termId);
+              }
+            : undefined
+        }
+        onRequestGenerateConfirm={
+          canManageInvoices
+            ? () => {
+                if (!viewTermId || modalBusy) return;
+                const termId = viewTermId;
+                setViewTermId(null);
+                setGenerateConfirmTermId(termId);
+              }
+            : undefined
+        }
+        onRequestPaymentConfirm={
+          canManageInvoices
+            ? (draft) => {
+                if (!viewTermId || modalBusy) return;
+                pendingPaymentFormRef.current = draft.buildFormData();
+                setPaymentConfirmMeta({ termName: draft.termName, amountLabel: draft.amountLabel });
+                setViewTermId(null);
+                setPaymentConfirmTermId(draft.termId);
+              }
+            : undefined
+        }
       />
 
+      {canManageInvoices ? (
+        <>
       <InvoiceTermGenerateConfirmDialog
         open={generateConfirmTermId != null}
         busy={generateConfirmBusy}
@@ -312,6 +331,8 @@ export const InvoiceInstallmentsTable = ({
         onComplete={() => setBusyId(null)}
         onError={() => setBusyId(null)}
       />
+        </>
+      ) : null}
 
       <Toast
         open={toastMessage != null}

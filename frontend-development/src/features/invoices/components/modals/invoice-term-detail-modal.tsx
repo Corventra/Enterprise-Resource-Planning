@@ -15,6 +15,8 @@ interface InvoiceTermDetailModalProps {
   open: boolean;
   invoiceDetail: InvoiceDetail;
   termId: string;
+  /** false = read-only (CEO): lihat detail & bukti, tanpa mutasi termin. */
+  canManageInvoices?: boolean;
   busy: boolean;
   onBusyChange: (busy: boolean) => void;
   onClose: () => void;
@@ -92,6 +94,7 @@ export const InvoiceTermDetailModal = ({
   open,
   invoiceDetail,
   termId,
+  canManageInvoices = true,
   busy,
   onBusyChange,
   onClose,
@@ -155,11 +158,12 @@ export const InvoiceTermDetailModal = ({
     (term.termType === 'FINAL' || term.billingTriggerType === 'PROJECT_COMPLETION');
 
   const showFooter =
-    term?.statusDb === 'READY_TO_ISSUE' ||
-    term?.statusDb === 'ISSUED' ||
-    term?.statusDb === 'SENT' ||
-    term?.statusDb === 'OVERDUE' ||
-    canConfirmProjectCompletion;
+    canManageInvoices &&
+    (term?.statusDb === 'READY_TO_ISSUE' ||
+      term?.statusDb === 'ISSUED' ||
+      term?.statusDb === 'SENT' ||
+      term?.statusDb === 'OVERDUE' ||
+      canConfirmProjectCompletion);
 
   const handleConfirmProjectCompletion = async () => {
     if (!term) return;
@@ -221,7 +225,11 @@ export const InvoiceTermDetailModal = ({
           <>
             <SidePanelDialogHeader
               title="Detail Termin Invoice"
-              description="Kelola termin ini: generate invoice, kirim ke klien, atau catat bukti pembayaran."
+              description={
+                canManageInvoices
+                  ? 'Kelola termin ini: generate invoice, kirim ke klien, atau catat bukti pembayaran.'
+                  : 'Lihat detail termin, riwayat bukti pembayaran, dan dokumen terkait (mode baca saja).'
+              }
             />
 
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-slate-50/50">
@@ -342,8 +350,14 @@ export const InvoiceTermDetailModal = ({
 
               {canConfirmProjectCompletion ? (
                 <p className="rounded-lg border border-amber-100 bg-amber-50/80 px-4 py-3 text-sm text-slate-700">
-                  Termin pelunasan menunggu konfirmasi project completion. Setelah dikonfirmasi, status menjadi{' '}
-                  <span className="font-semibold">Ready to Issue</span>.
+                  {canManageInvoices
+                    ? (
+                        <>
+                          Termin pelunasan menunggu konfirmasi project completion. Setelah dikonfirmasi, status
+                          menjadi <span className="font-semibold">Ready to Issue</span>.
+                        </>
+                      )
+                    : 'Termin pelunasan menunggu konfirmasi project completion oleh tim administrasi.'}
                 </p>
               ) : null}
 
@@ -357,20 +371,41 @@ export const InvoiceTermDetailModal = ({
 
               {term.statusDb === 'READY_TO_ISSUE' ? (
                 <p className="rounded-lg border border-blue-100 bg-blue-50/80 px-4 py-3 text-sm text-slate-700">
-                  Termin siap diterbitkan. Generate invoice paling lambat{' '}
-                  <span className="font-semibold">{formatDate(term.dueDate)}</span>. Klik{' '}
-                  <span className="font-semibold">Generate Invoice</span> di bawah untuk membuat nomor invoice.
+                  Termin siap diterbitkan
+                  {canManageInvoices ? (
+                    <>
+                      . Generate invoice paling lambat{' '}
+                      <span className="font-semibold">{formatDate(term.dueDate)}</span>. Klik{' '}
+                      <span className="font-semibold">Generate Invoice</span> di bawah untuk membuat nomor invoice.
+                    </>
+                  ) : (
+                    <>
+                      . Batas generate paling lambat{' '}
+                      <span className="font-semibold">{formatDate(term.dueDate)}</span>.
+                    </>
+                  )}
                 </p>
               ) : null}
 
               {term.statusDb === 'ISSUED' ? (
                 <p className="rounded-lg border border-blue-100 bg-blue-50/80 px-4 py-3 text-sm text-slate-700">
-                  Invoice telah diterbitkan. Kirim ke klien paling lambat{' '}
-                  <span className="font-semibold">{formatDate(term.dueDate)}</span> (1 hari sejak diterbitkan).
+                  Invoice telah diterbitkan.
+                  {canManageInvoices ? (
+                    <>
+                      {' '}
+                      Kirim ke klien paling lambat <span className="font-semibold">{formatDate(term.dueDate)}</span>{' '}
+                      (1 hari sejak diterbitkan).
+                    </>
+                  ) : (
+                    <>
+                      {' '}
+                      Tenggat kirim ke klien: <span className="font-semibold">{formatDate(term.dueDate)}</span>.
+                    </>
+                  )}
                 </p>
               ) : null}
 
-              {term.statusDb === 'SENT' || term.statusDb === 'OVERDUE' ? (
+              {canManageInvoices && (term.statusDb === 'SENT' || term.statusDb === 'OVERDUE') ? (
                 <SectionCard title="Upload Bukti Pembayaran">
                   <p className="mb-4 text-xs leading-relaxed text-slate-500">
                     Upload bukti setelah klien membayar. Pembayaran langsung tercatat sebagai terverifikasi oleh admin

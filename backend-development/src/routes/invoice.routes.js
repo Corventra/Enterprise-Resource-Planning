@@ -13,9 +13,11 @@ const { uploadInvoicePaymentProof } = require('../middleware/upload-invoice-paym
 
 const router = express.Router();
 
+const viewStack = [authenticate, requirePermission(['INVOICE_VIEW', 'INVOICE_MANAGE'], 'any')];
 const manageStack = [authenticate, requirePermission('INVOICE_MANAGE')];
 
-router.get('/', ...manageStack, listInvoices);
+router.get('/', ...viewStack, listInvoices);
+router.get('/:accountId', ...viewStack, getInvoiceDetail);
 router.post('/terms/:invoiceId/generate', ...manageStack, generateInvoiceTerm);
 router.post('/terms/:invoiceId/confirm-trigger', ...manageStack, confirmInvoiceTermTrigger);
 router.post('/terms/:invoiceId/sent', ...manageStack, markTermSentToClient);
@@ -25,6 +27,5 @@ router.post(
   uploadInvoicePaymentProof,
   createInvoiceTermPayment
 );
-router.get('/:accountId', ...manageStack, getInvoiceDetail);
 
 module.exports = router;
