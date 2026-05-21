@@ -50,3 +50,8 @@ export const meetingStatusLabel = (status: 'SCHEDULED' | 'DONE' | 'CANCELLED') =
   if (status === 'CANCELLED') return 'Cancelled';
   return 'Scheduled';
 };
+
+export const minutesStatusClass = (hasMinutes: boolean) =>
+  hasMinutes ? 'bg-[#006544]/10 text-[#006544]' : 'bg-[#eceef0] text-[#57657a]';
+
+export const minutesStatusLabel = (hasMinutes: boolean) => (hasMinutes ? 'Done' : 'Not Created');

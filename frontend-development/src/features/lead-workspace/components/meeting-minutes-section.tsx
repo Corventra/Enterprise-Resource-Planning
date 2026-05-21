@@ -3,7 +3,12 @@ import { useOutletContext } from 'react-router';
 import { useLeadWorkspacePermissions } from '../hooks/use-lead-workspace-permissions';
 import type { LeadWorkspaceMeetingMinutesView } from '../types/lead-meetings.types';
 import type { LeadWorkspaceOutletContext } from '../types/lead-workspace.types';
-import { isHttpUrl, meetingModeTableLabel } from '../utils/meeting-history-table-display';
+import {
+  isHttpUrl,
+  meetingModeTableLabel,
+  minutesStatusClass,
+  minutesStatusLabel
+} from '../utils/meeting-history-table-display';
 
 interface MeetingMinutesSectionProps {
   detail?: LeadWorkspaceMeetingMinutesView | null;
@@ -32,11 +37,6 @@ const detailStatusLabel = (status: LeadWorkspaceMeetingMinutesView['meeting']['s
   if (status === 'CANCELLED') return 'Cancelled';
   return 'Scheduled';
 };
-
-const minutesStatusClass = (hasMinutes: boolean) =>
-  hasMinutes ? 'bg-[#006544]/10 text-[#006544]' : 'bg-[#eceef0] text-[#57657a]';
-
-const minutesStatusLabel = (hasMinutes: boolean) => (hasMinutes ? 'Done' : 'Not Created');
 
 const platformIcon = (mode: LeadWorkspaceMeetingMinutesView['meeting']['mode']) => {
   if (mode === 'ONLINE') return <Video className="h-4 w-4 text-[#0f52ba]" />;

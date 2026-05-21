@@ -1,111 +1,67 @@
-import { AlertTriangle, CheckCircle2, Clock3, FileText, ReceiptText, Wallet } from 'lucide-react';
+import { AlertTriangle, Clock3, FileText, ReceiptText } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { CeoSummaryCard } from '../../../dashboard/components/ceo/ceo-dashboard-ui';
+import { formatDashboardNumber } from '../../../dashboard/utils/format-dashboard';
 
-interface InvoicesSummaryCardsProps {
-  summary: {
-    totalOutstanding: number;
-    dueSoonCount: number;
-    overdueCount: number;
-    paidThisMonth: number;
-    pendingVerification: number;
-    readyToInvoice: number;
-    needsFinalBilling: number;
-  };
+export interface InvoicesSummary {
+  dueSoonCount: number;
+  overdueCount: number;
+  readyToInvoice: number;
+  needsFinalBilling: number;
 }
 
-const formatCompactCurrency = (amount: number) =>
-  new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    notation: 'compact',
-    maximumFractionDigits: 1
-  }).format(amount);
+interface InvoicesSummaryCardsProps {
+  summary: InvoicesSummary;
+}
 
-const cards = [
-  {
-    label: 'Total Outstanding',
-    valueKey: 'totalOutstanding' as const,
-    hint: 'Belum lunas',
-    icon: Wallet,
-    iconClass: 'text-[#003c90] bg-[#003c90]/10',
-    hintClass: 'text-[#006544]'
-  },
+const cards: Array<{
+  label: string;
+  valueKey: keyof InvoicesSummary;
+  hint: string;
+  icon: LucideIcon;
+  accent: string;
+}> = [
   {
     label: 'Termin Jatuh Tempo',
-    valueKey: 'dueSoonCount' as const,
+    valueKey: 'dueSoonCount',
     hint: '7 hari ke depan',
     icon: Clock3,
-    iconClass: 'text-[#004b31] bg-[#004b31]/10',
-    hintClass: 'text-[#006544]'
+    accent: 'from-[#006544] to-[#2ea87a]'
   },
   {
     label: 'Termin Overdue',
-    valueKey: 'overdueCount' as const,
+    valueKey: 'overdueCount',
     hint: 'Perlu follow-up',
     icon: AlertTriangle,
-    iconClass: 'text-[#93000a] bg-[#ffdad6]',
-    hintClass: 'text-[#93000a]'
-  },
-  {
-    label: 'Pembayaran Bulan Ini',
-    valueKey: 'paidThisMonth' as const,
-    hint: 'Cash in',
-    icon: CheckCircle2,
-    iconClass: 'text-[#004b31] bg-[#6ffbbe]/25',
-    hintClass: 'text-[#006544]'
-  },
-  {
-    label: 'Menunggu Verifikasi',
-    valueKey: 'pendingVerification' as const,
-    hint: 'Menunggu admin',
-    icon: ReceiptText,
-    iconClass: 'text-[#00419c] bg-[#d9e2ff]',
-    hintClass: 'text-[#0f52ba]'
+    accent: 'from-[#ba1a1a] to-[#d94a4a]'
   },
   {
     label: 'Siap Dibuat Invoice',
-    valueKey: 'readyToInvoice' as const,
-    hint: 'Draft/ready',
+    valueKey: 'readyToInvoice',
+    hint: 'Status ready to bill',
     icon: FileText,
-    iconClass: 'text-[#515f74] bg-[#d5e3fc]',
-    hintClass: 'text-[#737784]'
+    accent: 'from-[#434653] to-[#5c6070]'
   },
   {
     label: 'Perlu Tagihan Akhir',
-    valueKey: 'needsFinalBilling' as const,
-    hint: 'Retensi/final',
+    valueKey: 'needsFinalBilling',
+    hint: 'Retensi / final billing',
     icon: ReceiptText,
-    iconClass: 'text-[#3a485b] bg-[#e0e3e5]',
-    hintClass: 'text-[#737784]'
+    accent: 'from-[#a16207] to-[#c49a00]'
   }
 ];
 
-export const InvoicesSummaryCards = ({ summary }: InvoicesSummaryCardsProps) => {
-  return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-      {cards.map(({ label, valueKey, hint, icon: Icon, iconClass, hintClass }) => {
-        const value =
-          valueKey === 'totalOutstanding' || valueKey === 'paidThisMonth'
-            ? formatCompactCurrency(summary[valueKey])
-            : summary[valueKey];
-
-        return (
-          <div
-            key={valueKey}
-            className="flex flex-col justify-between rounded-xl bg-white p-5 shadow-sm ring-1 ring-[#eceef0]"
-          >
-            <div className="mb-4 flex items-center justify-between">
-              <span className={`rounded-full p-2 ${iconClass}`}>
-                <Icon className="h-5 w-5" strokeWidth={2} />
-              </span>
-              <span className={`text-[11px] font-bold ${hintClass}`}>{hint}</span>
-            </div>
-            <div>
-              <p className="mb-0.5 text-xs font-medium text-[#737784]">{label}</p>
-              <h3 className="text-2xl font-semibold tracking-tight text-[#191c1e]">{value}</h3>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
+export const InvoicesSummaryCards = ({ summary }: InvoicesSummaryCardsProps) => (
+  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    {cards.map(({ label, valueKey, hint, icon, accent }) => (
+      <CeoSummaryCard
+        key={valueKey}
+        title={label}
+        value={formatDashboardNumber(summary[valueKey])}
+        icon={icon}
+        accent={accent}
+        footer={<p className="text-xs text-[#737784]">{hint}</p>}
+      />
+    ))}
+  </div>
+);

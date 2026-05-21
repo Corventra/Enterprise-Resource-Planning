@@ -3,6 +3,7 @@ import {
   Megaphone,
   Landmark,
   LineChart,
+  CalendarDays,
   Handshake,
   CheckCircle2,
   Briefcase,
@@ -51,6 +52,13 @@ export const sidebarNavItems: SidebarNavItem[] = [
     icon: LineChart,
     group: 'Main',
     anyPermission: [PERMISSIONS.LEAD_TRACKER_VIEW]
+  },
+  {
+    label: 'Meeting',
+    path: '/meetings',
+    icon: CalendarDays,
+    group: 'Main',
+    permission: [ROLES.CEO, ROLES.BD]
   },
   {
     label: 'Handover',

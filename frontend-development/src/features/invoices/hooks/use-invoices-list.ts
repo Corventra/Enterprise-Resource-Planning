@@ -31,10 +31,6 @@ export const useInvoicesList = () => {
   }, []);
 
   const summary = useMemo(() => {
-    const totalOutstanding = invoices.reduce((sum, item) => {
-      const outstanding = Math.max(0, item.estimatedNetReceipt * (1 - item.paymentProgress / 100));
-      return sum + outstanding;
-    }, 0);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const inSevenDays = new Date(today);
@@ -42,8 +38,6 @@ export const useInvoicesList = () => {
 
     let dueSoonCount = 0;
     let overdueCount = 0;
-    let paidThisMonth = 0;
-    let pendingVerification = 0;
     let readyToInvoice = 0;
 
     for (const item of invoices) {
@@ -60,11 +54,8 @@ export const useInvoicesList = () => {
     }
 
     return {
-      totalOutstanding,
       dueSoonCount,
       overdueCount,
-      paidThisMonth,
-      pendingVerification,
       readyToInvoice,
       needsFinalBilling: invoices.filter((i) => i.statusDb === 'AWAITING_PAYMENT' && i.paymentProgress > 0 && i.paymentProgress < 100)
         .length

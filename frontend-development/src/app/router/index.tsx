@@ -36,6 +36,7 @@ import { KpiConsultantPage } from '../../features/kpi/pages/kpi-consultant-page'
 import { SettingsPage } from '../../features/settings/pages/settings-page';
 import { KpiConfigPage } from '../../features/settings/pages/kpi-config-page';
 import { TaskTemplatesPage } from '../../features/settings/pages/task-templates-page';
+import { MeetingsPage } from '../../features/meetings/pages/meetings-page';
 import { UserManagementPage } from '../../features/admin/pages/user-management-page';
 import { DepartmentManagementPage } from '../../features/admin/pages/department-management-page';
 import { SystemSettingsPage } from '../../features/admin/pages/system-settings-page';
@@ -85,6 +86,10 @@ export const AppRouter = () => {
 
           <Route element={<PermissionGuard permissions={[PERMISSIONS.LEAD_TRACKER_VIEW]} />}>
             <Route path="/lead-tracker" element={<LeadTrackerPage />} />
+          </Route>
+
+          <Route element={<PermissionGuard roles={[ROLES.CEO, ROLES.BD]} />}>
+            <Route path="/meetings" element={<MeetingsPage />} />
           </Route>
 
           <Route element={<PermissionGuard permissions={[PERMISSIONS.LEAD_VIEW]} />}>
