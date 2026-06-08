@@ -4,7 +4,10 @@ import { resolveBdDashboardTarget } from '../utils/bd-dashboard-variant';
 import { BdDashboardPage } from './bd-dashboard-page';
 import { BdDashboardUnsupported } from './bd-dashboard-unsupported';
 import { CeoDashboardPage } from './ceo-dashboard-page';
+import { ConsultantDashboardPage } from './consultant-dashboard-page';
+import { CooDashboardPage } from './coo-dashboard-page';
 import { MeoDashboardPage } from './meo-dashboard-page';
+import { PmDashboardPage } from './pm-dashboard-page';
 import { StaffAdminDashboardPage } from './staff-admin-dashboard-page';
 
 /**
@@ -22,6 +25,18 @@ export const DashboardPage = () => {
 
   if (user.role === ROLES.CEO || user.role === ROLES.SUPERADMIN) {
     return <CeoDashboardPage />;
+  }
+
+  if (user.role === ROLES.COO) {
+    return <CooDashboardPage />;
+  }
+
+  if (user.role === ROLES.PM) {
+    return <PmDashboardPage />;
+  }
+
+  if (user.role === ROLES.CONSULTANT) {
+    return <ConsultantDashboardPage />;
   }
 
   if (user.role === ROLES.STAFF_ADMIN) {

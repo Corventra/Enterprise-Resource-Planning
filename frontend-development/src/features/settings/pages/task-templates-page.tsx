@@ -94,7 +94,13 @@ export const TaskTemplatesPage = () => {
     setIsSaving(true);
     setFeedback(null);
     try {
-      const saved = await taskTemplateService.update(draft, { id: user.email, name: user.name, role });
+      // Backend pakai req.user dari JWT, actor.id di-pass untuk kompat lama.
+      // Numeric user.id, bukan email (fix dari bug era mock).
+      const saved = await taskTemplateService.update(draft, {
+        id: String(user.id ?? ''),
+        name: user.name,
+        role
+      });
       setTemplates((prev) => prev.map((t) => (t.id === saved.id ? saved : t)));
       setFeedback({ kind: 'success', message: `Template ${saved.name} tersimpan.` });
     } catch (error) {

@@ -1,6 +1,9 @@
 const { pool } = require('../config/db');
 const handoverRepo = require('../repositories/handover.repo');
 const { syncInvoiceTermLifecycle } = require('../utils/invoice-term-lifecycle');
+const wfms = require('../services/wfms');
+const { fetchProjectAuditTrail } = require('../services/wfms/audit-logger');
+const kpiService = require('../services/kpi');
 
 /**
  * Projects controller.
@@ -8,9 +11,26 @@ const { syncInvoiceTermLifecycle } = require('../utils/invoice-term-lifecycle');
  * Phase 1: listProjects, getProjectDetail (read-only).
  * Phase 2: createFromHandover (COO assign PM, spawn project + milestones).
  * Phase 3+: assignConsultants, updateMilestoneStatus, rateMilestone.
+ *
+ * Phase 4 (current): Semua perubahan project.status & milestone.status WAJIB
+ * lewat `wfms.transitionProject()` / `wfms.transitionMilestone()`. Controller
+ * tetap pegang business validation (role consultant, department, dll), tapi
+ * state transition + audit log + matrix check di-delegate ke WFMS service.
  */
 
+/**
+ * Map WFMSError ke HTTP response yang konsisten.
+ * Return true kalau response sudah dikirim, false kalau bukan WFMSError.
+ */
+const sendWFMSError = (res, err) => {
+  if (!(err instanceof wfms.WFMSError)) return false;
+  const status = wfms.httpStatusForWFMSError(err);
+  res.status(status).json({ success: false, code: err.code, message: err.message });
+  return true;
+};
+
 const sendError = (res, e) => {
+  if (sendWFMSError(res, e)) return;
   // eslint-disable-next-line no-console
   console.error('[projects.controller] error:', e);
   // Surface MySQL/JS error message di response — memudahkan debug demo. Bisa
@@ -41,6 +61,21 @@ const getUserIdFromRequest = (req, res) => {
     return null;
   }
   return id;
+};
+
+/**
+ * Snapshot aktor untuk WFMS service. role_code dari JWT, name dari DB
+ * (snapshot supaya audit log tetap konsisten meski user rename nanti).
+ */
+const loadActorSnapshot = async (req, conn) => {
+  const id = Number(req.user?.sub);
+  if (!Number.isInteger(id) || id <= 0) return null;
+  const roleCode = String(req.user?.role || '').toUpperCase();
+  const [[row]] = await conn.query(
+    `SELECT name FROM users WHERE id = ? LIMIT 1`,
+    [id]
+  );
+  return { id, role_code: roleCode, name: row?.name || null };
 };
 
 /**
@@ -398,6 +433,27 @@ const createFromHandover = async (req, res) => {
       [handoverId]
     );
 
+    // 9b. WFMS audit trail — log initial transition (null → Awaiting Consultant).
+    // Bukan via transitionProject() karena ini adalah inisialisasi (project
+    // belum exists saat check matrix); pakai logProjectCreation helper.
+    try {
+      const [[actorRow]] = await conn.query(
+        `SELECT name FROM users WHERE id = ? LIMIT 1`,
+        [actorUserId]
+      );
+      await wfms.logProjectCreation(conn, {
+        projectId: newProjectId,
+        actor: { id: actorUserId, name: actorRow?.name || null },
+        reason: note
+          ? `Project created from handover ${handover.handover_code}. ${note}`
+          : `Project created from handover ${handover.handover_code}`
+      });
+    } catch (auditErr) {
+      // Audit log gagal → rollback transaction supaya tidak ada project tanpa
+      // creation row. Beda dengan handover_activity_logs yang non-critical.
+      throw auditErr;
+    }
+
     // 10. Activity log (non-critical — log warning kalau gagal, jangan fail txn)
     try {
       await conn.query(
@@ -587,17 +643,26 @@ const assignConsultants = async (req, res) => {
       [insertValues]
     );
 
-    // 5. Transition status kalau 'Awaiting Consultant' → 'In Progress'
+    // 5. Transition status kalau 'Awaiting Consultant' → 'In Progress' via WFMS.
+    // WFMS akan re-check DP_UNPAID (defensif depth), authorization (PM/COO),
+    // dan menulis audit log ke project_status_transitions.
     let statusTransitioned = false;
     if (project.status === 'Awaiting Consultant') {
-      await conn.query(
-        `UPDATE projects SET status = 'In Progress' WHERE project_id = ?`,
-        [projectId]
-      );
-      statusTransitioned = true;
+      const actor = await loadActorSnapshot(req, conn);
+      const consultantNames = fresh.map((c) => validUserMap.get(c.userId).name).join(', ');
+      const result = await wfms.transitionProject(conn, {
+        projectId,
+        toStatus: 'In Progress',
+        actor,
+        reason: note
+          ? `Consultant assigned: ${consultantNames}. ${note}`
+          : `Consultant assigned: ${consultantNames}`
+      });
+      statusTransitioned = !result.noop;
     }
 
-    // 6. Activity log (non-critical) — log "PROJECT_STARTED" hanya pas first transition
+    // 6. Cross-module activity log (handover_activity_logs) — log "PROJECT_STARTED"
+    // hanya pas first transition. Non-critical: kalau gagal, jangan rollback.
     if (statusTransitioned) {
       try {
         const consultantNames = fresh.map((c) => validUserMap.get(c.userId).name).join(', ');
@@ -799,14 +864,20 @@ const setConsultants = async (req, res) => {
       );
     }
 
-    // 6. Auto-transition status kalau pertama kali ada consultant
+    // 6. Auto-transition status kalau pertama kali ada consultant — via WFMS.
     let statusTransitioned = false;
     if (project.status === 'Awaiting Consultant' && desired.length > 0) {
-      await conn.query(
-        `UPDATE projects SET status = 'In Progress' WHERE project_id = ?`,
-        [projectId]
-      );
-      statusTransitioned = true;
+      const actor = await loadActorSnapshot(req, conn);
+      const consultantNames = desired.map((c) => c.name).join(', ');
+      const result = await wfms.transitionProject(conn, {
+        projectId,
+        toStatus: 'In Progress',
+        actor,
+        reason: note
+          ? `Roster set, consultant: ${consultantNames}. ${note}`
+          : `Roster set, consultant: ${consultantNames}`
+      });
+      statusTransitioned = !result.noop;
     }
 
     // 7. Activity log (non-critical)
@@ -876,74 +947,21 @@ const updateMilestoneStatus = async (req, res) => {
     });
   }
 
-  const actorUserId = getUserIdFromRequest(req, res);
-  if (!actorUserId) return;
-
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
 
-    // 1. Lock milestone + check ownership chain (milestone → project)
-    const [[milestone]] = await conn.query(
-      `SELECT m.milestone_id, m.project_id, m.status, m.owner_user_id, m.completed_at,
-              p.pm_user_id
-       FROM project_milestones m
-       INNER JOIN projects p ON p.project_id = m.project_id
-       WHERE m.milestone_id = ? AND m.project_id = ?
-       FOR UPDATE`,
-      [milestoneId, projectId]
-    );
-    if (!milestone) {
-      await conn.rollback();
-      return res.status(404).json({ success: false, message: 'Milestone tidak ditemukan di project ini.' });
-    }
-
-    // 2. Validasi actor: owner ATAU PM of project
-    const isOwner = milestone.owner_user_id === actorUserId;
-    const isPm = milestone.pm_user_id === actorUserId;
-    if (!isOwner && !isPm) {
-      await conn.rollback();
-      return res.status(403).json({
-        success: false,
-        message: 'Hanya owner milestone atau PM project yang boleh update status ini.'
-      });
-    }
-
-    // 3. No-op kalau status sama
-    if (milestone.status === nextStatus) {
-      await conn.commit();
-      const detail = await loadProjectDetailById(pool, projectId);
-      return res.status(200).json({ success: true, data: { project: detail } });
-    }
-
-    const fromStatus = milestone.status;
-
-    // 4. Compute completed_at
-    let newCompletedAt = milestone.completed_at;
-    if (nextStatus === 'Done') {
-      newCompletedAt = newCompletedAt ?? new Date();
-    } else if (fromStatus === 'Done') {
-      newCompletedAt = null;
-    }
-
-    // 5. Update milestone
-    await conn.query(
-      `UPDATE project_milestones SET status = ?, completed_at = ? WHERE milestone_id = ?`,
-      [nextStatus, newCompletedAt, milestoneId]
-    );
-
-    // 6. Audit log (NOT in try/catch — kalau gagal, roll back semuanya supaya
-    // KPI Update Compliance tidak missing entry).
-    const [[actor]] = await conn.query(
-      `SELECT name FROM users WHERE id = ? LIMIT 1`,
-      [actorUserId]
-    );
-    await conn.query(
-      `INSERT INTO project_milestone_updates
-        (milestone_id, by_user_id, by_name_snapshot, from_status, to_status, note)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [milestoneId, actorUserId, actor?.name || null, fromStatus, nextStatus, note || null]
-    );
+    // Delegate ke WFMS service: matrix check, authorization (owner OR PM),
+    // cross-entity precondition (project tidak terminal), execute UPDATE,
+    // dan audit log ke project_milestone_updates — semua dalam 1 service call.
+    const actor = await loadActorSnapshot(req, conn);
+    await wfms.transitionMilestone(conn, {
+      projectId,
+      milestoneId,
+      toStatus: nextStatus,
+      actor,
+      note: note || null
+    });
 
     await conn.commit();
 
@@ -1081,83 +1099,38 @@ const completeProject = async (req, res) => {
 
   const { note } = req.body || {};
 
-  const actorUserId = getUserIdFromRequest(req, res);
-  if (!actorUserId) return;
-
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
 
-    // 1. Lock & read project
-    const [[project]] = await conn.query(
-      `SELECT project_id, project_code, handover_id, status, pm_user_id, end_date
-       FROM projects WHERE project_id = ? FOR UPDATE`,
-      [projectId]
-    );
-    if (!project) {
-      await conn.rollback();
-      return res.status(404).json({ success: false, message: 'Project tidak ditemukan.' });
-    }
+    // STEP 1-6: Delegate state transition ke WFMS service. WFMS akan:
+    //   - SELECT FOR UPDATE lock project + handover
+    //   - Matrix check (In Progress/On Hold → Completed allowed)
+    //   - Authorization (strict PM ownership)
+    //   - Preconditions (semua milestone harus Done)
+    //   - Execute UPDATE projects.status
+    //   - INSERT audit log ke project_status_transitions
+    const actor = await loadActorSnapshot(req, conn);
+    const transitionResult = await wfms.transitionProject(conn, {
+      projectId,
+      toStatus: 'Completed',
+      actor,
+      reason: note || null
+    });
 
-    // 2. Actor harus PM
-    if (project.pm_user_id !== actorUserId) {
-      await conn.rollback();
-      return res.status(403).json({
-        success: false,
-        message: 'Hanya PM project yang boleh menandai project sebagai Completed.'
-      });
-    }
+    const project = transitionResult.project;
 
-    // 3. Status pre-check
-    if (project.status === 'Completed') {
-      await conn.rollback();
-      return res.status(409).json({
-        success: false,
-        message: 'Project sudah dalam status Completed.'
-      });
-    }
-    if (project.status === 'Cancelled') {
-      await conn.rollback();
-      return res.status(409).json({
-        success: false,
-        message: 'Project Cancelled tidak bisa di-complete.'
-      });
-    }
-
-    // 4. Semua milestone harus Done (strict completion rule)
-    const [milestoneStats] = await conn.query(
-      `SELECT
-         COUNT(*) AS total,
-         SUM(CASE WHEN status = 'Done' THEN 1 ELSE 0 END) AS done_count
-       FROM project_milestones WHERE project_id = ?`,
-      [projectId]
-    );
-    const { total, done_count: doneCount } = milestoneStats[0];
-    if (Number(total) === 0) {
-      await conn.rollback();
-      return res.status(409).json({
-        success: false,
-        message: 'Project tidak punya milestone — tidak bisa dianggap Completed.'
-      });
-    }
-    if (Number(doneCount) < Number(total)) {
-      await conn.rollback();
-      return res.status(409).json({
-        success: false,
-        message: `Masih ada ${Number(total) - Number(doneCount)} dari ${total} milestone yang belum Done.`,
-        code: 'MILESTONES_INCOMPLETE'
-      });
-    }
-
-    // 5. Update project status + end_date (catat tanggal aktual completion)
+    // STEP 7a: Side effect — set end_date (WFMS hanya update status field,
+    // end_date adalah data project-spesifik bukan state machine concern).
     const todayIso = new Date().toISOString().slice(0, 10);
     await conn.query(
-      `UPDATE projects SET status = 'Completed', end_date = ? WHERE project_id = ?`,
+      `UPDATE projects SET end_date = ? WHERE project_id = ?`,
       [todayIso, projectId]
     );
 
-    // 6. Trigger ke modul Invoice — isi field completion pada term FINAL (masih DRAFT).
-    // Promosi READY_TO_ISSUE via syncInvoiceTermLifecycle (previous terms PAID, dll.).
+    // STEP 7b: Side effect — trigger ke modul Invoice (PRD Rule B).
+    // Isi field completion pada term FINAL (masih DRAFT); promosi READY_TO_ISSUE
+    // via syncInvoiceTermLifecycle.
     const [triggerResult] = await conn.query(
       `UPDATE invoice_terms
        SET trigger_reference_value = 'Project completed',
@@ -1167,7 +1140,7 @@ const completeProject = async (req, res) => {
        WHERE project_id = ?
          AND term_type = 'FINAL'
          AND status = 'DRAFT'`,
-      [actorUserId, projectId]
+      [actor.id, projectId]
     );
     const triggeredInvoiceTerms = triggerResult.affectedRows ?? 0;
 
@@ -1182,15 +1155,40 @@ const completeProject = async (req, res) => {
       await syncInvoiceTermLifecycle(conn, row.account_id);
     }
 
-    // 7. Activity log (non-critical)
+    // STEP 7c: SYS KPI — auto-compute preliminary KPI snapshot untuk semua
+    // consultant yang terlibat di project ini. Sesuai Activity Diagram WFMS
+    // (SYS INVOICE → SYS KPI). Snapshot disimpan dengan finalized_at = NULL
+    // (preliminary); CEO bisa lock via endpoint Finalize KPI Periode.
+    let kpiComputeResults = [];
     try {
-      const [[actor]] = await conn.query(
-        `SELECT name FROM users WHERE id = ? LIMIT 1`,
-        [actorUserId]
+      const [consultantRows] = await conn.query(
+        `SELECT consultant_user_id, consultant_name_snapshot
+         FROM project_consultants
+         WHERE project_id = ?`,
+        [projectId]
       );
+      if (consultantRows.length > 0) {
+        const period = kpiService.formatPeriodFromDate(new Date());
+        kpiComputeResults = await kpiService.computeAndStorePreliminarySnapshots(conn, {
+          consultants: consultantRows.map((c) => ({
+            userId: c.consultant_user_id,
+            name: c.consultant_name_snapshot
+          })),
+          period
+        });
+      }
+    } catch (kpiErr) {
+      // KPI compute gagal non-critical — log warning, jangan rollback project completion.
+      // Konsultan tetap bisa lihat KPI live (frontend compute) sebagai fallback.
+      // eslint-disable-next-line no-console
+      console.warn('[projects.controller] KPI auto-compute failed:', kpiErr.message);
+    }
+
+    // STEP 7d: Side effect — cross-module activity log (non-critical).
+    try {
       const description = note
-        ? `Project ${project.project_code} ditandai Completed oleh ${actor?.name || 'PM'}. Trigger final invoice: ${triggeredInvoiceTerms} term. ${note}`
-        : `Project ${project.project_code} ditandai Completed oleh ${actor?.name || 'PM'}. Trigger final invoice: ${triggeredInvoiceTerms} term.`;
+        ? `Project ${project.project_code} ditandai Completed oleh ${actor.name || 'PM'}. Trigger final invoice: ${triggeredInvoiceTerms} term. ${note}`
+        : `Project ${project.project_code} ditandai Completed oleh ${actor.name || 'PM'}. Trigger final invoice: ${triggeredInvoiceTerms} term.`;
       await conn.query(
         `INSERT INTO handover_activity_logs
           (handover_id, activity_type, title, description, created_by)
@@ -1199,7 +1197,7 @@ const completeProject = async (req, res) => {
           project.handover_id,
           `Project ${project.project_code} completed`,
           description,
-          actorUserId
+          actor.id
         ]
       );
     } catch (logErr) {
@@ -1210,11 +1208,17 @@ const completeProject = async (req, res) => {
     await conn.commit();
 
     const detail = await loadProjectDetailById(pool, projectId);
+    const kpiSummary = {
+      consultantsProcessed: kpiComputeResults.length,
+      snapshotsComputed: kpiComputeResults.filter((r) => !r.skipped).length,
+      skippedAlreadyFinalized: kpiComputeResults.filter((r) => r.reason === 'ALREADY_FINALIZED').length
+    };
     return res.status(200).json({
       success: true,
       data: {
         project: detail,
-        triggeredInvoiceTerms
+        triggeredInvoiceTerms,
+        kpiAutoCompute: kpiSummary
       }
     });
   } catch (e) {
@@ -1261,6 +1265,142 @@ const getProjectHandover = async (req, res) => {
   }
 };
 
+/**
+ * Helper untuk endpoint pause/resume/cancel — semua thin wrapper di sekitar
+ * wfms.transitionProject. Activity log cross-module (handover_activity_logs)
+ * non-critical, kalau gagal log warning saja.
+ */
+const performLifecycleTransition = async (req, res, opts) => {
+  const { toStatus, activityType, activityTitleFn, requireReason } = opts;
+  const projectId = parseIdParam(req.params.projectId);
+  if (projectId == null) {
+    return res.status(400).json({ success: false, message: 'Project ID tidak valid.' });
+  }
+
+  const { reason: rawReason } = req.body || {};
+  const reason = typeof rawReason === 'string' ? rawReason.trim() : '';
+  if (requireReason && reason.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: 'Reason wajib diisi untuk transisi ini.'
+    });
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const actor = await loadActorSnapshot(req, conn);
+    const result = await wfms.transitionProject(conn, {
+      projectId,
+      toStatus,
+      actor,
+      reason: reason || null
+    });
+
+    // Cross-module activity log (non-critical)
+    if (!result.noop) {
+      try {
+        await conn.query(
+          `INSERT INTO handover_activity_logs
+            (handover_id, activity_type, title, description, created_by)
+           VALUES (?, ?, ?, ?, ?)`,
+          [
+            result.project.handover_id,
+            activityType,
+            activityTitleFn(result.project),
+            reason || `Status: ${result.fromStatus} → ${result.toStatus}`,
+            actor.id
+          ]
+        );
+      } catch (logErr) {
+        // eslint-disable-next-line no-console
+        console.warn('[projects.controller] activity log insert failed:', logErr.message);
+      }
+    }
+
+    await conn.commit();
+    const detail = await loadProjectDetailById(pool, projectId);
+    return res.status(200).json({ success: true, data: { project: detail } });
+  } catch (e) {
+    try { await conn.rollback(); } catch (_) { /* ignore */ }
+    return sendError(res, e);
+  } finally {
+    conn.release();
+  }
+};
+
+/**
+ * POST /api/projects/:projectId/pause
+ * Body: { reason: string (required) }
+ *
+ * PM/CEO/COO action: pause project (In Progress → On Hold). Reason wajib.
+ */
+const pauseProject = (req, res) => performLifecycleTransition(req, res, {
+  toStatus: 'On Hold',
+  activityType: 'PROJECT_PAUSED',
+  activityTitleFn: (p) => `Project ${p.project_code} di-pause`,
+  requireReason: true
+});
+
+/**
+ * POST /api/projects/:projectId/resume
+ * Body: { reason?: string }
+ *
+ * PM/CEO/COO action: resume project (On Hold → In Progress). WFMS preconditions
+ * akan cek DP harus PAID (sama dengan TP2 — On Hold tidak boleh resume tanpa DP).
+ */
+const resumeProject = (req, res) => performLifecycleTransition(req, res, {
+  toStatus: 'In Progress',
+  activityType: 'PROJECT_RESUMED',
+  activityTitleFn: (p) => `Project ${p.project_code} di-resume`,
+  requireReason: false
+});
+
+/**
+ * POST /api/projects/:projectId/cancel
+ * Body: { reason: string (required) }
+ *
+ * CEO/COO action: cancel project (* → Cancelled). Reason wajib. Project tidak
+ * bisa di-cancel kalau sudah Completed (matrix block).
+ */
+const cancelProject = (req, res) => performLifecycleTransition(req, res, {
+  toStatus: 'Cancelled',
+  activityType: 'PROJECT_CANCELLED',
+  activityTitleFn: (p) => `Project ${p.project_code} dibatalkan`,
+  requireReason: true
+});
+
+/**
+ * GET /api/projects/:projectId/audit-trail
+ *
+ * Return combined audit trail (project-level transitions + milestone-level
+ * updates) untuk satu project, sorted kronologis ascending. Dipakai oleh tab
+ * "Timeline" di project detail.
+ */
+const getProjectAuditTrail = async (req, res) => {
+  const projectId = parseIdParam(req.params.projectId);
+  if (projectId == null) {
+    return res.status(400).json({ success: false, message: 'Project ID tidak valid.' });
+  }
+  try {
+    const [[exists]] = await pool.query(
+      `SELECT project_id FROM projects WHERE project_id = ? LIMIT 1`,
+      [projectId]
+    );
+    if (!exists) {
+      return res.status(404).json({ success: false, message: 'Project tidak ditemukan.' });
+    }
+    const transitions = await fetchProjectAuditTrail(pool, projectId);
+    return res.json({
+      success: true,
+      data: { project_id: projectId, transitions }
+    });
+  } catch (e) {
+    return sendError(res, e);
+  }
+};
+
 module.exports = {
   listProjects,
   getProjectDetail,
@@ -1270,5 +1410,9 @@ module.exports = {
   updateMilestoneStatus,
   rateMilestone,
   completeProject,
-  getProjectHandover
+  pauseProject,
+  resumeProject,
+  cancelProject,
+  getProjectHandover,
+  getProjectAuditTrail
 };

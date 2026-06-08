@@ -272,7 +272,11 @@ export const KpiConsultantPage = () => {
           <h1 className="text-2xl font-bold tracking-tight text-[#191c1e] sm:text-3xl">
             {isOwn ? 'My KPI' : consultant.name}
           </h1>
-          <p className="mt-1 text-sm text-[#737784]">{consultant.id}</p>
+          <p className="mt-1 text-sm text-[#737784]">
+            {isOwn
+              ? `Snapshot performa KPI Anda untuk periode ${snapshot.period}.`
+              : `Detail KPI consultant untuk periode ${snapshot.period}.`}
+          </p>
         </div>
         <div
           className={`flex shrink-0 flex-col items-center justify-center rounded-2xl px-6 py-4 ${totalToneClass}`}

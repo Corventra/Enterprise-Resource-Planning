@@ -50,6 +50,7 @@ export const rolePermissionMap: Record<Role, Permission[]> = {
     PERMISSIONS.PROJECT_VIEW,
     PERMISSIONS.PROJECT_VIEW_FINANCIALS,
     PERMISSIONS.PROJECT_ASSIGN_PM,
+    PERMISSIONS.PROJECT_MANAGE_STATUS,
     PERMISSIONS.DOCUMENT_VIEW,
     // KPI: oversight + operational override + collaborative pada task templates
     PERMISSIONS.KPI_VIEW_OWN,
@@ -61,6 +62,7 @@ export const rolePermissionMap: Record<Role, Permission[]> = {
     PERMISSIONS.PROJECT_VIEW,
     PERMISSIONS.PROJECT_ASSIGN_CONSULTANT,
     PERMISSIONS.PROJECT_UPDATE_PROGRESS,
+    PERMISSIONS.PROJECT_MANAGE_STATUS,
     PERMISSIONS.DOCUMENT_VIEW,
     // KPI: rate task (input utama dimensi Output Quality), lihat tim sendiri
     PERMISSIONS.KPI_VIEW_OWN,

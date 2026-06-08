@@ -161,5 +161,22 @@ export const projectService = {
       project: mapApiProjectDetailToProject(result.project),
       triggeredInvoiceTerms: result.triggeredInvoiceTerms
     };
+  },
+  /**
+   * Phase 3 lifecycle actions — pause / resume / cancel project. Backend WFMS
+   * service yang handle matrix check, authorization, audit log. Frontend cuma
+   * panggil lalu re-fetch detail.
+   */
+  async pauseProject(projectId: string, reason: string): Promise<Project> {
+    const api = await projectsApi.pauseProject(projectId, reason);
+    return mapApiProjectDetailToProject(api);
+  },
+  async resumeProject(projectId: string, reason?: string): Promise<Project> {
+    const api = await projectsApi.resumeProject(projectId, reason);
+    return mapApiProjectDetailToProject(api);
+  },
+  async cancelProject(projectId: string, reason: string): Promise<Project> {
+    const api = await projectsApi.cancelProject(projectId, reason);
+    return mapApiProjectDetailToProject(api);
   }
 };

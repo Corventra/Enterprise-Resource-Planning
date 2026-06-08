@@ -193,34 +193,52 @@ const mapSnapshotRow = (row) => ({
         role: row.finalized_by_role || ''
       }
     : undefined,
-  // Dimensions: backend cuma store capaian — weight & rawValue di-hydrate dari
-  // config saat read di frontend kalau perlu detail break-down.
-  dimensions: {
-    taskCompletion: {
-      weight: 0,
-      capaian: Number(row.capaian_task_completion),
-      rawValue: 0,
-      contributingTaskIds: []
-    },
-    timeliness: {
-      weight: 0,
-      capaian: Number(row.capaian_timeliness),
-      rawValue: 0,
-      contributingTaskIds: []
-    },
-    updateCompliance: {
-      weight: 0,
-      capaian: Number(row.capaian_update_compliance),
-      rawValue: 0,
-      contributingTaskIds: []
-    },
-    outputQuality: {
-      weight: 0,
-      capaian: Number(row.capaian_output_quality),
-      rawValue: 0,
-      contributingTaskIds: []
-    }
-  },
+  // Dimensions: capaian dari snapshot, weight di-hydrate dari kpi_period_config
+  // via config_id_used. rawValue di-derive back dari capaian + config params
+  // (formula invers dari kpi-calculations.js):
+  //   TC/TM: raw = capaian / 100                    (lossless)
+  //   UC:    raw = targetGap × 100 / capaian        (lossy bila capaian=100 karena Math.min cap)
+  //   OQ:    raw = capaian × scale / 100            (lossless)
+  // contributingTaskIds NULL forever — frontend tidak render listing-nya
+  // (UI cek `length > 0` sebelum render).
+  dimensions: (() => {
+    const capTC = Number(row.capaian_task_completion);
+    const capTM = Number(row.capaian_timeliness);
+    const capUC = Number(row.capaian_update_compliance);
+    const capOQ = Number(row.capaian_output_quality);
+    const targetGap = Number(row.update_gap_target_days ?? 0);
+    const scale = Number(row.quality_rating_scale ?? 5);
+    return {
+      taskCompletion: {
+        weight: Number(row.weight_task_completion ?? 0),
+        capaian: capTC,
+        rawValue: capTC / 100,
+        contributingTaskIds: []
+      },
+      timeliness: {
+        weight: Number(row.weight_timeliness ?? 0),
+        capaian: capTM,
+        rawValue: capTM / 100,
+        contributingTaskIds: []
+      },
+      updateCompliance: {
+        weight: Number(row.weight_update_compliance ?? 0),
+        capaian: capUC,
+        // capUC=0 (no compliance) atau no config → 0 (UI tampil "No gap data");
+        // capUC=100 (perfect) → return targetGap sebagai best-case estimate.
+        rawValue: capUC <= 0 || targetGap <= 0
+          ? 0
+          : capUC >= 100 ? targetGap : (targetGap * 100) / capUC,
+        contributingTaskIds: []
+      },
+      outputQuality: {
+        weight: Number(row.weight_output_quality ?? 0),
+        capaian: capOQ,
+        rawValue: (capOQ * scale) / 100,
+        contributingTaskIds: []
+      }
+    };
+  })(),
   total: Number(row.total_score),
   contributingProjectIds: []
 });
@@ -240,12 +258,19 @@ const SNAPSHOT_SELECT_FIELDS = `
   s.finalized_at,
   s.finalized_by_user_id,
   uf.name AS finalized_by_name,
-  rf.code AS finalized_by_role
+  rf.code AS finalized_by_role,
+  cfg.weight_task_completion,
+  cfg.weight_timeliness,
+  cfg.weight_update_compliance,
+  cfg.weight_output_quality,
+  cfg.update_gap_target_days,
+  cfg.quality_rating_scale
 `;
 const SNAPSHOT_JOIN = `
   FROM kpi_snapshots s
   LEFT JOIN users uf ON uf.id = s.finalized_by_user_id
   LEFT JOIN roles rf ON rf.id = uf.role_id
+  LEFT JOIN kpi_period_config cfg ON cfg.config_id = s.config_id_used
 `;
 
 /**
@@ -329,6 +354,22 @@ const getSnapshotByConsultantAndPeriod = async (req, res) => {
  * Auth: KPI_FINALIZE_PERIOD (CEO).
  * Backend set finalized_at = NOW(), finalized_by = req.user.sub.
  * Pakai config_id terbaru sebagai snapshot config reference.
+ *
+ * **Dual-source preliminary snapshot (post Phase 6c):**
+ * Sejak auto-compute KPI di completeProject (Activity Diagram WFMS "SYS KPI"),
+ * row di kpi_snapshots dapat ada dalam 2 keadaan:
+ *   1. PRELIMINARY (finalized_at = NULL) — di-create otomatis saat project
+ *      completed. Auto-computed dari raw milestone data via services/kpi.
+ *   2. FINALIZED (finalized_at NOT NULL) — di-lock CEO via endpoint ini.
+ *
+ * Endpoint ini melakukan UPSERT yang sekaligus berfungsi sebagai LOCK:
+ *   - Kalau ada row preliminary existing (finalized_at NULL): UPDATE values
+ *     dari body + SET finalized_at = NOW() → preliminary jadi finalized.
+ *   - Kalau belum ada row: INSERT langsung dengan finalized_at = NOW().
+ *
+ * CEO bisa kirim values dari frontend (computed via kpi-engine) untuk override,
+ * atau kirim values yang sama dengan preliminary kalau setuju dengan
+ * auto-compute. Setelah finalized, row tidak boleh dimodifikasi lagi.
  */
 const upsertSnapshot = async (req, res) => {
   const actorUserId = getUserIdFromRequest(req, res);

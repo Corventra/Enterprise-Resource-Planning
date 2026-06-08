@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router';
 import { ROLES } from '../../../app/permissions';
 import { useAuth } from '../../../app/store/auth-store';
+import { LifecycleHistorySection } from '../components/detail/lifecycle-history-section';
 import { RateTaskDialog } from '../components/modals/rate-task-dialog';
 import { projectService } from '../services/project-service';
 import {
@@ -333,6 +334,8 @@ export const ProjectTimelinePage = () => {
           )}
         </>
       )}
+
+      <LifecycleHistorySection projectId={project.id} />
 
       <RateTaskDialog
         open={ratingTarget !== null}

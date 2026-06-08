@@ -125,6 +125,35 @@ export interface CompleteProjectResult {
   triggeredInvoiceTerms: number;
 }
 
+/**
+ * Combined WFMS audit trail row (project-level transition + milestone-level
+ * update merged). Untuk milestone, `entity_label` = title milestone; untuk
+ * project, `entity_label` = null.
+ *
+ * `from_status` bisa null hanya pada baris project-level untuk event creation
+ * (initial transition dari "tidak ada" ke 'Awaiting Consultant').
+ */
+export interface ApiAuditTrailEntry {
+  id: number;
+  entity_type: 'project' | 'milestone';
+  entity_label: string | null;
+  from_status: string | null;
+  to_status: string;
+  by_user_id: number | null;
+  by_name: string | null;
+  trigger_source: 'USER' | 'SYSTEM';
+  triggered_at: string;
+  reason: string | null;
+}
+
+interface AuditTrailResponse {
+  success: boolean;
+  data: {
+    project_id: number;
+    transitions: ApiAuditTrailEntry[];
+  };
+}
+
 export const projectsApi = {
   list: async (): Promise<ApiProjectListRow[]> => {
     const res = await apiGet<ListResponse>('/projects');
@@ -217,6 +246,43 @@ export const projectsApi = {
       payload
     );
     return res.data;
+  },
+  /**
+   * Fetch WFMS combined audit trail (project + milestone transitions) sorted
+   * kronologis ascending. Dipakai di tab Timeline (section Lifecycle History).
+   */
+  getAuditTrail: async (projectId: string | number): Promise<ApiAuditTrailEntry[]> => {
+    const res = await apiGet<AuditTrailResponse>(`/projects/${projectId}/audit-trail`);
+    return res.data.transitions;
+  },
+  /**
+   * Phase 3 lifecycle endpoints — pause / resume / cancel. Semua menghasilkan
+   * row di project_status_transitions (audit trail).
+   *
+   * - pause   : In Progress → On Hold (reason required)
+   * - resume  : On Hold → In Progress (reason optional; WFMS re-check DP PAID)
+   * - cancel  : * → Cancelled (reason required; CEO/COO only)
+   */
+  pauseProject: async (
+    projectId: string | number,
+    reason: string
+  ): Promise<ApiProjectDetail> => {
+    const res = await apiPost<DetailResponse>(`/projects/${projectId}/pause`, { reason });
+    return res.data.project;
+  },
+  resumeProject: async (
+    projectId: string | number,
+    reason?: string
+  ): Promise<ApiProjectDetail> => {
+    const res = await apiPost<DetailResponse>(`/projects/${projectId}/resume`, { reason });
+    return res.data.project;
+  },
+  cancelProject: async (
+    projectId: string | number,
+    reason: string
+  ): Promise<ApiProjectDetail> => {
+    const res = await apiPost<DetailResponse>(`/projects/${projectId}/cancel`, { reason });
+    return res.data.project;
   },
   listUsersByRole: async (
     roleCode: string,

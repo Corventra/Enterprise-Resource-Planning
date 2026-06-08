@@ -2,16 +2,18 @@
 -- Feature: KPI (Performance Management)
 -- Tables:
 --   - kpi_period_config       (CEO-managed config: bobot dimensi, threshold)
---   - kpi_snapshots           (finalized KPI snapshot per consultant per period)
+--   - kpi_snapshots           (KPI snapshot per consultant per period — preliminary OR finalized)
 --
 -- Catatan:
 --   - kpi_period_config: insert-only history. Latest row = active config.
 --     Default seed di-insert sebagai initial. CEO update via PUT yang
 --     INSERT row baru (history preserved).
---   - kpi_snapshots: hanya snapshot FINALIZED (locked by CEO).
---     Snapshot preliminary di-compute on-the-fly oleh backend dari raw
---     project data (project_milestones + project_milestone_updates).
---     Total snapshot = w_TC*c_TC + w_TM*c_TM + w_UC*c_UC + w_OQ*c_OQ.
+--   - kpi_snapshots: menyimpan dua jenis snapshot, dibedakan via finalized_at:
+--       * PRELIMINARY (finalized_at = NULL): auto-computed oleh sistem saat
+--         project completed (trigger dari WFMS completeProject). Updateable.
+--       * FINALIZED   (finalized_at IS NOT NULL): locked by CEO via endpoint
+--         POST /api/kpi/snapshots/finalize. Tidak boleh dimodifikasi lagi.
+--     Total snapshot = w_TC*c_TC + w_TM*c_TM + w_UC*c_UC + w_OQ*c_OQ (WSM).
 -- =============================================================
 
 CREATE TABLE kpi_period_config (
@@ -69,8 +71,11 @@ CREATE TABLE kpi_snapshots (
   total_score           DECIMAL(6,2)  NOT NULL,
 
   -- Audit
+  -- computed_at: kapan snapshot dihitung (auto-trigger atau CEO finalize click).
+  -- finalized_at: NULL = preliminary (auto-trigger dari completeProject),
+  --               NOT NULL = locked by CEO action.
   computed_at           DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  finalized_at          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  finalized_at          DATETIME      NULL,
   finalized_by_user_id  INT           NULL,
 
   CONSTRAINT fk_kpi_snapshots_user

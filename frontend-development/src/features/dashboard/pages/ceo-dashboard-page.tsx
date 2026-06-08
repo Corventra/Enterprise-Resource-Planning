@@ -4,6 +4,13 @@ import { CeoDashboardSkeleton } from '../components/ceo/ceo-dashboard-ui';
 import { CeoKpiSection } from '../components/ceo/ceo-kpi-section';
 import { MarketingAnalyticsSection } from '../components/marketing/marketing-analytics-section';
 import { CeoPerformanceSection } from '../components/ceo/ceo-performance-section';
+import { CeoProjectOperationsSection } from '../components/ceo/ceo-project-operations-section';
+import { CeoConsultantKpiSection } from '../components/ceo/ceo-consultant-kpi-section';
+import { InsightsPanel } from '../components/analytics/insights-panel';
+import { KpiTrendChart } from '../components/analytics/kpi-trend-chart';
+import { ProjectVelocityChart } from '../components/analytics/project-velocity-chart';
+import { RatingDistributionChart } from '../components/analytics/rating-distribution-chart';
+import { CeoPanel, CeoSectionHeader, ceoSectionClass } from '../components/ceo/ceo-dashboard-ui';
 import { RevenueInvoiceAnalyticsSection } from '../components/revenue/revenue-invoice-analytics-section';
 import { PipelineAnalyticsSection } from '../components/pipeline/pipeline-analytics-section';
 import { useCeoDashboard } from '../hooks/use-ceo-dashboard';
@@ -50,6 +57,10 @@ export const CeoDashboardPage = () => {
       {data ? (
         <div className="space-y-10">
           <CeoKpiSection kpis={data.executive_kpis} comparisonLabel={data.meta.comparison_label} />
+
+          {/* Auto-generated insights — narrative impact tinggi untuk eksekutif */}
+          <InsightsPanel insights={data.analytics.insights} title="Insight Otomatis Periode Ini" />
+
           <MarketingAnalyticsSection
             marketing={data.marketing}
             comparisonLabel={data.meta.comparison_label}
@@ -68,6 +79,39 @@ export const CeoDashboardPage = () => {
             title="Revenue & Invoice Analytics"
             description="Performa penagihan dan pembayaran seluruh organisasi."
           />
+          <CeoProjectOperationsSection
+            data={data.project_operations}
+            comparisonLabel={data.meta.comparison_label}
+          />
+          <CeoConsultantKpiSection data={data.consultant_kpi} />
+
+          {/* Analytics trend section */}
+          <section className={ceoSectionClass}>
+            <CeoSectionHeader
+              title="Analitik Tren"
+              description="Pola lintas-periode untuk KPI organisasi dan velocity delivery project."
+              badge="6 periode terakhir"
+            />
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+              <CeoPanel
+                className="xl:col-span-2"
+                title="KPI Organisasi per Periode"
+                subtitle="Rata-rata 4 dimensi KPI (bobot 35/25/15/25) — Weighted Scoring Method"
+              >
+                <KpiTrendChart data={data.analytics.kpi_trend} mode="dimensions" />
+              </CeoPanel>
+              <CeoPanel title="Project Velocity" subtitle="Project created vs completed per bulan">
+                <ProjectVelocityChart data={data.analytics.project_velocity} />
+              </CeoPanel>
+            </div>
+            <CeoPanel
+              title="Distribusi Quality Rating"
+              subtitle="Rating yang diberikan PM atas milestone yang Done — feed dimensi Output Quality"
+            >
+              <RatingDistributionChart data={data.analytics.rating_distribution} />
+            </CeoPanel>
+          </section>
+
           <CeoPerformanceSection performance={data.performance} />
         </div>
       ) : null}

@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useNavigate, useParams } from 'react-router';
 import type { HandoverDetail } from '../../handover/types/handover.types';
 import { ProjectDetailHeader } from '../components/detail/project-detail-header';
+import { ProjectLifecycleActions } from '../components/detail/project-lifecycle-actions';
 import { ProjectTabs } from '../components/detail/project-tabs';
 import { useProjectDetail } from '../hooks/use-project-detail';
 import type { Project } from '../types/project.types';
@@ -46,6 +47,7 @@ export const ProjectDetailPage = () => {
   return (
     <div className="space-y-5">
       <ProjectDetailHeader project={project} onBack={() => navigate('/projects')} />
+      <ProjectLifecycleActions project={project} onAction={refresh} />
       <ProjectTabs projectId={project.id} />
       <Outlet context={{ project, handover, refresh } satisfies ProjectDetailOutletContext} />
     </div>

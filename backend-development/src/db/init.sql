@@ -227,6 +227,7 @@ INSERT INTO permissions (code, description) VALUES ('PROJECT_VIEW_FINANCIALS', '
 INSERT INTO permissions (code, description) VALUES ('PROJECT_ASSIGN_PM', 'Assign PM ke project (COO action)');
 INSERT INTO permissions (code, description) VALUES ('PROJECT_ASSIGN_CONSULTANT', 'Assign Consultant ke project (PM action)');
 INSERT INTO permissions (code, description) VALUES ('PROJECT_UPDATE_PROGRESS', 'Update milestone status & progres');
+INSERT INTO permissions (code, description) VALUES ('PROJECT_MANAGE_STATUS', 'Mengelola status project (pause/resume/cancel)');
 INSERT INTO permissions (code, description) VALUES ('DOCUMENT_VIEW', 'Akses Document Center');
 INSERT INTO permissions (code, description) VALUES ('INVOICE_MANAGE', 'Kelola invoice klien');
 INSERT INTO permissions (code, description) VALUES ('KPI_VIEW_OWN', 'Lihat KPI sendiri');
@@ -276,6 +277,7 @@ INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM ro
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'COO'), (SELECT id FROM permissions WHERE code = 'PROJECT_VIEW'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'COO'), (SELECT id FROM permissions WHERE code = 'PROJECT_VIEW_FINANCIALS'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'COO'), (SELECT id FROM permissions WHERE code = 'PROJECT_ASSIGN_PM'));
+INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'COO'), (SELECT id FROM permissions WHERE code = 'PROJECT_MANAGE_STATUS'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'COO'), (SELECT id FROM permissions WHERE code = 'DOCUMENT_VIEW'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'COO'), (SELECT id FROM permissions WHERE code = 'KPI_VIEW_OWN'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'COO'), (SELECT id FROM permissions WHERE code = 'KPI_VIEW_ALL'));
@@ -284,6 +286,7 @@ INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM ro
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'PM'), (SELECT id FROM permissions WHERE code = 'PROJECT_VIEW'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'PM'), (SELECT id FROM permissions WHERE code = 'PROJECT_ASSIGN_CONSULTANT'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'PM'), (SELECT id FROM permissions WHERE code = 'PROJECT_UPDATE_PROGRESS'));
+INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'PM'), (SELECT id FROM permissions WHERE code = 'PROJECT_MANAGE_STATUS'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'PM'), (SELECT id FROM permissions WHERE code = 'DOCUMENT_VIEW'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'PM'), (SELECT id FROM permissions WHERE code = 'KPI_VIEW_OWN'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'PM'), (SELECT id FROM permissions WHERE code = 'KPI_VIEW_TEAM'));
@@ -310,6 +313,7 @@ INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM ro
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'SUPERADMIN'), (SELECT id FROM permissions WHERE code = 'PROJECT_ASSIGN_PM'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'SUPERADMIN'), (SELECT id FROM permissions WHERE code = 'PROJECT_ASSIGN_CONSULTANT'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'SUPERADMIN'), (SELECT id FROM permissions WHERE code = 'PROJECT_UPDATE_PROGRESS'));
+INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'SUPERADMIN'), (SELECT id FROM permissions WHERE code = 'PROJECT_MANAGE_STATUS'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'SUPERADMIN'), (SELECT id FROM permissions WHERE code = 'DOCUMENT_VIEW'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'SUPERADMIN'), (SELECT id FROM permissions WHERE code = 'INVOICE_MANAGE'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'SUPERADMIN'), (SELECT id FROM permissions WHERE code = 'KPI_VIEW_OWN'));

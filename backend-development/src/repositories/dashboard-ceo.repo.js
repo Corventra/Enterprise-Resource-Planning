@@ -13,6 +13,16 @@ const {
 } = require('./dashboard-pipeline.repo');
 const { buildMarketingAnalytics } = require('./dashboard-marketing.repo');
 const { buildRevenueAnalytics } = require('./dashboard-revenue.repo');
+const {
+  buildProjectOperations,
+  buildConsultantKpi
+} = require('./dashboard-ceo-faried.repo');
+const {
+  buildKpiTrend,
+  buildProjectVelocity,
+  buildRatingDistribution,
+  generateInsights
+} = require('./dashboard-analytics.repo');
 
 const TRACKED_LEAD_WHERE = `
   l.lead_status IN ('ACTIVE', 'WON', 'LOST')
@@ -208,6 +218,30 @@ const getCeoDashboard = async (query = {}) => {
       departmentId
     });
 
+    // Faried's scope — post-handover delivery + KPI consultant.
+    const projectOperations = await buildProjectOperations(conn, {
+      period,
+      comparison,
+      serviceId,
+      departmentId
+    });
+    const consultantKpi = await buildConsultantKpi(conn, {
+      period,
+      departmentId
+    });
+
+    // Analytics overlay (CEO scope = organisasi).
+    const kpiTrend = await buildKpiTrend(conn, { period });
+    const projectVelocity = await buildProjectVelocity(conn, { period });
+    const ratingDistribution = await buildRatingDistribution(conn, {});
+    const insights = generateInsights({
+      role: 'CEO',
+      projectOps: projectOperations,
+      consultantKpi,
+      kpiTrend,
+      ratingDistribution
+    });
+
     const [topServicesLead] = await conn.execute(
       `SELECT svc.service_id, svc.name AS service_name, COUNT(DISTINCT l.lead_id) AS metric_value
          FROM leads l
@@ -313,6 +347,14 @@ const getCeoDashboard = async (query = {}) => {
             name: r.service_name,
             value: Number(r.metric_value)
           }))
+        },
+        project_operations: projectOperations,
+        consultant_kpi: consultantKpi,
+        analytics: {
+          kpi_trend: kpiTrend,
+          project_velocity: projectVelocity,
+          rating_distribution: ratingDistribution,
+          insights
         }
       }
     };
