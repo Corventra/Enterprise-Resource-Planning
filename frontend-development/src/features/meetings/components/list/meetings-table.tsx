@@ -11,6 +11,7 @@ import {
   minutesStatusClass,
   minutesStatusLabel
 } from '../../utils/meetings-display';
+import { isMeetingScheduleOverdue } from '../../utils/meeting-schedule-due-date';
 import { MeetingsTableRowActions } from './meetings-table-row-actions';
 
 interface MeetingsTableProps {
@@ -59,6 +60,7 @@ export const MeetingsTable = ({
             const { dateLine, timeLine } = formatMeetingDateLines(item.meetingDatetime);
             const accessHref = getMeetingAccessHref(item.mode, access);
             const isSelected = item.id === selectedMeetingId;
+            const isOverdue = isMeetingScheduleOverdue(item);
 
             return (
               <tr
@@ -67,7 +69,9 @@ export const MeetingsTable = ({
                 className={
                   isSelected
                     ? 'cursor-pointer border-l-4 border-[#003c90] bg-[#003c90]/5 transition-colors'
-                    : 'cursor-pointer border-b border-[#eceef0] transition-colors hover:bg-[#f2f4f6]'
+                    : isOverdue
+                      ? 'cursor-pointer border-b border-[#eceef0] bg-[#ffdad6]/60 transition-colors hover:bg-[#ffdad6]/80'
+                      : 'cursor-pointer border-b border-[#eceef0] transition-colors hover:bg-[#f2f4f6]'
                 }
               >
                 <td className={rowCellClassName}>
@@ -109,12 +113,18 @@ export const MeetingsTable = ({
                       </span>
                     )}
                   </div>
-                  <p className="mt-0.5 text-xs leading-snug text-[#434653]">
+                  <p
+                    className={`mt-0.5 text-xs leading-snug ${
+                      isOverdue ? 'font-bold text-[#ba1a1a]' : 'text-[#434653]'
+                    }`}
+                  >
                     {dateLine}
                     {timeLine ? (
                       <>
                         {' '}
-                        <span className="text-[11px] text-[#434653]">{timeLine}</span>
+                        <span className={`text-[11px] ${isOverdue ? 'text-[#ba1a1a]' : 'text-[#434653]'}`}>
+                          {timeLine}
+                        </span>
                       </>
                     ) : null}
                   </p>
