@@ -10,7 +10,7 @@ import {
   ceoSectionClass
 } from '../ceo/ceo-dashboard-ui';
 import { InvoiceStatusDistributionChart } from './invoice-status-distribution-chart';
-import { MonthlyRevenueHealthChart } from './monthly-revenue-health-chart';
+import { MonthlyInvoiceTrendChart } from './monthly-revenue-health-chart';
 import { PaymentReceivedTrendChart } from './payment-received-trend-chart';
 import { TopClientsOverdueList } from './top-clients-overdue-list';
 
@@ -98,14 +98,14 @@ export const RevenueInvoiceAnalyticsSection = ({
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <CeoPanel title="Tren Pembayaran Diterima" subtitle="Bar chart arus kas masuk per bulan (pembayaran terverifikasi)">
+        <CeoPanel title="Tren Pembayaran Diterima" subtitle="Line chart arus kas masuk per bulan (pembayaran terverifikasi)">
           <PaymentReceivedTrendChart points={revenue.payment_trend} />
         </CeoPanel>
         <CeoPanel
-          title="Kesehatan Pendapatan Bulanan"
-          subtitle="Grouped bar per bulan — Paid (arus masuk) vs Outstanding (akhir bulan)"
+          title="Perbandingan Invoice Bulanan"
+          subtitle="Perbandingan total invoiced, payments received, outstanding amount, dan overdue amount per bulan."
         >
-          <MonthlyRevenueHealthChart points={revenue.paid_vs_outstanding_trend} />
+          <MonthlyInvoiceTrendChart points={revenue.monthly_invoice_trend} />
         </CeoPanel>
         <CeoPanel title="Distribusi Status Invoice" subtitle="Jumlah termin per status (snapshot saat ini)">
           <InvoiceStatusDistributionChart distribution={revenue.invoice_status_distribution} />

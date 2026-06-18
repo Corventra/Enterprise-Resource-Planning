@@ -18,6 +18,17 @@ export interface RevenuePaidOutstandingPoint {
   outstanding: number;
 }
 
+export interface RevenueMonthlyInvoiceTrendPoint {
+  month: string;
+  label: string;
+  invoiced: number;
+  paid: number;
+  outstanding: number;
+  overdue: number;
+  /** @deprecated Legacy API field — use `invoiced`. */
+  due?: number;
+}
+
 export interface InvoiceStatusDistributionItem {
   status: string;
   count: number;
@@ -37,6 +48,7 @@ export interface RevenueAttentionItem {
 export interface RevenueInvoiceAnalytics {
   payment_trend: RevenueTrendPoint[];
   paid_vs_outstanding_trend: RevenuePaidOutstandingPoint[];
+  monthly_invoice_trend: RevenueMonthlyInvoiceTrendPoint[];
   invoice_status_distribution: InvoiceStatusDistributionItem[];
   top_clients_overdue: RevenueAttentionItem[];
   summary: {
