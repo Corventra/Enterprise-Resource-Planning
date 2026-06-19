@@ -4,6 +4,7 @@ import type {
   LeadTrackerItem,
   LeadTrackerSummaryProcessedByTarget
 } from '../types/lead-tracker.types';
+import { compareLeadTrackerRowsByDueDate } from '../utils/lead-tracker-due-date';
 
 const PROCESSED_BY_UNASSIGNED = 'Unassigned';
 
@@ -13,23 +14,6 @@ const defaultFilters: LeadTrackerFilters = {
   status: 'All',
   processedBy: 'All'
 };
-
-/** ACTIVE first, then WON, then LOST at the bottom; same-status rows keep API order. */
-const leadStatusSortRank = (status: LeadTrackerItem['leadStatus']) => {
-  switch (status) {
-    case 'ACTIVE':
-      return 0;
-    case 'WON':
-      return 1;
-    case 'LOST':
-      return 2;
-    default:
-      return 0;
-  }
-};
-
-const compareLeadTrackerRows = (a: LeadTrackerItem, b: LeadTrackerItem) =>
-  leadStatusSortRank(a.leadStatus) - leadStatusSortRank(b.leadStatus);
 
 export const useLeadTrackerFilters = (items: LeadTrackerItem[], pageSize = 6) => {
   const [filters, setFilters] = useState<LeadTrackerFilters>(defaultFilters);
@@ -74,7 +58,7 @@ export const useLeadTrackerFilters = (items: LeadTrackerItem[], pageSize = 6) =>
 
       return matchSearch && matchStage && matchStatus && matchProcessedBy;
     });
-    return [...filtered].sort(compareLeadTrackerRows);
+    return [...filtered].sort(compareLeadTrackerRowsByDueDate);
   }, [items, filters]);
 
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));

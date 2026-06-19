@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Eye } from 'lucide-react';
 import type { InvoiceItem } from '../../types/invoice.types';
+import { isInvoiceListDueOverdue } from '../../utils/invoice-list-due-date';
 
 interface InvoicesTableProps {
   invoices: InvoiceItem[];
@@ -62,8 +63,16 @@ export const InvoicesTable = ({ invoices, onView, footer }: InvoicesTableProps) 
             </tr>
           </thead>
           <tbody className="divide-y divide-[#eceef0]">
-            {invoices.map((invoice) => (
-              <tr key={invoice.id} className="group transition-colors hover:bg-[#eceef0]/30">
+            {invoices.map((invoice) => {
+              const isOverdue = isInvoiceListDueOverdue(invoice);
+
+              return (
+              <tr
+                key={invoice.id}
+                className={`group transition-colors ${
+                  isOverdue ? 'bg-[#ffdad6]/60 hover:bg-[#ffdad6]/80' : 'hover:bg-[#eceef0]/30'
+                }`}
+              >
                 <td className="py-3.5 pl-5 pr-4 text-xs font-medium text-[#434653]">{invoice.clientName}</td>
                 <td className="px-4 py-3.5">
                   <span className="inline-flex rounded-full bg-[#d5e3fc] px-2.5 py-0.5 text-[11px] font-bold text-[#57657a]">
@@ -79,14 +88,14 @@ export const InvoicesTable = ({ invoices, onView, footer }: InvoicesTableProps) 
                 <td className="max-w-[220px] px-4 py-3.5">
                   <p
                     className={`text-xs font-medium leading-snug ${
-                      invoice.statusDb === 'OVERDUE' ? 'text-[#ba1a1a]' : 'text-[#434653]'
+                      isOverdue ? 'font-bold text-[#ba1a1a]' : 'text-[#434653]'
                     }`}
                   >
                     {invoice.nextAction}
                   </p>
                   <p
                     className={`mt-0.5 text-[11px] ${
-                      invoice.statusDb === 'OVERDUE' ? 'text-[#ba1a1a]/80' : 'text-[#737784]'
+                      isOverdue ? 'font-bold text-[#ba1a1a]' : 'text-[#737784]'
                     }`}
                   >
                     Tenggat: {formatDate(invoice.nextDueDate)}
@@ -106,13 +115,13 @@ export const InvoicesTable = ({ invoices, onView, footer }: InvoicesTableProps) 
                     <div className="flex w-full max-w-[120px] items-center gap-2">
                       <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#eceef0]">
                         <div
-                          className={`h-full ${invoice.statusDb === 'OVERDUE' ? 'bg-[#ba1a1a]' : 'bg-[#003c90]'}`}
+                          className={`h-full ${isOverdue ? 'bg-[#ba1a1a]' : 'bg-[#003c90]'}`}
                           style={{ width: `${invoice.paymentProgress}%` }}
                         />
                       </div>
                       <span
                         className={`text-[11px] font-medium ${
-                          invoice.statusDb === 'OVERDUE' ? 'text-[#ba1a1a]' : 'text-[#737784]'
+                          isOverdue ? 'text-[#ba1a1a]' : 'text-[#737784]'
                         }`}
                       >
                         {invoice.paymentProgress}%
@@ -134,7 +143,8 @@ export const InvoicesTable = ({ invoices, onView, footer }: InvoicesTableProps) 
                   </div>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

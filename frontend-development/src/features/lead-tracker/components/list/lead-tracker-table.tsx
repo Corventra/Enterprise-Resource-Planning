@@ -6,6 +6,7 @@ import {
   type LeadPipelineStatus,
   type LeadTrackerItem
 } from '../../types/lead-tracker.types';
+import { isLeadDueDateOverdue } from '../../utils/lead-tracker-due-date';
 import { getLeadPipelineProgressPercent } from '../../utils/lead-tracker-progress';
 import { LeadTrackerTableRowActions } from './lead-tracker-table-row-actions';
 
@@ -88,9 +89,15 @@ export const LeadTrackerTable = ({
                 item.stageProgress,
                 item.leadStatus
               );
+              const isOverdue = isLeadDueDateOverdue(item.dueDate);
 
               return (
-                <tr key={item.id} className="group transition-colors hover:bg-[#eceef0]/30">
+                <tr
+                  key={item.id}
+                  className={`group transition-colors ${
+                    isOverdue ? 'bg-[#ffdad6]/60 hover:bg-[#ffdad6]/80' : 'hover:bg-[#eceef0]/30'
+                  }`}
+                >
                 <td className="py-3.5 pl-5 pr-4">
                   <p className="font-mono text-xs font-bold text-[#003c90]">{item.leadCode}</p>
                 </td>
@@ -132,7 +139,13 @@ export const LeadTrackerTable = ({
                   </td>
                   <td className="px-4 py-3.5 text-xs text-[#434653]">{formatDateTime(item.processedAt)}</td>
                   <td className="px-4 py-3.5 text-xs font-bold text-[#434653]">{item.nextAction ?? '—'}</td>
-                  <td className="px-4 py-3.5 text-xs font-medium text-[#434653]">{formatDateTime(item.dueDate)}</td>
+                  <td
+                    className={`px-4 py-3.5 text-xs font-medium ${
+                      isOverdue ? 'font-bold text-[#ba1a1a]' : 'text-[#434653]'
+                    }`}
+                  >
+                    {formatDateTime(item.dueDate)}
+                  </td>
                   <td className="px-4 py-3.5 align-middle">
                     <div className="flex justify-center">
                       <span

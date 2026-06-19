@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { InvoiceDueStatus, InvoiceFilters, InvoiceItem } from '../types/invoice.types';
+import { compareInvoiceListRowsByDueDate, isInvoiceListDueOverdue } from '../utils/invoice-list-due-date';
 
 const defaultFilters: InvoiceFilters = {
   search: '',
@@ -8,7 +9,7 @@ const defaultFilters: InvoiceFilters = {
 };
 
 const getDueStatus = (invoice: InvoiceItem): InvoiceDueStatus => {
-  if (invoice.statusDb === 'OVERDUE') {
+  if (invoice.statusDb === 'OVERDUE' || isInvoiceListDueOverdue(invoice)) {
     return 'Overdue';
   }
   if (invoice.nextDueDate) {
@@ -29,7 +30,7 @@ export const useInvoiceFilters = (invoices: InvoiceItem[], pageSize = 6) => {
   const [currentPage, setCurrentPage] = useState(1);
 
   const filteredInvoices = useMemo(() => {
-    return invoices.filter((invoice) => {
+    const filtered = invoices.filter((invoice) => {
       const q = filters.search.toLowerCase().trim();
       const matchSearch =
         q === '' ||
@@ -42,6 +43,7 @@ export const useInvoiceFilters = (invoices: InvoiceItem[], pageSize = 6) => {
 
       return matchSearch && matchStatus && matchDueStatus;
     });
+    return [...filtered].sort(compareInvoiceListRowsByDueDate);
   }, [invoices, filters]);
 
   const totalPages = Math.max(1, Math.ceil(filteredInvoices.length / pageSize));

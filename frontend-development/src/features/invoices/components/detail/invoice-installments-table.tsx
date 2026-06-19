@@ -14,6 +14,7 @@ import { InvoiceTermSentConfirmDialog } from '../modals/invoice-term-sent-confir
 import { useInvoicePermissions } from '../../hooks/use-invoice-permissions';
 import { invoicesService } from '../../services/invoices-service';
 import { formatCurrency, formatDate, shouldShowTermDueDate } from './invoice-detail-formatters';
+import { isDueDateOverdue } from '../../../../utils/is-due-date-overdue';
 
 interface InvoiceInstallmentsTableProps {
   invoiceDetail: InvoiceDetail;
@@ -187,8 +188,17 @@ export const InvoiceInstallmentsTable = ({
                   </td>
                 </tr>
               ) : (
-                installments.map((item) => (
-                  <tr key={item.id} className="hover:bg-[#f7f9fb]">
+                installments.map((item) => {
+                  const isOverdue =
+                    shouldShowTermDueDate(item.statusDb) && isDueDateOverdue(item.dueDate);
+
+                  return (
+                  <tr
+                    key={item.id}
+                    className={`transition-colors ${
+                      isOverdue ? 'bg-[#ffdad6]/60 hover:bg-[#ffdad6]/80' : 'hover:bg-[#f7f9fb]'
+                    }`}
+                  >
                     <td className="px-3 py-3 font-bold text-[#191c1e] sm:px-6 sm:py-4">{item.invoiceNumber}</td>
                     <td className="px-3 py-3 sm:px-6 sm:py-4">{item.termName}</td>
                     <td className="px-3 py-3 sm:px-6 sm:py-4">{item.percentage}%</td>
@@ -197,7 +207,11 @@ export const InvoiceInstallmentsTable = ({
                     <td className="px-3 py-3 font-semibold text-[#004b31] sm:px-6 sm:py-4">{formatCurrency(item.totalInvoice)}</td>
                     <td className="px-3 py-3 sm:px-6 sm:py-4">{formatDate(item.billingScheduleDate)}</td>
                     <td className="px-3 py-3 sm:px-6 sm:py-4">{formatDate(item.issuedDate)}</td>
-                    <td className="px-3 py-3 sm:px-6 sm:py-4">
+                    <td
+                      className={`px-3 py-3 sm:px-6 sm:py-4 ${
+                        isOverdue ? 'font-bold text-[#ba1a1a]' : ''
+                      }`}
+                    >
                       {shouldShowTermDueDate(item.statusDb) ? formatDate(item.dueDate) : '—'}
                     </td>
                     <td className="px-3 py-3 sm:px-6 sm:py-4">
@@ -239,7 +253,8 @@ export const InvoiceInstallmentsTable = ({
                       </div>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>

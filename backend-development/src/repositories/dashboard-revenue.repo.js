@@ -75,6 +75,58 @@ const sumInvoiceOutstandingAsOf = async (conn, asOfExclusive, { filterParams, sv
   return sumInRange(conn, sql, [asOfExclusive, asOfExclusive, ...filterParams], context);
 };
 
+const sumInvoiceOverdueAsOf = async (conn, asOfExclusive, { filterParams, svcLead, deptLead }, context) => {
+  const sql = `SELECT COALESCE(SUM(${invoiceBalanceExpr}), 0) AS total
+    ${INVOICE_SCOPE_JOIN}
+    ${invoicePaidAsOfJoin}
+   WHERE ${invoiceOverdueAtCutoffWhere}
+     ${svcLead.sql}
+     ${deptLead.sql}`;
+  return sumInRange(
+    conn,
+    sql,
+    [asOfExclusive, asOfExclusive, asOfExclusive, asOfExclusive, asOfExclusive, ...filterParams],
+    context
+  );
+};
+
+const sumInvoiceInvoicedInMonth = async (
+  conn,
+  monthStartSql,
+  monthEndExclusiveSql,
+  { filterParams, svcLead, deptLead },
+  context
+) => {
+  const sql = `SELECT COALESCE(SUM(it.net_amount), 0) AS total
+    ${INVOICE_SCOPE_JOIN}
+   WHERE it.created_at >= ?
+     AND it.created_at < ?
+     ${svcLead.sql}
+     ${deptLead.sql}`;
+  return sumInRange(conn, sql, [monthStartSql, monthEndExclusiveSql, ...filterParams], context);
+};
+
+const sumVerifiedPaymentsInMonth = async (
+  conn,
+  monthStartSql,
+  monthEndExclusiveSql,
+  { filterParams, svcLead, deptLead },
+  context
+) => {
+  const sql = `SELECT COALESCE(SUM(ip.amount_received_net), 0) AS total
+      FROM invoice_payments ip
+      INNER JOIN invoice_terms it ON it.invoice_id = ip.invoice_id
+      INNER JOIN invoice_accounts ia ON ia.account_id = it.account_id
+      INNER JOIN services svc ON svc.service_id = ia.service_id
+      INNER JOIN departments dept ON dept.id = svc.department_id
+     WHERE ${INVOICE_PAYMENT_VERIFIED_SQL}
+       AND ip.transaction_date >= ?
+       AND ip.transaction_date < ?
+       ${svcLead.sql}
+       ${deptLead.sql}`;
+  return sumInRange(conn, sql, [monthStartSql, monthEndExclusiveSql, ...filterParams], context);
+};
+
 const fetchTopClientsOverdueAsOf = async (conn, asOfExclusive, { filterParams, svcLead, deptLead }) => {
   const sql = `SELECT
       l.lead_id,
@@ -228,19 +280,12 @@ const buildRevenueAnalytics = async (
 
   const paidVsOutstandingTrend = await Promise.all(
     trendBuckets.map(async (bucket) => {
-      const paid = await sumInRange(
+      const paid = await sumVerifiedPaymentsInMonth(
         conn,
-        `SELECT COALESCE(SUM(ip.amount_received_net), 0) AS total
-             FROM invoice_payments ip
-             INNER JOIN invoice_terms it ON it.invoice_id = ip.invoice_id
-             INNER JOIN invoice_accounts ia ON ia.account_id = it.account_id
-             INNER JOIN services svc ON svc.service_id = ia.service_id
-             INNER JOIN departments dept ON dept.id = svc.department_id
-            WHERE ${INVOICE_PAYMENT_VERIFIED_SQL}
-              AND ip.transaction_date >= ? AND ip.transaction_date < ?
-              ${svcLead.sql}
-              ${deptLead.sql}`,
-        [bucket.startSql, bucket.endSqlExclusive, ...filterParams]
+        bucket.startSql,
+        bucket.endSqlExclusive,
+        invoiceSnapshotFilters,
+        `paid_vs_outstanding_paid_${bucket.key}`
       );
       const outstanding = await sumInvoiceOutstandingAsOf(
         conn,
@@ -249,6 +294,40 @@ const buildRevenueAnalytics = async (
         `outstanding_${bucket.key}`
       );
       return { month: bucket.key, label: bucket.label, paid, outstanding };
+    })
+  );
+
+  const monthlyInvoiceTrend = await Promise.all(
+    trendBuckets.map(async (bucket) => {
+      const [invoiced, paid, outstanding, overdue] = await Promise.all([
+        sumInvoiceInvoicedInMonth(
+          conn,
+          bucket.startSql,
+          bucket.endSqlExclusive,
+          invoiceSnapshotFilters,
+          `monthly_invoice_invoiced_${bucket.key}`
+        ),
+        sumVerifiedPaymentsInMonth(
+          conn,
+          bucket.startSql,
+          bucket.endSqlExclusive,
+          invoiceSnapshotFilters,
+          `monthly_invoice_paid_${bucket.key}`
+        ),
+        sumInvoiceOutstandingAsOf(
+          conn,
+          bucket.endSqlExclusive,
+          invoiceSnapshotFilters,
+          `monthly_invoice_outstanding_${bucket.key}`
+        ),
+        sumInvoiceOverdueAsOf(
+          conn,
+          bucket.endSqlExclusive,
+          invoiceSnapshotFilters,
+          `monthly_invoice_overdue_${bucket.key}`
+        )
+      ]);
+      return { month: bucket.key, label: bucket.label, invoiced, paid, outstanding, overdue };
     })
   );
 
@@ -276,6 +355,7 @@ const buildRevenueAnalytics = async (
   return {
     payment_trend: paymentTrend,
     paid_vs_outstanding_trend: paidVsOutstandingTrend,
+    monthly_invoice_trend: monthlyInvoiceTrend,
     invoice_status_distribution: invoiceStatusRows.map((r) => ({
       status: r.status,
       count: Number(r.cnt),
