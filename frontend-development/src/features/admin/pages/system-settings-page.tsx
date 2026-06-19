@@ -1,5 +1,8 @@
-import { RefreshCcw, Save, ShieldCheck } from 'lucide-react';
+import { CheckCircle, RefreshCcw, Save, ShieldCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { FullscreenConfirmDialog } from '../../../components/ui/fullscreen-confirm-dialog';
+import { Toast } from '../../../components/ui/toast';
+import { useToast } from '../../../hooks/use-toast';
 import { useSystemConfig } from '../hooks/use-system-config';
 import type { SystemConfig } from '../types/admin.types';
 
@@ -23,7 +26,8 @@ export const SystemSettingsPage = () => {
   const { config, isLoading, error, save, reset } = useSystemConfig();
   const [draft, setDraft] = useState<Editable | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [feedback, setFeedback] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const { message: toastMessage, variant: toastVariant, dismiss: dismissToast, show: showToast } = useToast();
 
   useEffect(() => {
     if (config) {
@@ -40,33 +44,28 @@ export const SystemSettingsPage = () => {
   const handleSave = async () => {
     if (!draft) return;
     setIsSubmitting(true);
-    setFeedback(null);
     try {
       await save(draft);
-      setFeedback({ tone: 'success', message: 'Konfigurasi sistem tersimpan.' });
+      showToast('Konfigurasi sistem tersimpan.', { variant: 'success' });
     } catch (e) {
-      setFeedback({
-        tone: 'error',
-        message: e instanceof Error ? e.message : 'Gagal menyimpan konfigurasi'
-      });
+      showToast(e instanceof Error ? e.message : 'Gagal menyimpan konfigurasi', { variant: 'error' });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleReset = async () => {
-    const confirm = window.confirm('Reset konfigurasi sistem ke default? Semua perubahan akan hilang.');
-    if (!confirm) return;
+  const handleResetRequest = () => {
+    setResetConfirmOpen(true);
+  };
+
+  const handleResetConfirm = async () => {
+    setResetConfirmOpen(false);
     setIsSubmitting(true);
-    setFeedback(null);
     try {
       await reset();
-      setFeedback({ tone: 'success', message: 'Konfigurasi di-reset ke default.' });
+      showToast('Konfigurasi di-reset ke default.', { variant: 'success' });
     } catch (e) {
-      setFeedback({
-        tone: 'error',
-        message: e instanceof Error ? e.message : 'Gagal reset konfigurasi'
-      });
+      showToast(e instanceof Error ? e.message : 'Gagal reset konfigurasi', { variant: 'error' });
     } finally {
       setIsSubmitting(false);
     }
@@ -96,7 +95,7 @@ export const SystemSettingsPage = () => {
         </div>
         <button
           type="button"
-          onClick={handleReset}
+          onClick={handleResetRequest}
           disabled={isSubmitting}
           className="inline-flex items-center gap-2 rounded-lg border border-[#c3c6d5] bg-white px-3 py-2 text-xs font-semibold text-[#191c1e] transition-colors hover:bg-[#f2f4f6] disabled:opacity-50"
         >
@@ -107,18 +106,6 @@ export const SystemSettingsPage = () => {
       {error && (
         <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
           {error}
-        </div>
-      )}
-
-      {feedback && (
-        <div
-          className={
-            feedback.tone === 'success'
-              ? 'rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700'
-              : 'rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700'
-          }
-        >
-          {feedback.message}
         </div>
       )}
 
@@ -252,6 +239,47 @@ export const SystemSettingsPage = () => {
           {isSubmitting ? 'Menyimpan...' : 'Save Settings'}
         </button>
       </div>
+
+      <FullscreenConfirmDialog open={resetConfirmOpen}>
+        <div className="w-full max-w-md rounded-xl border border-[#eceef0] border-l-4 border-l-[#003c90] bg-white p-5 shadow-lg">
+          <div className="flex items-start gap-3">
+            <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-[#003c90]" aria-hidden />
+            <div className="flex-1">
+              <h2 className="text-base font-semibold text-[#191c1e]">
+                Reset konfigurasi ke default?
+              </h2>
+              <p className="mt-2 text-sm text-[#737784]">
+                Semua perubahan tersimpan akan hilang.
+              </p>
+            </div>
+          </div>
+          <div className="mt-5 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setResetConfirmOpen(false)}
+              disabled={isSubmitting}
+              className="rounded-lg border border-[#c3c6d5] px-4 py-2 text-sm font-medium text-[#434653] hover:bg-[#eceef0] disabled:opacity-50"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              onClick={handleResetConfirm}
+              disabled={isSubmitting}
+              className="rounded-lg bg-[#003c90] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+            >
+              Ya, reset
+            </button>
+          </div>
+        </div>
+      </FullscreenConfirmDialog>
+
+      <Toast
+        open={toastMessage !== null}
+        message={toastMessage ?? ''}
+        variant={toastVariant}
+        onClose={dismissToast}
+      />
     </div>
   );
 };

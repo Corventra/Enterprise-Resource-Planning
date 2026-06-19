@@ -1,5 +1,8 @@
-import { Plus, Search } from 'lucide-react';
+import { AlertCircle, Plus, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { FullscreenConfirmDialog } from '../../../components/ui/fullscreen-confirm-dialog';
+import { Toast } from '../../../components/ui/toast';
+import { useToast } from '../../../hooks/use-toast';
 import { DepartmentFormDialog } from '../components/department-form-dialog';
 import { DepartmentListTable } from '../components/department-list-table';
 import { useManagedDepartments } from '../hooks/use-managed-departments';
@@ -16,6 +19,9 @@ export const DepartmentManagementPage = () => {
   const [activeDept, setActiveDept] = useState<ManagedDepartment | null>(null);
   const [formError, setFormError] = useState<string | undefined>(undefined);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [deleteTarget, setDeleteTarget] = useState<ManagedDepartment | null>(null);
+  const { message: toastMessage, variant: toastVariant, dismiss: dismissToast, show: showToast } = useToast();
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -72,20 +78,27 @@ export const DepartmentManagementPage = () => {
   const handleToggleActive = async (dept: ManagedDepartment) => {
     try {
       await setActive(dept.id, !dept.isActive);
+      showToast(`Department ${dept.code} ${dept.isActive ? 'dinonaktifkan' : 'diaktifkan'}.`, {
+        variant: 'success'
+      });
     } catch (e) {
-      window.alert(e instanceof Error ? e.message : 'Gagal mengubah status');
+      showToast(e instanceof Error ? e.message : 'Gagal mengubah status', { variant: 'error' });
     }
   };
 
-  const handleDelete = async (dept: ManagedDepartment) => {
-    const ok = window.confirm(
-      `Hapus department "${dept.code} — ${dept.name}"? Tindakan ini tidak bisa dibatalkan.`
-    );
-    if (!ok) return;
+  const handleDeleteRequest = (dept: ManagedDepartment) => {
+    setDeleteTarget(dept);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    const target = deleteTarget;
+    setDeleteTarget(null);
     try {
-      await remove(dept.id);
+      await remove(target.id);
+      showToast(`Department ${target.code} berhasil dihapus.`, { variant: 'success' });
     } catch (e) {
-      window.alert(e instanceof Error ? e.message : 'Gagal menghapus department');
+      showToast(e instanceof Error ? e.message : 'Gagal menghapus department', { variant: 'error' });
     }
   };
 
@@ -156,7 +169,7 @@ export const DepartmentManagementPage = () => {
         isLoading={isLoading}
         onEdit={openEdit}
         onToggleActive={handleToggleActive}
-        onDelete={handleDelete}
+        onDelete={handleDeleteRequest}
       />
 
       <DepartmentFormDialog
@@ -167,6 +180,45 @@ export const DepartmentManagementPage = () => {
         errorMessage={formError}
         onClose={() => setFormOpen(false)}
         onSubmit={handleFormSubmit}
+      />
+
+      <FullscreenConfirmDialog open={deleteTarget !== null}>
+        <div className="w-full max-w-md rounded-xl border border-[#eceef0] border-l-4 border-l-red-600 bg-white p-5 shadow-lg">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" aria-hidden />
+            <div className="flex-1">
+              <h2 className="text-base font-semibold text-[#191c1e]">
+                Hapus department {deleteTarget?.code}?
+              </h2>
+              <p className="mt-2 text-sm text-[#737784]">
+                Tindakan ini tidak bisa dibatalkan.
+              </p>
+            </div>
+          </div>
+          <div className="mt-5 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setDeleteTarget(null)}
+              className="rounded-lg border border-[#c3c6d5] px-4 py-2 text-sm font-medium text-[#434653] hover:bg-[#eceef0]"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteConfirm}
+              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+            >
+              Ya, hapus
+            </button>
+          </div>
+        </div>
+      </FullscreenConfirmDialog>
+
+      <Toast
+        open={toastMessage !== null}
+        message={toastMessage ?? ''}
+        variant={toastVariant}
+        onClose={dismissToast}
       />
     </div>
   );

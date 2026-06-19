@@ -3,6 +3,9 @@ import { useState } from 'react';
 import { useOutletContext } from 'react-router';
 import { ROLES } from '../../../app/permissions';
 import { useAuth } from '../../../app/store/auth-store';
+import { FullscreenConfirmDialog } from '../../../components/ui/fullscreen-confirm-dialog';
+import { Toast } from '../../../components/ui/toast';
+import { useToast } from '../../../hooks/use-toast';
 import { HandoverDocumentSections } from '../../handover/components/detail/handover-document-sections';
 import { projectService } from '../services/project-service';
 import type { ProjectDetailOutletContext } from './project-detail-page';
@@ -29,28 +32,28 @@ export const ProjectOverviewPage = () => {
   const canMarkCompleted = isPm && !isAlreadyCompleted && !isCancelled && allMilestonesDone;
 
   const [isCompleting, setIsCompleting] = useState(false);
-  const [completeError, setCompleteError] = useState<string | undefined>();
-  const [completeSuccess, setCompleteSuccess] = useState<string | undefined>();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const { message: toastMessage, variant: toastVariant, dismiss: dismissToast, show: showToast } = useToast();
 
-  const handleMarkCompleted = async () => {
+  const handleMarkCompletedRequest = () => {
     if (!canMarkCompleted) return;
-    const confirmed = window.confirm(
-      `Mark project "${project.projectCode}" sebagai Completed?\n\nIni akan mengaktifkan tagihan final invoice (term FINAL: DRAFT → READY_TO_ISSUE).`
-    );
-    if (!confirmed) return;
+    setConfirmOpen(true);
+  };
+
+  const handleMarkCompletedConfirm = async () => {
+    setConfirmOpen(false);
     setIsCompleting(true);
-    setCompleteError(undefined);
-    setCompleteSuccess(undefined);
     try {
       const result = await projectService.completeProject(project.id);
-      setCompleteSuccess(
+      showToast(
         result.triggeredInvoiceTerms > 0
           ? `Project Completed. ${result.triggeredInvoiceTerms} final invoice term diaktifkan.`
-          : 'Project Completed. (Tidak ada term FINAL yang ke-trigger — pastikan invoice ter-link ke project.)'
+          : 'Project Completed. (Tidak ada term FINAL yang ke-trigger — pastikan invoice ter-link ke project.)',
+        { variant: 'success' }
       );
       await refresh();
     } catch (e) {
-      setCompleteError(e instanceof Error ? e.message : 'Gagal mark project Completed.');
+      showToast(e instanceof Error ? e.message : 'Gagal mark project Completed.', { variant: 'error' });
     } finally {
       setIsCompleting(false);
     }
@@ -86,7 +89,7 @@ export const ProjectOverviewPage = () => {
             {isPm && !isAlreadyCompleted && !isCancelled && (
               <button
                 type="button"
-                onClick={handleMarkCompleted}
+                onClick={handleMarkCompletedRequest}
                 disabled={!canMarkCompleted || isCompleting}
                 className="inline-flex items-center gap-2 rounded-lg bg-[#006544] px-4 py-2 text-xs font-bold text-white shadow-md shadow-[#006544]/20 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
               >
@@ -95,14 +98,50 @@ export const ProjectOverviewPage = () => {
               </button>
             )}
           </div>
-          {completeError && (
-            <p className="mt-3 text-sm text-[#c2410c]">{completeError}</p>
-          )}
-          {completeSuccess && (
-            <p className="mt-3 text-sm text-[#006544]">{completeSuccess}</p>
-          )}
         </section>
       )}
+
+      <FullscreenConfirmDialog open={confirmOpen}>
+        <div className="w-full max-w-md rounded-xl border border-[#eceef0] border-l-4 border-l-[#003c90] bg-white p-5 shadow-lg">
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-[#003c90]" aria-hidden />
+            <div className="flex-1">
+              <h2 className="text-base font-semibold text-[#191c1e]">
+                Mark project &ldquo;{project.projectCode}&rdquo; sebagai Completed?
+              </h2>
+              <p className="mt-2 text-sm text-[#737784]">
+                Ini akan mengaktifkan tagihan final invoice.
+              </p>
+            </div>
+          </div>
+          <div className="mt-5 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setConfirmOpen(false)}
+              disabled={isCompleting}
+              className="rounded-lg border border-[#c3c6d5] px-4 py-2 text-sm font-medium text-[#434653] hover:bg-[#eceef0] disabled:opacity-50"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              onClick={handleMarkCompletedConfirm}
+              disabled={isCompleting}
+              className="rounded-lg bg-[#003c90] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+            >
+              Ya, mark completed
+            </button>
+          </div>
+        </div>
+      </FullscreenConfirmDialog>
+
+      <Toast
+        open={toastMessage !== null}
+        message={toastMessage ?? ''}
+        variant={toastVariant}
+        onClose={dismissToast}
+      />
+
 
       <section className={sectionClass}>
         <h2 className={sectionTitleClass}>Project Information</h2>

@@ -1,6 +1,9 @@
-import { Search, UserPlus } from 'lucide-react';
+import { AlertCircle, Search, UserPlus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useAuth } from '../../../app/store/auth-store';
+import { FullscreenConfirmDialog } from '../../../components/ui/fullscreen-confirm-dialog';
+import { Toast } from '../../../components/ui/toast';
+import { useToast } from '../../../hooks/use-toast';
 import { ResetPasswordDialog } from '../components/reset-password-dialog';
 import { UserFormDialog } from '../components/user-form-dialog';
 import { UserListTable } from '../components/user-list-table';
@@ -25,6 +28,9 @@ export const UserManagementPage = () => {
   const [resetOpen, setResetOpen] = useState(false);
   const [resetError, setResetError] = useState<string | undefined>(undefined);
   const [isResetSubmitting, setIsResetSubmitting] = useState(false);
+
+  const [deleteTarget, setDeleteTarget] = useState<ManagedUser | null>(null);
+  const { message: toastMessage, variant: toastVariant, dismiss: dismissToast, show: showToast } = useToast();
 
   const filteredUsers = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -99,13 +105,19 @@ export const UserManagementPage = () => {
     }
   };
 
-  const handleDelete = async (user: ManagedUser) => {
-    const confirm = window.confirm(`Hapus user ${user.email}? Tindakan ini tidak bisa dibatalkan.`);
-    if (!confirm) return;
+  const handleDeleteRequest = (user: ManagedUser) => {
+    setDeleteTarget(user);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    const target = deleteTarget;
+    setDeleteTarget(null);
     try {
-      await remove(user.id);
+      await remove(target.id);
+      showToast(`User ${target.email} berhasil dihapus.`, { variant: 'success' });
     } catch (e) {
-      window.alert(e instanceof Error ? e.message : 'Gagal menghapus user');
+      showToast(e instanceof Error ? e.message : 'Gagal menghapus user', { variant: 'error' });
     }
   };
 
@@ -180,7 +192,7 @@ export const UserManagementPage = () => {
         currentUserId={authUser?.id}
         onEdit={openEdit}
         onResetPassword={openReset}
-        onDelete={handleDelete}
+        onDelete={handleDeleteRequest}
       />
 
       <UserFormDialog
@@ -202,6 +214,45 @@ export const UserManagementPage = () => {
         errorMessage={resetError}
         onClose={() => setResetOpen(false)}
         onSubmit={handleResetSubmit}
+      />
+
+      <FullscreenConfirmDialog open={deleteTarget !== null}>
+        <div className="w-full max-w-md rounded-xl border border-[#eceef0] border-l-4 border-l-red-600 bg-white p-5 shadow-lg">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" aria-hidden />
+            <div className="flex-1">
+              <h2 className="text-base font-semibold text-[#191c1e]">
+                Hapus user {deleteTarget?.email}?
+              </h2>
+              <p className="mt-2 text-sm text-[#737784]">
+                Tindakan ini tidak bisa dibatalkan.
+              </p>
+            </div>
+          </div>
+          <div className="mt-5 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setDeleteTarget(null)}
+              className="rounded-lg border border-[#c3c6d5] px-4 py-2 text-sm font-medium text-[#434653] hover:bg-[#eceef0]"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteConfirm}
+              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+            >
+              Ya, hapus
+            </button>
+          </div>
+        </div>
+      </FullscreenConfirmDialog>
+
+      <Toast
+        open={toastMessage !== null}
+        message={toastMessage ?? ''}
+        variant={toastVariant}
+        onClose={dismissToast}
       />
     </div>
   );

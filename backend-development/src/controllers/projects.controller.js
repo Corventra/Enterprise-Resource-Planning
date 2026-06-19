@@ -1196,24 +1196,35 @@ const completeProject = async (req, res) => {
     // STEP 7b: Side effect — trigger ke modul Invoice (PRD Rule B).
     // Isi field completion pada term FINAL (masih DRAFT); promosi READY_TO_ISSUE
     // via syncInvoiceTermLifecycle.
+    //
+    // Match via engagement_id (handover → invoice_terms via engagement):
+    // di banyak record `invoice_terms.project_id` masih NULL karena term
+    // dibuat dari engagement letter SEBELUM project lahir dari handover.
+    // Kita JOIN via engagement + handover, lalu sekalian backfill project_id
+    // supaya query downstream konsisten.
     const [triggerResult] = await conn.query(
-      `UPDATE invoice_terms
-       SET trigger_reference_value = 'Project completed',
-           trigger_confirmed_by = ?,
-           trigger_confirmed_at = NOW(),
-           updated_at = CURRENT_TIMESTAMP
-       WHERE project_id = ?
-         AND term_type = 'FINAL'
-         AND status = 'DRAFT'`,
+      `UPDATE invoice_terms it
+         INNER JOIN handovers h ON h.engagement_id = it.engagement_id
+         INNER JOIN projects p ON p.handover_id = h.handover_id
+          SET it.trigger_reference_value = 'Project completed',
+              it.trigger_confirmed_by = ?,
+              it.trigger_confirmed_at = NOW(),
+              it.project_id = p.project_id,
+              it.updated_at = CURRENT_TIMESTAMP
+        WHERE p.project_id = ?
+          AND it.term_type = 'FINAL'
+          AND it.status = 'DRAFT'`,
       [actor.id, projectId]
     );
     const triggeredInvoiceTerms = triggerResult.affectedRows ?? 0;
 
     const [accountRows] = await conn.query(
-      `SELECT DISTINCT account_id
-         FROM invoice_terms
-        WHERE project_id = ?
-          AND term_type = 'FINAL'`,
+      `SELECT DISTINCT it.account_id
+         FROM invoice_terms it
+         INNER JOIN handovers h ON h.engagement_id = it.engagement_id
+         INNER JOIN projects p ON p.handover_id = h.handover_id
+        WHERE p.project_id = ?
+          AND it.term_type = 'FINAL'`,
       [projectId]
     );
     for (const row of accountRows) {
