@@ -19,8 +19,8 @@ import {
  */
 
 export const projectService = {
-  async getAll(): Promise<Project[]> {
-    const rows = await projectsApi.list();
+  async getAll(options?: { withConsultants?: boolean }): Promise<Project[]> {
+    const rows = await projectsApi.list(options);
     return rows.map(mapApiProjectListRowToProject);
   },
 

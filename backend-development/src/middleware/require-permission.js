@@ -27,6 +27,7 @@ const requirePermission = (permissions, mode = 'any') => {
 
     if (!has) {
       return res.status(403).json({
+        code: 'UNAUTHORIZED_ROLE',
         error: 'Akses ditolak. Permission Anda tidak cukup untuk operasi ini.',
         requiredPermissions: required,
         mode
@@ -36,4 +37,42 @@ const requirePermission = (permissions, mode = 'any') => {
   };
 };
 
-module.exports = { requirePermission };
+/**
+ * Middleware factory: lolos kalau user punya `permission` ATAU role-nya termasuk `fallbackRoles`.
+ * Pakai SETELAH authenticate.
+ *
+ * Tujuan: jaring pengaman untuk permission yang baru ditambahkan setelah user login —
+ * JWT mereka belum berisi permission baru, tapi role-nya tetap valid. Tanpa ini, user
+ * harus logout/login dulu agar permission baru aktif.
+ *
+ * Contoh:
+ *   requirePermissionOrRole('DASHBOARD_CEO_VIEW', ['CEO', 'SUPERADMIN'])
+ */
+const requirePermissionOrRole = (permission, fallbackRoles) => {
+  if (typeof permission !== 'string' || !permission) {
+    throw new Error('requirePermissionOrRole butuh permission code (string)');
+  }
+  if (!Array.isArray(fallbackRoles) || fallbackRoles.length === 0) {
+    throw new Error('requirePermissionOrRole butuh array fallbackRoles non-empty');
+  }
+  const roleSet = new Set(fallbackRoles);
+
+  return (req, res, next) => {
+    const userPerms = Array.isArray(req.user?.permissions) ? req.user.permissions : [];
+    const userRole = req.user?.role;
+    const hasPermission = userPerms.includes(permission);
+    const hasRole = userRole && roleSet.has(userRole);
+
+    if (!hasPermission && !hasRole) {
+      return res.status(403).json({
+        code: 'UNAUTHORIZED_ROLE',
+        error: 'Akses ditolak. Permission/role Anda tidak cukup untuk operasi ini.',
+        requiredPermission: permission,
+        fallbackRoles
+      });
+    }
+    return next();
+  };
+};
+
+module.exports = { requirePermission, requirePermissionOrRole };

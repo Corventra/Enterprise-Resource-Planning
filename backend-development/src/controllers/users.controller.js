@@ -182,7 +182,10 @@ const changePassword = async (req, res) => {
     if (!existing) {
       return res.status(404).json({ error: 'User tidak ditemukan.' });
     }
-    const newPassword = requirePassword((req.body || {}).newPassword, 'newPassword');
+    // TC-28 compatibility: terima `password` atau `newPassword` (preferensi newPassword).
+    const body = req.body || {};
+    const candidate = body.newPassword ?? body.password;
+    const newPassword = requirePassword(candidate, 'password');
     await userRepo.updatePassword(id, newPassword);
     return res.json({ ok: true });
   } catch (e) {

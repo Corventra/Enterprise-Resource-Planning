@@ -30,6 +30,8 @@ export interface ApiProjectListRow {
   dp_paid_at: string | null;
   engagement_id: number | null;
   lead_id: number | null;
+  // Opsional: terisi kalau caller pakai ?withConsultants=1
+  consultants?: ApiProjectConsultant[];
 }
 
 export interface ApiProjectMilestoneUpdate {
@@ -155,8 +157,9 @@ interface AuditTrailResponse {
 }
 
 export const projectsApi = {
-  list: async (): Promise<ApiProjectListRow[]> => {
-    const res = await apiGet<ListResponse>('/projects');
+  list: async (options?: { withConsultants?: boolean }): Promise<ApiProjectListRow[]> => {
+    const qs = options?.withConsultants ? '?withConsultants=1' : '';
+    const res = await apiGet<ListResponse>(`/projects${qs}`);
     return res.data.items;
   },
   getById: async (projectId: string | number): Promise<ApiProjectDetail | null> => {

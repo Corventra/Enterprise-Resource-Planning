@@ -84,7 +84,9 @@ export const mapApiProjectListRowToProject = (row: ApiProjectListRow): Project =
   serviceLine: row.service_line as ProjectServiceLine,
   status: row.status as ProjectStatus,
   pm: mapAssignee(row.pm_user_id, row.pm_name),
-  consultants: [],
+  // Default []. Backend mengisi array ini kalau caller pakai ?withConsultants=1
+  // (konsumen: kpi-engine.listAllConsultants).
+  consultants: (row.consultants ?? []).map(mapConsultant),
   startDate: toIsoDate(row.start_date),
   endDate: toIsoDate(row.end_date),
   milestones: [],

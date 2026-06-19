@@ -208,9 +208,37 @@ const loadProjectDetailById = async (db, projectId) => {
 /**
  * GET /api/projects
  * Return array projects shallow (tanpa milestones/consultants/update_log).
+ *
+ * Scoping per role (TC-05):
+ *   - CEO / COO / SUPERADMIN / STAFF_ADMIN: lihat semua project (overview org)
+ *   - PM:         hanya project yang di-assign (pm_user_id = self)
+ *   - CONSULTANT: hanya project di mana consultant tsb di-assign
+ *   - lainnya:    list kosong (defense-in-depth; middleware permission seharusnya sudah block)
  */
 const listProjects = async (req, res) => {
   try {
+    const role = req.user?.role || null;
+    const userId = req.user?.sub || null;
+
+    const WIDE_SCOPE_ROLES = new Set(['CEO', 'COO', 'SUPERADMIN', 'STAFF_ADMIN']);
+    let whereClause = '';
+    const params = [];
+
+    if (WIDE_SCOPE_ROLES.has(role)) {
+      whereClause = '';
+    } else if (role === 'PM') {
+      whereClause = 'WHERE p.pm_user_id = ?';
+      params.push(userId);
+    } else if (role === 'CONSULTANT') {
+      whereClause = `WHERE EXISTS (
+        SELECT 1 FROM project_consultants pc
+         WHERE pc.project_id = p.project_id AND pc.consultant_user_id = ?
+      )`;
+      params.push(userId);
+    } else {
+      return res.json({ success: true, data: { items: [] } });
+    }
+
     const [rows] = await pool.query(
       `SELECT
          p.project_id,
@@ -236,8 +264,45 @@ const listProjects = async (req, res) => {
        LEFT JOIN users u_pm ON u_pm.id = p.pm_user_id
        INNER JOIN handovers h ON h.handover_id = p.handover_id
        LEFT JOIN departments d ON d.id = h.department_id
-       ORDER BY p.created_at DESC`
+       ${whereClause}
+       ORDER BY p.created_at DESC`,
+      params
     );
+
+    // Opt-in: ?withConsultants=1 supaya halaman KPI Center / engine bisa
+    // langsung derive daftar consultant tanpa N+1 ke endpoint detail.
+    const wantConsultants =
+      req.query?.withConsultants === '1' || req.query?.withConsultants === 'true';
+    if (wantConsultants && rows.length > 0) {
+      const projectIds = rows.map((r) => r.project_id);
+      const [consultantRows] = await pool.query(
+        `SELECT
+           pc.project_id,
+           pc.consultant_user_id,
+           COALESCE(u.name, pc.consultant_name_snapshot) AS consultant_name,
+           pc.level,
+           pc.assigned_at
+         FROM project_consultants pc
+         LEFT JOIN users u ON u.id = pc.consultant_user_id
+         WHERE pc.project_id IN (?)
+         ORDER BY pc.assigned_at ASC`,
+        [projectIds]
+      );
+      const byProject = new Map();
+      for (const row of consultantRows) {
+        if (!byProject.has(row.project_id)) byProject.set(row.project_id, []);
+        byProject.get(row.project_id).push({
+          consultant_user_id: row.consultant_user_id,
+          consultant_name: row.consultant_name,
+          level: row.level,
+          assigned_at: row.assigned_at
+        });
+      }
+      for (const r of rows) {
+        r.consultants = byProject.get(r.project_id) || [];
+      }
+    }
+
     return res.json({ success: true, data: { items: rows } });
   } catch (e) {
     return sendError(res, e);
@@ -325,7 +390,7 @@ const createFromHandover = async (req, res) => {
       await conn.rollback();
       return res.status(409).json({
         success: false,
-        message: `Handover tidak dalam status APPROVED (current: ${handover.status}).`
+        message: 'Handover tidak dalam status APPROVED'
       });
     }
 
@@ -338,7 +403,7 @@ const createFromHandover = async (req, res) => {
       await conn.rollback();
       return res.status(409).json({
         success: false,
-        message: 'Handover ini sudah pernah di-convert ke project.'
+        message: 'Handover sudah pernah di-convert'
       });
     }
 

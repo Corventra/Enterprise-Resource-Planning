@@ -1,8 +1,9 @@
 import { ArrowLeft, Calculator, CheckCircle2, Lock, RefreshCw } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { PERMISSIONS, ROLES } from '../../../app/permissions';
 import { useAuth } from '../../../app/store/auth-store';
+import { ExportPdfButton } from '../../../components/shared/export-pdf-button';
 import { projectService } from '../../projects/services/project-service';
 import type { ProjectAssignee } from '../../projects/types/project.types';
 import { KpiDimensionCard } from '../components/kpi-dimension-card';
@@ -27,6 +28,7 @@ export const KpiConsultantPage = () => {
   const consultantId = rawId ? decodeURIComponent(rawId) : undefined;
   const { role, user, can } = useAuth();
 
+  const pdfRef = useRef<HTMLDivElement>(null);
   const [snapshot, setSnapshot] = useState<KpiSnapshot | undefined>();
   const [history, setHistory] = useState<KpiSnapshot[]>([]);
   const [breakdown, setBreakdown] = useState<ProjectKpiBreakdown[]>([]);
@@ -242,7 +244,7 @@ export const KpiConsultantPage = () => {
   const isOwn = role === ROLES.CONSULTANT;
 
   return (
-    <div className="space-y-5">
+    <div ref={pdfRef} className="space-y-5">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col items-start">
           {!isOwn && (
@@ -278,14 +280,21 @@ export const KpiConsultantPage = () => {
               : `Detail KPI consultant untuk periode ${snapshot.period}.`}
           </p>
         </div>
-        <div
-          className={`flex shrink-0 flex-col items-center justify-center rounded-2xl px-6 py-4 ${totalToneClass}`}
-        >
-          <span className="text-[11px] font-bold uppercase tracking-wider opacity-80">KPI Total</span>
-          <span className="text-3xl font-bold leading-tight">{snapshot.total.toFixed(1)}%</span>
-          <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider opacity-80">
-            <Calculator className="h-3 w-3" /> Σ(w × c)
-          </span>
+        <div className="flex flex-col items-end gap-3">
+          <ExportPdfButton
+            targetRef={pdfRef}
+            filename={`KPI_${consultant.name}_${snapshot.period}`}
+            headerText={`Laporan KPI ${consultant.name} — Period ${snapshot.period}`}
+          />
+          <div
+            className={`flex shrink-0 flex-col items-center justify-center rounded-2xl px-6 py-4 ${totalToneClass}`}
+          >
+            <span className="text-[11px] font-bold uppercase tracking-wider opacity-80">KPI Total</span>
+            <span className="text-3xl font-bold leading-tight">{snapshot.total.toFixed(1)}%</span>
+            <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider opacity-80">
+              <Calculator className="h-3 w-3" /> Σ(w × c)
+            </span>
+          </div>
         </div>
       </header>
 

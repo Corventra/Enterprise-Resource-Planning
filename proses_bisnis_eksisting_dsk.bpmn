@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_DSK" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="18.16.0">
+  <collaboration id="Collaboration_DSK">
+    <participant id="Pool_DSK" name="PT DSK Global Konsultama" processRef="Process_DSK" />
+  </collaboration>
+  <process id="Process_DSK" isExecutable="false">
+    <laneSet id="LaneSet_1">
+      <lane id="Lane_CEO" name="CEO">
+        <flowNodeRef>StartEvent_1</flowNodeRef>
+        <flowNodeRef>Task_AkuisisiClient</flowNodeRef>
+        <flowNodeRef>Task_HandoverPM</flowNodeRef>
+        <flowNodeRef>Task_EvaluasiCEO</flowNodeRef>
+        <flowNodeRef>Task_TerimaLaporan</flowNodeRef>
+        <flowNodeRef>EndEvent_1</flowNodeRef>
+      </lane>
+      <lane id="Lane_PM" name="Project Manager">
+        <flowNodeRef>Task_Scoping</flowNodeRef>
+        <flowNodeRef>Task_Penugasan</flowNodeRef>
+        <flowNodeRef>Task_MonitoringManual</flowNodeRef>
+        <flowNodeRef>Task_RekapManual</flowNodeRef>
+        <flowNodeRef>Task_Delivery</flowNodeRef>
+      </lane>
+      <lane id="Lane_Konsultan" name="Konsultan">
+        <flowNodeRef>Task_EksekusiPekerjaan</flowNodeRef>
+        <flowNodeRef>Task_UpdateInformal</flowNodeRef>
+      </lane>
+    </laneSet>
+    <sequenceFlow id="Flow_6" sourceRef="Task_EksekusiPekerjaan" targetRef="Task_UpdateInformal" />
+    <sequenceFlow id="Flow_12" sourceRef="Task_EvaluasiCEO" targetRef="EndEvent_1" />
+    <sequenceFlow id="Flow_11" sourceRef="Task_Delivery" targetRef="Task_EvaluasiCEO" />
+    <sequenceFlow id="Flow_10" sourceRef="Task_TerimaLaporan" targetRef="Task_Delivery" />
+    <sequenceFlow id="Flow_9" sourceRef="Task_RekapManual" targetRef="Task_TerimaLaporan" />
+    <sequenceFlow id="Flow_0kxu7x7" sourceRef="Task_MonitoringManual" targetRef="Task_RekapManual" />
+    <sequenceFlow id="Flow_8" sourceRef="Task_MonitoringManual" targetRef="Task_RekapManual" />
+    <sequenceFlow id="Flow_7" sourceRef="Task_UpdateInformal" targetRef="Task_MonitoringManual" />
+    <sequenceFlow id="Flow_4" sourceRef="Task_Penugasan" targetRef="Task_EksekusiPekerjaan" />
+    <sequenceFlow id="Flow_1oo30wt" sourceRef="Task_Scoping" targetRef="Task_Penugasan" />
+    <sequenceFlow id="Flow_3" sourceRef="Task_HandoverPM" targetRef="Task_Scoping" />
+    <sequenceFlow id="Flow_2" sourceRef="Task_AkuisisiClient" targetRef="Task_HandoverPM" />
+    <sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Task_AkuisisiClient" />
+    <task id="Task_UpdateInformal" name="Update Progres&#10;Informal via WA" />
+    <task id="Task_EksekusiPekerjaan" name="Eksekusi Pekerjaan&#10;TP-Doc">
+      <incoming>Flow_4</incoming>
+    </task>
+    <endEvent id="EndEvent_1" name="END" />
+    <task id="Task_TerimaLaporan" name="Terima Laporan&#10;Progres dari PM" />
+    <task id="Task_EvaluasiCEO" name="Evaluasi Subjektif&#10;(Tanpa KPI Standar)" />
+    <task id="Task_Delivery" name="Delivery&#10;ke Klien" />
+    <task id="Task_RekapManual" name="Rekap Manual&#10;Progres ke Direksi">
+      <incoming>Flow_0kxu7x7</incoming>
+    </task>
+    <task id="Task_MonitoringManual" name="Monitoring Manual&#10;(Excel + WA + Email)">
+      <outgoing>Flow_0kxu7x7</outgoing>
+    </task>
+    <task id="Task_Penugasan" name="Penugasan&#10;ke Konsultan">
+      <incoming>Flow_1oo30wt</incoming>
+      <outgoing>Flow_4</outgoing>
+    </task>
+    <task id="Task_Scoping" name="Scoping&#10;Pekerjaan TP-Doc">
+      <outgoing>Flow_1oo30wt</outgoing>
+    </task>
+    <task id="Task_HandoverPM" name="Handover Proyek&#10;ke PM (Informal)">
+      <outgoing>Flow_3</outgoing>
+    </task>
+    <task id="Task_AkuisisiClient" name="Mendapat&#10;Client Baru" />
+    <startEvent id="StartEvent_1" name="START" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_DSK">
+      <bpmndi:BPMNShape id="Shape_Pool_DSK" bpmnElement="Pool_DSK" isHorizontal="true">
+        <dc:Bounds x="150" y="80" width="1368" height="510" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Lane_Konsultan" bpmnElement="Lane_Konsultan" isHorizontal="true">
+        <dc:Bounds x="180" y="420" width="1338" height="170" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Lane_PM" bpmnElement="Lane_PM" isHorizontal="true">
+        <dc:Bounds x="180" y="250" width="1338" height="170" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Lane_CEO" bpmnElement="Lane_CEO" isHorizontal="true">
+        <dc:Bounds x="180" y="80" width="1338" height="170" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_StartEvent_1" bpmnElement="StartEvent_1">
+        <dc:Bounds x="222" y="147" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="223" y="190" width="36" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_AkuisisiClient" bpmnElement="Task_AkuisisiClient">
+        <dc:Bounds x="310" y="125" width="120" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_HandoverPM" bpmnElement="Task_HandoverPM">
+        <dc:Bounds x="490" y="125" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_Scoping" bpmnElement="Task_Scoping">
+        <dc:Bounds x="490" y="295" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_Penugasan" bpmnElement="Task_Penugasan">
+        <dc:Bounds x="670" y="295" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_MonitoringManual" bpmnElement="Task_MonitoringManual">
+        <dc:Bounds x="850" y="295" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_RekapManual" bpmnElement="Task_RekapManual">
+        <dc:Bounds x="1030" y="295" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_Delivery" bpmnElement="Task_Delivery">
+        <dc:Bounds x="1210" y="295" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_EvaluasiCEO" bpmnElement="Task_EvaluasiCEO">
+        <dc:Bounds x="1210" y="125" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_TerimaLaporan" bpmnElement="Task_TerimaLaporan">
+        <dc:Bounds x="1030" y="125" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_EndEvent_1" bpmnElement="EndEvent_1">
+        <dc:Bounds x="1382" y="147" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1389" y="190" width="24" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_EksekusiPekerjaan" bpmnElement="Task_EksekusiPekerjaan">
+        <dc:Bounds x="670" y="465" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Task_UpdateInformal" bpmnElement="Task_UpdateInformal">
+        <dc:Bounds x="850" y="465" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Edge_Flow_1" bpmnElement="Flow_1">
+        <di:waypoint x="258" y="165" />
+        <di:waypoint x="310" y="165" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_2" bpmnElement="Flow_2">
+        <di:waypoint x="430" y="165" />
+        <di:waypoint x="490" y="165" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_3" bpmnElement="Flow_3">
+        <di:waypoint x="550" y="205" />
+        <di:waypoint x="550" y="295" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_4" bpmnElement="Flow_4">
+        <di:waypoint x="730" y="380" />
+        <di:waypoint x="730" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_7" bpmnElement="Flow_7">
+        <di:waypoint x="910" y="460" />
+        <di:waypoint x="910" y="380" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_8" bpmnElement="Flow_8">
+        <di:waypoint x="1150" y="335" />
+        <di:waypoint x="1210" y="335" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0kxu7x7_di" bpmnElement="Flow_0kxu7x7">
+        <di:waypoint x="970" y="335" />
+        <di:waypoint x="1030" y="335" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_9" bpmnElement="Flow_9">
+        <di:waypoint x="1090" y="295" />
+        <di:waypoint x="1090" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_10" bpmnElement="Flow_10">
+        <di:waypoint x="1150" y="165" />
+        <di:waypoint x="1210" y="165" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_11" bpmnElement="Flow_11">
+        <di:waypoint x="1270" y="295" />
+        <di:waypoint x="1270" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_12" bpmnElement="Flow_12">
+        <di:waypoint x="1330" y="165" />
+        <di:waypoint x="1382" y="165" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1oo30wt_di" bpmnElement="Flow_1oo30wt">
+        <di:waypoint x="610" y="335" />
+        <di:waypoint x="670" y="335" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Edge_Flow_6" bpmnElement="Flow_6">
+        <di:waypoint x="790" y="505" />
+        <di:waypoint x="850" y="505" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

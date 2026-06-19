@@ -42,7 +42,10 @@ export const PERMISSIONS = {
   // Admin domain (Superadmin) — KF-15: pengelolaan akun pengguna & konfigurasi sistem
   USER_MANAGE: 'USER_MANAGE',
   SYSTEM_CONFIG: 'SYSTEM_CONFIG',
-  DEPARTMENT_MANAGE: 'DEPARTMENT_MANAGE'
+  DEPARTMENT_MANAGE: 'DEPARTMENT_MANAGE',
+
+  // Dashboard executive — TC-25: gating Dashboard CEO via permission, granted ke CEO + SUPERADMIN.
+  DASHBOARD_CEO_VIEW: 'DASHBOARD_CEO_VIEW'
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

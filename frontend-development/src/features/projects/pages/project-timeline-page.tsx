@@ -1,4 +1,4 @@
-import { Calendar, ChevronDown, ChevronRight, History, Star } from 'lucide-react';
+import { AlertTriangle, Calendar, ChevronDown, ChevronRight, History, Star } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router';
 import { ROLES } from '../../../app/permissions';
@@ -12,6 +12,7 @@ import {
   type ProjectMilestonePhase,
   type ProjectMilestoneStatus
 } from '../types/project.types';
+import { computeMilestoneLateness } from '../utils/milestone-lateness';
 import type { ProjectDetailOutletContext } from './project-detail-page';
 
 const sectionClass = 'rounded-2xl bg-white p-6 shadow-sm ring-1 ring-[#eceef0]';
@@ -182,6 +183,26 @@ export const ProjectTimelinePage = () => {
                   )}
                 </span>
               )}
+              {(() => {
+                // KF-07: Deteksi Keterlambatan — bandingkan completedAt / today vs targetDate.
+                const lateness = computeMilestoneLateness(milestone);
+                if (lateness.status === 'overdue' || lateness.status === 'late') {
+                  return (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#c2410c]">
+                      <AlertTriangle className="h-3 w-3" strokeWidth={2.4} />
+                      {lateness.label}
+                    </span>
+                  );
+                }
+                if (lateness.status === 'on-time') {
+                  return (
+                    <span className="inline-flex rounded-full bg-[#006544]/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#006544]">
+                      On time
+                    </span>
+                  );
+                }
+                return null;
+              })()}
             </div>
             <p className="mt-2 text-sm font-bold text-[#191c1e]">{milestone.title}</p>
             <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-[#434653]">

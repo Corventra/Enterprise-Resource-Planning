@@ -1,4 +1,5 @@
 import { HeaderSearch } from './header-search';
+import { NotificationBell } from './notification-bell';
 import { UserMenu } from './user-menu';
 
 interface HeaderProps {
@@ -14,9 +15,9 @@ export const Header = ({ isSidebarCollapsed }: HeaderProps) => {
       <div className="flex-1 flex items-center gap-4">
         <HeaderSearch />
       </div>
-      
-      <div className="flex items-center gap-4">
-        {/* Placeholder for notifications or other header icons could go here */}
+
+      <div className="flex items-center gap-3">
+        <NotificationBell />
         <UserMenu />
       </div>
     </header>

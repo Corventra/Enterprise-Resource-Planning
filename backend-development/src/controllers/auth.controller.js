@@ -16,7 +16,7 @@ const buildUserPublic = (user, permissions) => ({
 const login = async (req, res) => {
   const { email, password } = req.body || {};
   if (typeof email !== 'string' || typeof password !== 'string' || !email || !password) {
-    return res.status(400).json({ error: 'Email dan password wajib diisi.' });
+    return res.status(400).json({ error: 'Username dan password wajib diisi' });
   }
 
   const ip = req.ip || req.headers['x-forwarded-for'] || null;
@@ -33,7 +33,7 @@ const login = async (req, res) => {
 
   if (!user) {
     await userRepo.logLoginAttempt({ userId: null, emailTried: email, ip, userAgent, success: false });
-    return res.status(401).json({ error: 'Email atau password salah.' });
+    return res.status(401).json({ error: 'Username atau password salah' });
   }
 
   if (!user.isActive) {
@@ -44,7 +44,7 @@ const login = async (req, res) => {
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) {
     await userRepo.logLoginAttempt({ userId: user.id, emailTried: email, ip, userAgent, success: false });
-    return res.status(401).json({ error: 'Email atau password salah.' });
+    return res.status(401).json({ error: 'Username atau password salah' });
   }
 
   // Permission list untuk token: snapshot saat login. Perubahan di DB/resolver baru dipakai route guard setelah login ulang.

@@ -112,7 +112,9 @@ export const kpiEngine = {
    * untuk dihitung di period ini.
    */
   async listAllConsultants(): Promise<ProjectAssignee[]> {
-    const projects = await projectService.getAll();
+    // ?withConsultants=1: backend ikut sertakan array consultant per project,
+    // jadi engine bisa derive daftar konsultan tanpa N+1 fetch detail.
+    const projects = await projectService.getAll({ withConsultants: true });
     const seen = new Map<string, ProjectAssignee>();
     projects.forEach((p) => {
       p.consultants.forEach((c) => {

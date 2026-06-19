@@ -242,6 +242,7 @@ INSERT INTO permissions (code, description) VALUES ('TASK_TEMPLATE_MANAGE', 'Kel
 INSERT INTO permissions (code, description) VALUES ('USER_MANAGE', 'CRUD akun pengguna sistem');
 INSERT INTO permissions (code, description) VALUES ('SYSTEM_CONFIG', 'Konfigurasi sistem (org, session, audit)');
 INSERT INTO permissions (code, description) VALUES ('DEPARTMENT_MANAGE', 'CRUD service line / department');
+INSERT INTO permissions (code, description) VALUES ('DASHBOARD_CEO_VIEW', 'Akses dashboard ringkasan organisasi (executive view)');
 
 -- =============== 7. SEED: role_permissions ===============
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'MEO'), (SELECT id FROM permissions WHERE code = 'BANK_DATA_VIEW'));
@@ -271,6 +272,7 @@ INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM ro
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'CEO'), (SELECT id FROM permissions WHERE code = 'KPI_RECOMPUTE'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'CEO'), (SELECT id FROM permissions WHERE code = 'KPI_EXPORT'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'CEO'), (SELECT id FROM permissions WHERE code = 'TASK_TEMPLATE_MANAGE'));
+INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'CEO'), (SELECT id FROM permissions WHERE code = 'DASHBOARD_CEO_VIEW'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'COO'), (SELECT id FROM permissions WHERE code = 'LEAD_VIEW'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'COO'), (SELECT id FROM permissions WHERE code = 'LEAD_TRACKER_VIEW'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'COO'), (SELECT id FROM permissions WHERE code = 'HANDOVER_MANAGE'));
@@ -325,6 +327,7 @@ INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM ro
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'SUPERADMIN'), (SELECT id FROM permissions WHERE code = 'KPI_RECOMPUTE'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'SUPERADMIN'), (SELECT id FROM permissions WHERE code = 'KPI_EXPORT'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'SUPERADMIN'), (SELECT id FROM permissions WHERE code = 'TASK_TEMPLATE_MANAGE'));
+INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'SUPERADMIN'), (SELECT id FROM permissions WHERE code = 'DASHBOARD_CEO_VIEW'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'SUPERADMIN'), (SELECT id FROM permissions WHERE code = 'USER_MANAGE'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'SUPERADMIN'), (SELECT id FROM permissions WHERE code = 'SYSTEM_CONFIG'));
 INSERT INTO role_permissions (role_id, permission_id) VALUES ((SELECT id FROM roles WHERE code = 'SUPERADMIN'), (SELECT id FROM permissions WHERE code = 'DEPARTMENT_MANAGE'));

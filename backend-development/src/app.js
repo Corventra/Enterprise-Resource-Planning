@@ -25,6 +25,7 @@ const taskTemplatesRoutes = require("./routes/task-templates.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
 const meetingsRoutes = require("./routes/meetings.routes");
 const documentCenterRoutes = require("./routes/document-center.routes");
+const notificationsRoutes = require("./routes/notifications.routes");
 
 const app = express();
 
@@ -76,6 +77,7 @@ app.use("/api/task-templates", taskTemplatesRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/meetings", meetingsRoutes);
 app.use("/api/document-center", documentCenterRoutes);
+app.use("/api/notifications", notificationsRoutes);
 
 // Fallback 404 untuk path /api/* yang tidak match
 app.use("/api", (req, res) => {

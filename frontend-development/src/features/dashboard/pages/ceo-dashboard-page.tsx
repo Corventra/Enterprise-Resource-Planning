@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { ExportPdfButton } from '../../../components/shared/export-pdf-button';
 import { DashboardFilters } from '../components/dashboard-filters';
 import { CeoDashboardSkeleton } from '../components/ceo/ceo-dashboard-ui';
 import { CeoKpiSection } from '../components/ceo/ceo-kpi-section';
@@ -24,9 +25,13 @@ export const CeoDashboardPage = () => {
 
   const stableFilters = useMemo(() => filters, [filters]);
   const { data, loading, error, refetch } = useCeoDashboard(stableFilters);
+  const pdfRef = useRef<HTMLDivElement>(null);
+
+  const periodLabel = filters.period?.replace('_', ' ') || 'periode aktif';
+  const todayIso = new Date().toISOString().slice(0, 10);
 
   return (
-    <div className="space-y-5 pb-10">
+    <div ref={pdfRef} className="space-y-5 pb-10">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Dashboard CEO</h1>
@@ -34,6 +39,13 @@ export const CeoDashboardPage = () => {
             Ringkasan analitik marketing, pipeline sales, revenue, dan performa untuk pengambilan keputusan strategis.
           </p>
         </div>
+        {data && (
+          <ExportPdfButton
+            targetRef={pdfRef}
+            filename={`Dashboard_CEO_${todayIso}`}
+            headerText={`Laporan Dashboard CEO — ${periodLabel} (${todayIso})`}
+          />
+        )}
       </header>
 
       <DashboardFilters
