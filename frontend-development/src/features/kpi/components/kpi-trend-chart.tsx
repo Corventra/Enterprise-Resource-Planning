@@ -101,7 +101,7 @@ export const KpiTrendChart = ({ snapshots }: KpiTrendChartProps) => {
             <circle cx={p.x} cy={p.y} r={2.5} fill="white" />
             <text
               x={p.x}
-              y={p.y - 10}
+              y={p.y + 18}
               textAnchor="middle"
               fontSize={11}
               fill="#003c90"
