@@ -50,9 +50,10 @@ export const validatePublicFormAnswers = (
     }
 
     if (field.field_key === 'contact_phone') {
-      const digits = String(value).replace(/[\s-]/g, '');
-      if (digits.length < 6 || !/^\+?[0-9]+$/.test(digits)) {
-        errors[field.field_id] = 'Nomor telepon tidak valid.';
+      const cleaned = String(value).replace(/[\s-]/g, '');
+      const digitCount = cleaned.replace(/\D/g, '').length;
+      if (!/^\+?[0-9]+$/.test(cleaned) || digitCount < 7 || digitCount > 13) {
+        errors[field.field_id] = 'Nomor telepon harus 7–13 digit.';
       }
       continue;
     }

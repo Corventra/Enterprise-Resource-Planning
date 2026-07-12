@@ -2,6 +2,7 @@ import type { HandoverDetail } from '../types/handover.types';
 
 const REQUIRED_MSG = 'Wajib diisi.';
 const MIN_ONE_ITEM_MSG = 'Minimal satu item wajib diisi.';
+const PAST_DATE_MSG = 'Tanggal tidak boleh sebelum hari ini.';
 
 export interface HandoverSubmitErrors {
   projectTitle?: string;
@@ -22,6 +23,15 @@ export interface HandoverSubmitErrors {
 const trim = (value: string) => value.trim();
 
 const hasNonEmptyString = (items: string[]) => items.some((item) => trim(item) !== '');
+
+/** Today's date as YYYY-MM-DD in the user's local timezone. */
+export const getLocalTodayIsoDate = (): string => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
 
 export const hasHandoverSubmitErrors = (errors: HandoverSubmitErrors): boolean =>
   Object.values(errors).some((value) => Boolean(value));
@@ -51,6 +61,7 @@ export const firstHandoverSubmitErrorSectionId = (errors: HandoverSubmitErrors):
 
 export const validateHandoverForSubmit = (form: HandoverDetail): HandoverSubmitErrors => {
   const errors: HandoverSubmitErrors = {};
+  const today = getLocalTodayIsoDate();
 
   if (!trim(form.projectTitle ?? '')) {
     errors.projectTitle = REQUIRED_MSG;
@@ -60,9 +71,15 @@ export const validateHandoverForSubmit = (form: HandoverDetail): HandoverSubmitE
   }
   if (!trim(form.projectStartDate ?? '')) {
     errors.projectStartDate = REQUIRED_MSG;
+  } else if (form.projectStartDate < today) {
+    errors.projectStartDate = PAST_DATE_MSG;
   }
   if (!trim(form.projectEndDate ?? '')) {
     errors.projectEndDate = REQUIRED_MSG;
+  } else if (form.projectEndDate < today) {
+    errors.projectEndDate = PAST_DATE_MSG;
+  } else if (trim(form.projectStartDate ?? '') && form.projectEndDate < form.projectStartDate) {
+    errors.projectEndDate = 'Tanggal akhir tidak boleh sebelum tanggal mulai.';
   }
   if (!trim(form.backgroundSummary)) {
     errors.backgroundSummary = REQUIRED_MSG;
@@ -82,6 +99,14 @@ export const validateHandoverForSubmit = (form: HandoverDetail): HandoverSubmitE
   );
   if (!hasValidMilestone) {
     errors.timelineMilestones = 'Minimal satu milestone dengan nama dan tanggal target wajib diisi.';
+  } else {
+    const hasPastMilestone = form.timelineMilestones.some((row) => {
+      const date = trim(row.targetDateIso ?? '');
+      return date !== '' && date < today;
+    });
+    if (hasPastMilestone) {
+      errors.timelineMilestones = PAST_DATE_MSG;
+    }
   }
 
   if (!hasNonEmptyString(form.keyRisks)) {

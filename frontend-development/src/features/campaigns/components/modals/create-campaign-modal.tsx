@@ -42,7 +42,11 @@ export const CreateCampaignModal = ({
     event.preventDefault();
     setSubmitError(null);
 
-    const validationErrors = validateCampaignFormValues({ values: formData, noEndDate });
+    const validationErrors = validateCampaignFormValues({
+      values: formData,
+      noEndDate,
+      disallowPastStartDate: true
+    });
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
@@ -61,7 +65,11 @@ export const CreateCampaignModal = ({
       setImageFile(null);
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : 'Failed to create campaign.';
-      setSubmitError(msg);
+      if (/start date/i.test(msg)) {
+        setErrors({ startDate: msg });
+      } else {
+        setSubmitError(msg);
+      }
     } finally {
       setIsSubmitting(false);
     }

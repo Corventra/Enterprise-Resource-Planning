@@ -58,6 +58,15 @@ export const hasEngagementLetterFormErrors = (errors: EngagementLetterFormErrors
 
 const isValidBillingScheduleDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(String(value).trim());
 
+/** Today's date as YYYY-MM-DD in the user's local timezone. */
+export const getLocalTodayIsoDate = (): string => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
 export const validateEngagementLetterForm = (input: ValidateEngagementLetterFormInput): EngagementLetterFormErrors => {
   const errors: EngagementLetterFormErrors = {};
 
@@ -108,6 +117,11 @@ export const validateEngagementLetterForm = (input: ValidateEngagementLetterForm
         if (isDp) errors.dpBillingSchedule = 'Billing schedule wajib diisi.';
         else if (isFinal) errors.finalBillingSchedule = 'Billing schedule wajib diisi.';
         else installmentBillingItems[installmentIndex] = 'Billing schedule wajib diisi.';
+      } else if (row.billing_schedule_date < getLocalTodayIsoDate()) {
+        const pastMsg = 'Billing schedule tidak boleh sebelum hari ini.';
+        if (isDp) errors.dpBillingSchedule = pastMsg;
+        else if (isFinal) errors.finalBillingSchedule = pastMsg;
+        else installmentBillingItems[installmentIndex] = pastMsg;
       }
     });
 

@@ -158,6 +158,7 @@ export const PublicFormFieldInput = ({
             placeholder={field.placeholder ?? undefined}
             value={typeof value === 'string' ? value : ''}
             onChange={(e) => onChange(e.target.value)}
+            inputMode={field.field_key === 'contact_phone' ? 'tel' : undefined}
             aria-describedby={describedBy}
             className={inputClass}
           />

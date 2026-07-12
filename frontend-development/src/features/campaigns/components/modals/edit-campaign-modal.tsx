@@ -46,7 +46,11 @@ export const EditCampaignModal = ({
     event.preventDefault();
     setSubmitError(null);
 
-    const validationErrors = validateCampaignFormValues({ values: formData, noEndDate });
+    const validationErrors = validateCampaignFormValues({
+      values: formData,
+      noEndDate,
+      disallowPastStartDate: true
+    });
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;

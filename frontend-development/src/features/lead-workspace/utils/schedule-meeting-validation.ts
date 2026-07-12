@@ -6,6 +6,18 @@ export interface ScheduleMeetingFormErrors {
   meetingAccess?: string;
 }
 
+/** Today's date as YYYY-MM-DD in the user's local timezone. */
+export const getLocalTodayIsoDate = (): string => {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+/** Minimum value for `datetime-local` inputs (start of today). */
+export const getLocalDatetimeLocalMin = (): string => `${getLocalTodayIsoDate()}T00:00`;
+
 export const validateScheduleMeetingPayload = (
   values: ScheduleMeetingPayload
 ): ScheduleMeetingFormErrors => {
@@ -16,6 +28,8 @@ export const validateScheduleMeetingPayload = (
   }
   if (!values.meetingDatetime.trim()) {
     errors.meetingDatetime = 'Tanggal dan waktu wajib diisi.';
+  } else if (values.meetingDatetime < getLocalDatetimeLocalMin()) {
+    errors.meetingDatetime = 'Tanggal meeting tidak boleh sebelum hari ini.';
   }
   if (!values.meetingAccess.trim()) {
     errors.meetingAccess =

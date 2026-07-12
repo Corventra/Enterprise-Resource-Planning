@@ -1,6 +1,6 @@
 const leadWorkspaceRepo = require('../repositories/lead-workspace.repo');
 const { ensureLeadWorkspaceOperator } = require('../utils/lead-workspace-operator');
-const { ValidationError, requireString, requireEmail } = require('../utils/validation');
+const { ValidationError, requireString, requireEmail, requirePhoneNumber } = require('../utils/validation');
 
 const sendError = (res, e) => {
   if (e instanceof ValidationError) {
@@ -62,7 +62,7 @@ const parseDetailsPayload = (body) => ({
   company_address: requireString(body.company_address, 'Company Address', { max: 255 }),
   pic_name: requireString(body.pic_name, 'PIC Name', { max: 150 }),
   email: requireEmail(body.email, 'Email'),
-  phone_number: requireString(body.phone_number, 'Phone Number', { max: 50 }),
+  phone_number: requirePhoneNumber(body.phone_number, 'Phone Number'),
   desired_services: optionalString(body.desired_services, 'Desired Services')
 });
 

@@ -39,7 +39,7 @@ export const CORE_FIELDS: FormBuilderField[] = [
     id: 'core-phone',
     type: 'short-text',
     label: 'Nomor Telepon / WhatsApp',
-    note: 'Gunakan nomor yang aktif dan bisa dihubungi.',
+    note: 'Gunakan nomor yang aktif dan bisa dihubungi (7–13 digit).',
     placeholder: '+62...',
     required: true,
     isCore: true,

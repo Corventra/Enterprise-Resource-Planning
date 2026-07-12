@@ -36,6 +36,12 @@ export const validateLeadCoreFormValues = (values: LeadCoreFormValues): LeadCore
   }
   if (!values.phoneNumber.trim()) {
     errors.phoneNumber = 'Nomor telepon wajib diisi.';
+  } else {
+    const cleaned = values.phoneNumber.trim().replace(/[\s-]/g, '');
+    const digitCount = cleaned.replace(/\D/g, '').length;
+    if (!/^\+?[0-9]+$/.test(cleaned) || digitCount < 7 || digitCount > 13) {
+      errors.phoneNumber = 'Nomor telepon harus 7–13 digit.';
+    }
   }
 
   return errors;

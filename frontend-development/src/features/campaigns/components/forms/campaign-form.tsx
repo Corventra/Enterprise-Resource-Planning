@@ -6,6 +6,7 @@ import type {
   CampaignLookupTopic,
   CampaignLookupType
 } from '../../types/campaign.types';
+import { getLocalTodayIsoDate } from '../../utils/campaign-dates';
 
 interface CampaignFormProps {
   value: CampaignFormValues;
@@ -68,6 +69,8 @@ export const CampaignForm = ({
   const dragCounter = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const todayIso = getLocalTodayIsoDate();
+  const endDateMin = value.startDate || todayIso;
 
   const openFilePicker = () => fileInputRef.current?.click();
 
@@ -149,6 +152,7 @@ export const CampaignForm = ({
           <input
             type="date"
             value={value.startDate}
+            min={todayIso}
             onChange={(event) => onChange('startDate', event.target.value)}
             className={inputClassName}
           />
@@ -159,6 +163,7 @@ export const CampaignForm = ({
           <input
             type="date"
             value={value.endDate}
+            min={endDateMin}
             disabled={noEndDate}
             onChange={(event) => onChange('endDate', event.target.value)}
             className={`${inputClassName} disabled:bg-slate-100 disabled:text-slate-400`}

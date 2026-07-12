@@ -1,11 +1,18 @@
 import type { CampaignFormErrors, CampaignFormValues } from '../types/campaign.types';
+import { getLocalTodayIsoDate } from './campaign-dates';
 
 interface ValidateCampaignFormInput {
   values: CampaignFormValues;
   noEndDate: boolean;
+  /** When true, start date cannot be before today. */
+  disallowPastStartDate?: boolean;
 }
 
-export const validateCampaignFormValues = ({ values, noEndDate }: ValidateCampaignFormInput): CampaignFormErrors => {
+export const validateCampaignFormValues = ({
+  values,
+  noEndDate,
+  disallowPastStartDate = false
+}: ValidateCampaignFormInput): CampaignFormErrors => {
   const errors: CampaignFormErrors = {};
 
   if (!values.name.trim()) {
@@ -22,6 +29,8 @@ export const validateCampaignFormValues = ({ values, noEndDate }: ValidateCampai
 
   if (!values.startDate) {
     errors.startDate = 'Start date is required.';
+  } else if (disallowPastStartDate && values.startDate < getLocalTodayIsoDate()) {
+    errors.startDate = 'Start date cannot be before today.';
   }
 
   if (!noEndDate && !values.endDate) {

@@ -148,9 +148,11 @@ export const AddManualLeadDialog = ({
             <div>
               <LeadCoreFieldLabel required>Phone Number</LeadCoreFieldLabel>
               <input
+                type="tel"
+                inputMode="tel"
                 value={draft.phoneNumber}
                 onChange={(event) => updateField('phoneNumber', event.target.value)}
-                placeholder="e.g. +62 812-3456-7890"
+                placeholder="e.g. 081234567890"
                 className={leadCoreInputClassName}
               />
               <LeadCoreFieldError message={errors.phoneNumber} />

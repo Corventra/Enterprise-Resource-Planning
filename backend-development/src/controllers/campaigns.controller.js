@@ -33,6 +33,10 @@ const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 const sendError = (res, e) => {
   if (e instanceof ValidationError) return res.status(400).json({ error: e.message });
+  // Race: unique index uq_campaigns_start_date
+  if (e && (e.errno === 1062 || e.code === 'ER_DUP_ENTRY')) {
+    return res.status(400).json({ error: 'Start date sudah digunakan oleh campaign lain.' });
+  }
   // eslint-disable-next-line no-console
   console.error('[campaigns.controller] error:', e);
   return res.status(500).json({ error: 'Internal server error' });
@@ -192,6 +196,9 @@ const create = async (req, res) => {
     const userId = getUserIdFromRequest(req, res);
     if (userId === null) return;
     const p = parseWritePayload(req.body);
+    if (await campaignsRepo.existsByStartDate(p.start_date)) {
+      throw new ValidationError('Start date sudah digunakan oleh campaign lain.');
+    }
     const imagePath = imagePathFromUploadedFile(req.file);
     const campaign_id = await campaignsRepo.create({
       campaignTypeId: p.campaign_type_id,
@@ -223,6 +230,9 @@ const update = async (req, res) => {
     }
 
     const p = parseWritePayload(req.body);
+    if (await campaignsRepo.existsByStartDate(p.start_date, campaign_id)) {
+      throw new ValidationError('Start date sudah digunakan oleh campaign lain.');
+    }
     const oldImagePath = existing.image_path;
     const newImagePath = req.file ? imagePathFromUploadedFile(req.file) : existing.image_path;
     await campaignsRepo.update(campaign_id, {

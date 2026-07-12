@@ -35,6 +35,17 @@ const requireEmail = (value, fieldName = 'email') => {
   return trimmed.toLowerCase();
 };
 
+/** Phone: optional leading +, digits only after stripping spaces/dashes; 7–13 digits. */
+const requirePhoneNumber = (value, fieldName = 'Phone Number') => {
+  const trimmed = requireString(value, fieldName, { min: 1, max: 50 });
+  const cleaned = trimmed.replace(/[\s-]/g, '');
+  const digitCount = cleaned.replace(/\D/g, '').length;
+  if (!/^\+?[0-9]+$/.test(cleaned) || digitCount < 7 || digitCount > 13) {
+    throw new ValidationError(`${fieldName} harus 7–13 digit.`);
+  }
+  return trimmed;
+};
+
 const requirePassword = (value, fieldName = 'password') => {
   if (typeof value !== 'string' || value.length < 6) {
     throw new ValidationError(`${fieldName} minimal 6 karakter.`);
@@ -57,6 +68,7 @@ module.exports = {
   ValidationError,
   requireString,
   requireEmail,
+  requirePhoneNumber,
   requirePassword,
   optionalArray
 };

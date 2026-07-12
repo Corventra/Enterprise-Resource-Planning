@@ -31,7 +31,7 @@ export const LEAD_CAPTURE_FIELD_DISPLAY_DEFAULTS: Record<
   },
   contact_phone: {
     placeholder: '08xxxxxxxxxx',
-    helpText: 'Gunakan nomor aktif WhatsApp atau telepon'
+    helpText: 'Gunakan nomor aktif WhatsApp atau telepon (7–13 digit)'
   }
 };
 

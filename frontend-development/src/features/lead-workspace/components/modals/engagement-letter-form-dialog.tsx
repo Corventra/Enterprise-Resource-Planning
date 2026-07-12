@@ -13,6 +13,7 @@ import {
 import { EngagementLetterDocumentField } from './engagement-letter-document-field';
 import { normalizeDateOnlyString } from '../../../../utils/format-date-only';
 import {
+  getLocalTodayIsoDate,
   hasEngagementLetterFormErrors,
   validateEngagementLetterForm,
   type EngagementLetterFormErrors,
@@ -325,6 +326,8 @@ export const EngagementLetterFormDialog = ({
     return null;
   }
 
+  const billingScheduleMin = getLocalTodayIsoDate();
+
   return (
     <>
       <SidePanelDialog open={open} onOpenChange={(nextOpen) => !nextOpen && handleClose()}>
@@ -460,6 +463,7 @@ export const EngagementLetterFormDialog = ({
                       <input
                         type="date"
                         value={dpRow.billing_schedule_date}
+                        min={billingScheduleMin}
                         onChange={(e) => {
                           clearFieldError('dpBillingSchedule');
                           setDpRow((r) => ({ ...r, billing_schedule_date: e.target.value }));
@@ -533,6 +537,7 @@ export const EngagementLetterFormDialog = ({
                         <input
                           type="date"
                           value={row.billing_schedule_date}
+                          min={billingScheduleMin}
                           onChange={(e) => {
                             setErrors((prev) => {
                               if (!prev.installmentBillingItems?.[idx]) return prev;
@@ -604,6 +609,7 @@ export const EngagementLetterFormDialog = ({
                       <input
                         type="date"
                         value={finalRow.billing_schedule_date}
+                        min={billingScheduleMin}
                         onChange={(e) => {
                           clearFieldError('finalBillingSchedule');
                           setFinalRow((r) => ({ ...r, billing_schedule_date: e.target.value }));

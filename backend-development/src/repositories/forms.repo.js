@@ -54,7 +54,7 @@ const LEAD_CAPTURE_SYSTEM_FIELDS = [
     field_type: 'text',
     sort_order: 5,
     placeholder: '08xxxxxxxxxx',
-    help_text: 'Gunakan nomor aktif WhatsApp atau telepon'
+    help_text: 'Gunakan nomor aktif WhatsApp atau telepon (7–13 digit)'
   }
 ];
 
