@@ -3,7 +3,10 @@ import {
   leadCoreTextareaClassName
 } from '../../../lead-tracker/components/forms/lead-core-form-field';
 import type { HandoverContact, HandoverDetail } from '../../types/handover.types';
-import type { HandoverSubmitErrors } from '../../utils/handover-submit-validation';
+import {
+  getLocalTodayIsoDate,
+  type HandoverSubmitErrors
+} from '../../utils/handover-submit-validation';
 import { HandoverFeeStructureSection } from '../shared/handover-fee-structure-section';
 import { HandoverClientDocumentsField } from './handover-client-documents-field';
 
@@ -87,6 +90,8 @@ export const HandoverUpdateFormSections = ({
   showSubmitErrors = false
 }: HandoverUpdateFormSectionsProps) => {
   const showErr = showSubmitErrors;
+  const todayIso = getLocalTodayIsoDate();
+  const projectEndDateMin = form.projectStartDate || todayIso;
   const updateField = <K extends keyof HandoverDetail>(key: K, value: HandoverDetail[K]) => {
     onChange({ ...form, [key]: value });
   };
@@ -205,6 +210,7 @@ export const HandoverUpdateFormSections = ({
               className={leadCoreInputClassName}
               placeholder={HANDOVER_UPDATE_PLACEHOLDERS.projectStartDate}
               value={form.projectStartDate ?? ''}
+              min={todayIso}
               onChange={(event) => updateField('projectStartDate', event.target.value)}
             />
             <HandoverFieldError message={submitErrors.projectStartDate} show={showErr} />
@@ -216,6 +222,7 @@ export const HandoverUpdateFormSections = ({
               className={leadCoreInputClassName}
               placeholder={HANDOVER_UPDATE_PLACEHOLDERS.projectEndDate}
               value={form.projectEndDate ?? ''}
+              min={projectEndDateMin}
               onChange={(event) => updateField('projectEndDate', event.target.value)}
             />
             <HandoverFieldError message={submitErrors.projectEndDate} show={showErr} />
@@ -364,6 +371,7 @@ export const HandoverUpdateFormSections = ({
                           className={leadCoreInputClassName}
                           placeholder={HANDOVER_UPDATE_PLACEHOLDERS.milestoneTargetDate}
                   value={item.targetDateIso ?? ''}
+                  min={todayIso}
                   onChange={(event) => {
                     const next = [...form.timelineMilestones];
                     next[index] = { ...next[index], targetDateIso: event.target.value, targetDate: event.target.value };

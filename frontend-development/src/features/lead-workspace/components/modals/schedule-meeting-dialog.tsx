@@ -15,6 +15,7 @@ import {
 import type { ScheduleMeetingPayload } from '../../types/lead-meetings.types';
 import {
   hasScheduleMeetingFormErrors,
+  getLocalDatetimeLocalMin,
   validateScheduleMeetingPayload,
   type ScheduleMeetingFormErrors
 } from '../../utils/schedule-meeting-validation';
@@ -112,6 +113,7 @@ export const ScheduleMeetingDialog = ({
     draft.meetingMode === 'ONLINE'
       ? 'e.g. https://meet.google.com/abc-defg-hij'
       : 'e.g. Kantor Klien, Jakarta';
+  const meetingDatetimeMin = getLocalDatetimeLocalMin();
 
   return (
     <SidePanelDialog open={open} onOpenChange={(nextOpen) => !nextOpen && handleClose()}>
@@ -145,6 +147,7 @@ export const ScheduleMeetingDialog = ({
               <input
                 type="datetime-local"
                 value={draft.meetingDatetime}
+                min={meetingDatetimeMin}
                 onChange={(event) => updateField('meetingDatetime', event.target.value)}
                 className={leadCoreInputClassName}
               />

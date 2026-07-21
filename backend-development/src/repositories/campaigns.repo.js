@@ -176,6 +176,22 @@ const findByIdWithJoins = async (campaignId) => {
   return rows.length === 0 ? null : mapCampaignRow(rows[0]);
 };
 
+/** True if another campaign already uses this start_date (DATE). */
+const existsByStartDate = async (startDate, excludeCampaignId = null) => {
+  if (excludeCampaignId == null) {
+    const [rows] = await pool.execute(
+      `SELECT campaign_id FROM campaigns WHERE start_date = ? LIMIT 1`,
+      [startDate]
+    );
+    return rows.length > 0;
+  }
+  const [rows] = await pool.execute(
+    `SELECT campaign_id FROM campaigns WHERE start_date = ? AND campaign_id <> ? LIMIT 1`,
+    [startDate, excludeCampaignId]
+  );
+  return rows.length > 0;
+};
+
 const formatCampaignCode = (campaignId) => `cmp-${String(campaignId).padStart(3, '0')}`;
 
 const create = async ({
@@ -270,6 +286,7 @@ module.exports = {
   listAllWithJoins,
   getCampaignSummary,
   findByIdWithJoins,
+  existsByStartDate,
   create,
   update,
   setArchived

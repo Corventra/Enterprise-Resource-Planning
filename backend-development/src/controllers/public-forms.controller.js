@@ -98,9 +98,10 @@ const validateFormatByField = (field, storedString) => {
   }
 
   if (field.field_key === 'contact_phone') {
-    const digits = storedString.replace(/[\s-]/g, '');
-    if (digits.length < 6 || digits.length > 50 || !/^\+?[0-9]+$/.test(digits)) {
-      throw new ValidationError('Nomor telepon kontak tidak valid.');
+    const cleaned = storedString.replace(/[\s-]/g, '');
+    const digitCount = cleaned.replace(/\D/g, '').length;
+    if (!/^\+?[0-9]+$/.test(cleaned) || digitCount < 7 || digitCount > 13) {
+      throw new ValidationError('Nomor telepon kontak harus 7–13 digit.');
     }
     return;
   }
@@ -273,9 +274,10 @@ const buildLeadPayloadFromAnswers = (fields, answerByFieldId) => {
   if (!EMAIL_RE.test(byKey.contact_email) || byKey.contact_email.length > 190) {
     throw new ValidationError('Email kontak tidak valid.');
   }
-  const phoneDigits = byKey.contact_phone.replace(/[\s-]/g, '');
-  if (phoneDigits.length < 6 || phoneDigits.length > 50 || !/^\+?[0-9]+$/.test(phoneDigits)) {
-    throw new ValidationError('Nomor telepon kontak tidak valid.');
+  const phoneCleaned = byKey.contact_phone.replace(/[\s-]/g, '');
+  const phoneDigitCount = phoneCleaned.replace(/\D/g, '').length;
+  if (!/^\+?[0-9]+$/.test(phoneCleaned) || phoneDigitCount < 7 || phoneDigitCount > 13) {
+    throw new ValidationError('Nomor telepon kontak harus 7–13 digit.');
   }
   if (byKey.company_name.length > 200 || byKey.company_address.length > 255 || byKey.contact_name.length > 150) {
     throw new ValidationError('Satu atau lebih field lead melebihi panjang yang diizinkan.');
